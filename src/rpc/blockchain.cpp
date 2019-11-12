@@ -3164,7 +3164,7 @@ UniValue exec(const JSONRPCRequest& request)
 		double dTotalWhalePayments = 0;
 		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
 		results.push_back(Pair("DWS payables owed", dTotalWhalePayments));
-		results.push_back(Pair("DWS quantity", dws.size()));
+		results.push_back(Pair("DWS quantity", (int)dws.size()));
 	}
 	else if (sItem == "hexblocktojson")
 	{
@@ -3322,7 +3322,7 @@ UniValue exec(const JSONRPCRequest& request)
 		if (dDetails == 1)
 		{
 			std::vector<WhaleStake> w = GetDWS();
-			results.push_back(Pair("Total DWS Quantity", w.size()));
+			results.push_back(Pair("Total DWS Quantity", (int)w.size()));
 
 			for (int i = 0; i < w.size(); i++)
 			{

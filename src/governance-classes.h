@@ -148,7 +148,7 @@ public:
 	static bool IsSmartContract(int nHeight);
 
     static void GetNearestSuperblocksHeights(int nBlockHeight, int& nLastSuperblockRet, int& nNextSuperblockRet);
-    static CAmount GetPaymentsLimit(int nBlockHeight);
+    static CAmount GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes);
 
     int GetStatus() { return nStatus; }
     void SetStatus(int nStatusIn) { nStatus = nStatusIn; }

@@ -80,6 +80,10 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
         entry.push_back(Pair("generated", true));
 	if (wtx.tx->IsGSCPayment())
 		entry.push_back(Pair("Smart-Contract-Reward", true));
+	if (wtx.tx->IsWhaleReward())
+		entry.push_back(Pair("Dynamic-Whale-Stake-Reward", true));
+	if (wtx.tx->IsWhaleStake())
+		entry.push_back(Pair("Dyamic-Whale-Stake", true));
 	if (wtx.tx->IsCPKAssociation())
 		entry.push_back(Pair("Christian-Public-Key-Association", true));
 	if (wtx.tx->IsGSCTransmission())
@@ -1508,6 +1512,8 @@ void ListTransactions(CWallet * const pwallet, const CWalletTx& wtx, const std::
                 {
 					std::string sSuffix = "";
 					if (wtx.tx->IsGSCPayment()) sSuffix = " smart-contract-payment";
+					if (wtx.tx->IsWhaleReward()) sSuffix = " dynamic-whale-stake-reward";
+					if (wtx.tx->IsWhaleStake()) sSuffix = " dynamic-whale-stake";
 					if (wtx.tx->IsCPKAssociation()) sSuffix = " Christian-Keypair-Association";
 					if (wtx.tx->IsGSCTransmission()) sSuffix = " GSC-Stake-Transmission";
 					if (wtx.tx->IsABN()) sSuffix = " Anti-Botnet-Transaction";

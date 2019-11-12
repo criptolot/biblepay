@@ -1136,7 +1136,7 @@ UniValue getgovernanceinfo(const JSONRPCRequest& request)
 	// Used by the pools:
 	if (nBlockHeight > 0 && nNextSuperblock > 0)
 	{
-		double nBudget = CSuperblock::GetPaymentsLimit(nNextSuperblock) / COIN;
+		double nBudget = CSuperblock::GetPaymentsLimit(nNextSuperblock, false) / COIN;
 		obj.push_back(Pair("nextbudget", nBudget));
 	}
 
@@ -1239,7 +1239,7 @@ UniValue getsuperblockbudget(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
     }
 
-    CAmount nBudget = CSuperblock::GetPaymentsLimit(nBlockHeight);
+    CAmount nBudget = CSuperblock::GetPaymentsLimit(nBlockHeight, false);
     std::string strBudget = FormatMoney(nBudget);
 
     return strBudget;

@@ -398,6 +398,10 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         return tr("Received from");
     case TransactionRecord::RecvWithPrivateSend:
         return tr("Received via PrivateSend");
+	case TransactionRecord::WhaleStake:
+		return tr("Dynamic Whale Stake");
+	case TransactionRecord::WhaleReward:
+		return tr("Dynamic Whale Reward");
 	case TransactionRecord::GSCTransmission:
 		return tr("GSC Transmission");
     case TransactionRecord::SendToAddress:
@@ -434,6 +438,10 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
     QString theme = GUIUtil::getThemeName();
     switch(wtx->type)
     {
+		case TransactionRecord::WhaleReward:
+			return QIcon(":/icons/drkblue/whale3232");
+		case TransactionRecord::WhaleStake:
+			return QIcon(":/icons/drkblue/whale3232");
 		case TransactionRecord::SuperBlockPayment:
 			return QIcon(":/icons/drkblue/account32");
 		case TransactionRecord::GSCPayment:

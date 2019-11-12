@@ -315,6 +315,12 @@ public:
 		return false;
     }
 
+	bool IsWhaleReward() const
+	{
+		CAmount nValueOut = GetValueOut();
+		return (nValueOut % 1527 == 0) ? true : false;
+	}
+
 	bool IsSuperblockPayment() const
 	{
 		// Determine if this is a monthly governance superblock payment
@@ -359,6 +365,12 @@ public:
 		// Is this a Christian Public Keypair association tx?
 		std::string sMyData = GetTxMessage();
 		return (sMyData.find("<MT>CPK") != std::string::npos);
+	}
+
+	bool IsWhaleStake() const
+	{
+		std::string sMyData = GetTxMessage();
+		return (sMyData.find("<MT>DWS") != std::string::npos);
 	}
 
 	bool IsABN() const

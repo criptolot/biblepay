@@ -915,11 +915,17 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 		// BiblePay
 		if (chainActive.Tip() != NULL)
 		{
-
 			// BiblePay - If this is a PODC association, user must prove ownership of the CPID, otherwise reject the transaction
 			if (!VerifyMemoryPoolCPID(tx))
 			{
 				LogPrintf("AcceptToMemoryPool::PODC association rejected %s \n", 
+						tx.GetHash().GetHex());
+				return false;
+			}
+
+			if (!VerifyDynamicWhaleStake(tx))
+			{
+				LogPrintf("AcceptToMemoryPool::Dynamic Whale Burn rejected %s \n", 
 						tx.GetHash().GetHex());
 				return false;
 			}
@@ -2386,31 +2392,13 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
 
     // BIBLEPAY : MODIFIED TO CHECK MASTERNODE PAYMENTS AND SUPERBLOCKS	
 
-     int64_t nTime5_1 = GetTimeMicros(); nTimeISFilter += nTime5_1 - nTime4;	
-	if (fDebugSpam)	
-		LogPrint("bench", "      - IS filter: %.2fms [%.2fs]\n", 0.001 * (nTime5_1 - nTime4), nTimeISFilter * 0.000001);
-		
     // TODO: resync data (both ways?) and try to reprocess this block later.
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->pprev->nBits, pindex->pprev->nHeight, chainparams.GetConsensus(), false);
     std::string strError;
 	
-	int64_t nTime5_2 = GetTimeMicros(); nTimeSubsidy += nTime5_2 - nTime5_1;	
-    
-	if (fDebugSpam)	
-		LogPrint("bench", "      - GetBlockSubsidy: %.2fms [%.2fs]\n", 0.001 * (nTime5_2 - nTime5_1), nTimeSubsidy * 0.000001);
-
-
     if (!IsBlockValueValid(block, pindex->nHeight, blockReward, strError)) {
         return state.DoS(0, error("ConnectBlock(BIBLEPAY): %s", strError), REJECT_INVALID, "bad-cb-amount");
     }
-
-	int64_t nTime5_3 = GetTimeMicros(); nTimeValueValid += nTime5_3 - nTime5_2;	
-    int64_t nTime5_4 = GetTimeMicros(); nTimePayeeValid += nTime5_4 - nTime5_3;	
-    if (fDebugSpam)	  
-        LogPrint("bench", "      - IsBlockPayeeValid: %.2fms [%.2fs]\n", 0.001 * (nTime5_4 - nTime5_3), nTimePayeeValid * 0.000001);
-
-	if (fDebugSpam)	
-	    LogPrint("bench", "      - IsBlockValueValid: %.2fms [%.2fs]\n", 0.001 * (nTime5_3 - nTime5_2), nTimeValueValid * 0.000001);
 	
 	// Since we still live in the hybrid scenario (.13 + .14):
 	if (GetSporkDouble("SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT", 0) == 1) 
@@ -2426,10 +2414,6 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
         return error("ConnectBlock(DASH): ProcessSpecialTxsInBlock for block %s failed with %s",	
                      pindex->GetBlockHash().ToString(), FormatStateMessage(state));	
     }
-
-    int64_t nTime5 = GetTimeMicros(); nTimePayeeAndSpecial += nTime5 - nTime4;
-    if (fDebugSpam)
-		LogPrint("bench", "    - Payee and special txes: %.2fms [%.2fs]\n", 0.001 * (nTime5 - nTime4), nTimePayeeAndSpecial * 0.000001);
 
     // END BIBLEPAY
 
@@ -2480,10 +2464,6 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     // add this block to the view's block chain
     view.SetBestBlock(pindex->GetBlockHash());
 
-    int64_t nTime6 = GetTimeMicros(); nTimeIndex += nTime6 - nTime5;
-    if (fDebugSpam)
-		LogPrint("bench", "    - Index writing: %.2fms [%.2fs]\n", 0.001 * (nTime6 - nTime5), nTimeIndex * 0.000001);
-
     // Watch for changes to the previous coinbase transaction.
     static uint256 hashPrevBestCoinBase;
     GetMainSignals().UpdatedTransaction(hashPrevBestCoinBase);
@@ -2499,10 +2479,6 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
 			LogPrintf("EGSCQP %f %s", (double)pindex->nHeight, sStatus);
 	}
 	// END BIBLEPAY
-
-    int64_t nTime7 = GetTimeMicros(); nTimeCallbacks += nTime7 - nTime6;
-    if (fDebugSpam)
-		LogPrint("bench", "    - Callbacks: %.2fms [%.2fs]\n", 0.001 * (nTime7 - nTime6), nTimeCallbacks * 0.000001);
 
     return true;
 }

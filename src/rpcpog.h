@@ -68,6 +68,48 @@ struct Researcher
 	std::string CPK;
 };
 
+struct WhaleStake
+{
+	double Amount = 0;
+	double RewardAmount = 0;
+	double TotalOwed = 0;
+	int64_t BurnTime = 0;
+	int BurnHeight = 0;
+	int Duration = 0;
+	double ROI = 0;
+	double ActualROI = 0;
+	int64_t MaturityTime = 0;
+	int MaturityHeight = 0;
+	uint256 TXID = uint256S("0x0");
+	std::string XML = std::string();
+	std::string ReturnAddress = std::string();
+	bool found = false;
+	bool paid = false;
+};
+
+static double MAX_DAILY_WHALE_COMMITMENTS = 5000000;
+static double MAX_WHALE_ROI = 2.0;
+struct WhaleMetric
+{
+	double nTotalFutureCommitments = 0;
+	double nTotalGrossFutureCommitments = 0;
+	
+	double nTotalCommitmentsDueToday = 0;
+	double nTotalGrossCommitmentsDueToday = 0;
+
+	double nTotalBurnsToday = 0;
+	double nTotalGrossBurnsToday = 0;
+
+	double nTotalMonthlyCommitments = 0;
+	double nTotalGrossMonthlyCommitments = 0;
+
+	double nTotalAnnualReward = 0;
+
+	double nSaturationPercentAnnual = 0;
+	double nSaturationPercentMonthly = 0;
+	double ROI = 0;
+};
+
 struct BiblePayProposal
 {
 	std::string sName;
@@ -248,10 +290,15 @@ std::string BIPFS_Payment(CAmount nAmount, std::string sTXID, std::string sXML);
 BBPResult DSQL_ReadOnlyQuery(std::string sXMLSource);
 int LoadResearchers();
 std::string TeamToName(int iTeamID);
-std::string GetResearcherCPID();
+std::string GetResearcherCPID(std::string sSearch);
 bool CreateExternalPurse(std::string& sError);
 bool VerifyMemoryPoolCPID(CTransaction tx);
 std::string GetEPArg(bool fPublic);
-void GetDWS();
+std::vector<WhaleStake> GetDWS();
+WhaleMetric GetWhaleMetrics(int nHeight);
+bool VerifyDynamicWhaleStake(CTransaction tx);
+double GetROIBasedOnMaturity(double nDuration, double dROI);
+double GetOwedBasedOnMaturity(double nDuration, double dROI, double dAmount);
+std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
 
 #endif

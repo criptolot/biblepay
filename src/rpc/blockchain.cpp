@@ -1776,7 +1776,7 @@ void BoincHelpfulHint(UniValue& e)
 {
 	e.push_back(Pair("Step 1", "Log into your WCG account at 'worldcommunitygrid.org' with your WCG E-mail address and WCG password."));
 	e.push_back(Pair("Step 2", "Click Settings | My Profile.  Record your 'Username' and 'Verification Code' and your 'CPID' (Cross-Project-ID)."));
-	e.push_back(Pair("Step 3", "From our RPC console, type, exec associate wcg your_username your_verification_code"));
+	e.push_back(Pair("Step 3", "From our RPC console, type, exec associate your_username your_verification_code"));
 	e.push_back(Pair("Step 4", "Wait for 5 blocks to pass.  Then type 'exec rac' again, and see if you are linked!  "));
 	e.push_back(Pair("Step 5", "Once you are linked you will receive daily rewards.  Please read about our minimum stake requirements per RAC here: wiki.biblepay.org/PODC"));
 }
@@ -1992,6 +1992,7 @@ UniValue exec(const JSONRPCRequest& request)
 		int iNextSuperblock = 0;
 		int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
 		std::string sContract = GetGSCContract(0, true); // As of iLastSuperblock height
+		results.push_back(Pair("end_height", iLastSuperblock));
 		results.push_back(Pair("contract", sContract));
 		std::string sAddresses;
 		std::string sAmounts;
@@ -2034,9 +2035,9 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("required_votes", iRequiredVotes));
 		results.push_back(Pair("last_superblock", iLastSuperblock));
 		results.push_back(Pair("next_superblock", iNextSuperblock));
-		CAmount nLastLimit = CSuperblock::GetPaymentsLimit(iLastSuperblock);
+		CAmount nLastLimit = CSuperblock::GetPaymentsLimit(iLastSuperblock, false);
 		results.push_back(Pair("last_payments_limit", (double)nLastLimit/COIN));
-		CAmount nNextLimit = CSuperblock::GetPaymentsLimit(iNextSuperblock);
+		CAmount nNextLimit = CSuperblock::GetPaymentsLimit(iNextSuperblock, false);
 		results.push_back(Pair("next_payments_limit", (double)nNextLimit/COIN));
 		bool fOverbudget = dTotal > (nNextLimit/COIN);
 		results.push_back(Pair("overbudget", fOverbudget));
@@ -2687,15 +2688,23 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("BBP/USD", nPrice));
 		}
 	}
-	else if (sItem == "paycameroon")
+	else if (sItem == "paysponsorship")
 	{
-		if (request.params.size() != 4)
-			throw std::runtime_error("You must specify childid amount_in_USD send_mode.  IE: exec paycameroon childID 40 [test/authorize].");
+		if (request.params.size() != 5)
+			throw std::runtime_error("You must specify charity_name childid amount_in_USD send_mode.  IE: exec paysponsorship cameroon-one childID 40 [test/authorize].  Or: exec paysponsorship kairos childID 25 [test/authorize].");
 		std::string sError;
 	   	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
-		std::string sChildID = request.params[1].get_str();
-		double nAmountUSD = cdbl(request.params[2].get_str(), 2);
-		std::string sSendMode = request.params[3].get_str();
+		
+		std::string sCharity = request.params[1].get_str();
+		std::string sChildID = request.params[2].get_str();
+		double nAmountUSD = cdbl(request.params[3].get_str(), 2);
+		std::string sSendMode = request.params[4].get_str();
+
+		if (sCharity != "cameroon-one" && sCharity != "kairos")
+		{
+			throw std::runtime_error("Sorry, the charity name does not match any POOM charities.  [cameroon-one || kairos]. ");
+		}
+
 		double nPrice = GetBBPPrice();
 		
 		if (nPrice < .00001)
@@ -2710,7 +2719,7 @@ UniValue exec(const JSONRPCRequest& request)
 			nAmountUSD = .01;
 		}
 
-		bool fGood = VerifyChild(sChildID);
+		bool fGood = VerifyChild(sChildID, sCharity);
 		if (!fGood || sChildID.empty())
 			sError += "Invalid Child ID. (Not sponsored). ";
 
@@ -2724,10 +2733,14 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("BBP/USD_Price", nPrice));
 
 		std::string sXML = "<cpk>" + sCPK + "</cpk><childid> " + sChildID + "</childid><amount_usd>" + RoundToString(nAmountUSD, 2) 
-			+ "</amount_usd><amount>" + RoundToString(nAmount, 2) + "</amount>";
-		std::string sDest = "BHRiFZYUpHj2r3gxw7pHyvByTUk1dGb8vz";
+			+ "</amount_usd><amount>" + RoundToString(nAmount, 2) + "</amount><charity>" + sCharity + "</charity>";
+		
+		// This handles Charity and Chain Type:
+		std::string sDest = GetSporkValue(sCharity + "-receive-address");
 		CBitcoinAddress baDest(sDest);
-
+		if (!baDest.IsValid())
+			throw std::runtime_error("Sorry, destination address is invalid for charity " + sCharity + ".");
+	
 		bool fSubtractFee = false;
 		bool fInstantSend = false;
 		CWalletTx wtx;
@@ -2913,9 +2926,16 @@ UniValue exec(const JSONRPCRequest& request)
 		// So:  Display WCG Rac in team BBP, Link Status, and external-purse weight need to be shown.
 		// This command can knock out most troubleshooting issues all in one swoop.
 
-		// First verif the user has a CPK...
+		if (request.params.size() > 2)
+			throw std::runtime_error("You must specify exec rac [optional=someone elses cpid or nickname].");
+
+		std::string sSearch;
+		if (request.params.size() > 1)
+			sSearch = request.params[1].get_str();
+		
+		// First verify the user has a CPK...
 		CPK myCPK = GetMyCPK("cpk");
-		if (myCPK.sAddress.empty()) 
+		if (myCPK.sAddress.empty() && sSearch.empty()) 
 		{
 			results.push_back(Pair("Error", "Sorry, you do not have a CPK.  First please create your CPK by typing 'exec cpk your_nickname'.  This adds your CPK to the chain.  Please wait 3 or more blocks after adding your CPK before you move on to the next step. "));
 			BoincHelpfulHint(results);
@@ -2923,7 +2943,7 @@ UniValue exec(const JSONRPCRequest& request)
 		}
 
 		// Next check the link status (of the exec join wcg->cpid)...
-		std::string sCPID = GetResearcherCPID();
+		std::string sCPID = GetResearcherCPID(sSearch);
 		UniValue e(UniValue::VOBJ);
 
 		if (sCPID.empty())
@@ -2947,7 +2967,7 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("CPK", myCPK.sAddress));
 			results.push_back(Pair("wcg_teamid", r.teamid));
 			int nFreq = (int)cdbl(GetArg("-dailygscfrequency", RoundToString(BLOCKS_PER_DAY, 0)), 0);
-			int nHeight = chainActive.Tip()->nHeight - (chainActive.Tip()->nHeight % nFreq) + nFreq;
+			int nHeight = chainActive.Tip()->nHeight - (chainActive.Tip()->nHeight % nFreq) + (BLOCKS_PER_DAY / 2);
 			results.push_back(Pair("next_podc_gsc_transmission", nHeight));
 			std::string sTeamName = TeamToName(r.teamid);
 			
@@ -3011,63 +3031,6 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair(RoundToString(i, 0), sRow));
 		}
 	}
-	else if (sItem == "roi")
-	{
-		const Consensus::Params& consensusParams = Params().GetConsensus();
-		int iNextSuperblock = 0;
-		int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
-		CAmount nPaymentsLimit = CSuperblock::GetPaymentsLimit(iLastSuperblock);
-		nPaymentsLimit -= MAX_BLOCK_SUBSIDY * COIN;
-		std::string sContract = GetGSCContract(iLastSuperblock, false);
-		std::string sData = ExtractXML(sContract, "<DATA>", "</DATA>");
-		std::vector<std::string> vData = Split(sData.c_str(), "\n");
-		double dTotalPaid = 0;
-		double nTotalPoints = 0;
-		for (int i = 0; i < vData.size(); i++)
-		{
-			std::vector<std::string> vRow = Split(vData[i].c_str(), "|");
-			if (vRow.size() >= 6)
-			{
-				double nPoints = cdbl(vRow[2], 2);
-				double nProminence = cdbl(vRow[3], 4) * 100;
-				double nPayment = cdbl(vRow[5], 4);
-				CAmount nOwed = nPaymentsLimit * (nProminence / 100);
-				dTotalPaid += nPayment;
-				nTotalPoints += nPoints;
-			}
-		}
-		results.push_back(Pair("Notes", "Please note this information is for the POG campaign only, and based on yesterday's participation levels."));
-		results.push_back(Pair("Contract Height", iLastSuperblock));
-		results.push_back(Pair("Total Paid", dTotalPaid));
-		results.push_back(Pair("Total Points", nTotalPoints));
-		double dPPP = dTotalPaid / nTotalPoints;
-		results.push_back(Pair("Payment Per Point", dPPP));
-		CAmount nTotalReq;
-		double dCoinAge = pwalletMain->GetAntiBotNetWalletWeight(0, nTotalReq);
-		results.push_back(Pair("My Current Coin Age", dCoinAge));
-		results.push_back(Pair("My free balance", nTotalReq / COIN));
-		CBlockIndex* bindex = FindBlockByHeight(iLastSuperblock - 1);
-		int nBits = bindex->nBits;
-		CAmount nReward = GetBlockSubsidy(nBits, iLastSuperblock - 1, consensusParams, false);
-		CAmount nSanc = GetMasternodePayment(iLastSuperblock -1, nReward);
-		results.push_back(Pair("Sanctuary Reward @" + RoundToString(iLastSuperblock - 1, 2), nSanc / COIN));
-		double nSancROI = ((double)(nSanc/COIN) / SANCTUARY_COLLATERAL) * 100 * 365;
-		results.push_back(Pair("Sanctuary ROI Annualized %", nSancROI));
-		for (double nTitheAmount = 2; nTitheAmount < 50000; nTitheAmount += 1000)
-		{
-			double nPoints = cbrt(nTitheAmount) * dCoinAge;
-			if (nTitheAmount > 10000)
-				nTitheAmount += 5000;
-			results.push_back(Pair("Tithe " + RoundToString(nTitheAmount, 2) + " Points", nPoints));
-			// Calculate conceptual ROI
-			double nEarned = (dPPP * nPoints) - nTitheAmount;
-			results.push_back(Pair("Tithe " + RoundToString(nTitheAmount, 2) + " Reward", (dPPP * nPoints)));
-			double nROI = (nEarned / nTitheAmount) * 100;
-			results.push_back(Pair("Tithe " + RoundToString(nTitheAmount, 2) + " Daily ROI %", nROI));
-			double nROIBalance = (nEarned / (nTotalReq/COIN)) * 100 * 365;
-			results.push_back(Pair("Balance " + RoundToString(nTotalReq / COIN, 2) + " Annualized ROI %", nROIBalance));
-		}
-	}
 	else if (sItem == "debugtool1")
 	{
 		std::string sBlock = request.params[1].get_str();
@@ -3098,7 +3061,12 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "dailysponsorshipcap")	
 	{	
-		double nCap = GetProminenceCap("CAMEROON-ONE", 1333, .50);
+		if (request.params.size() != 2)
+			throw std::runtime_error("You must specify the charity name.");
+		std::string sCharity = request.params[1].get_str();
+		if (sCharity != "cameroon-one" && sCharity != "kairos")
+			throw std::runtime_error("Invalid charity name.");
+		double nCap = GetProminenceCap(sCharity, 1333, .50);
 		results.push_back(Pair("cap", nCap));
 	}
 	else if (sItem == "cleantips")
@@ -3183,7 +3151,7 @@ UniValue exec(const JSONRPCRequest& request)
 		const Consensus::Params& consensusParams = Params().GetConsensus();
 		int nBits = 486585255;
 		int nHeight = cdbl(request.params[1].get_str(), 0);
-		CAmount nLimit = CSuperblock::GetPaymentsLimit(nHeight);
+		CAmount nLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
 		CAmount nReward = GetBlockSubsidy(nBits, nHeight, consensusParams, false);
 		CAmount nRewardGov = GetBlockSubsidy(nBits, nHeight, consensusParams, true);
 		CAmount nSanc = GetMasternodePayment(nHeight, nReward);
@@ -3192,6 +3160,11 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("Sanc", (double)nSanc/COIN));
 		// Evo Audit: 14700 gross, @98400=13518421, @129150=13225309/Daily = @129170=1013205
 		results.push_back(Pair("GovernanceSubsidy", (double)nRewardGov/COIN));
+		// Dynamic Whale Staking
+		double dTotalWhalePayments = 0;
+		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
+		results.push_back(Pair("DWS payables owed", dTotalWhalePayments));
+		results.push_back(Pair("DWS quantity", dws.size()));
 	}
 	else if (sItem == "hexblocktojson")
 	{
@@ -3276,7 +3249,7 @@ UniValue exec(const JSONRPCRequest& request)
 			throw std::runtime_error("You must specify exec dws amount duration_in_days 0=test/1=authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].");
 
 		double nAmt = cdbl(request.params[1].get_str(), 2);
-		double nDuration = cdbl(request.params[2].get_str(), 2);
+		double nDuration = cdbl(request.params[2].get_str(), 0);
 		double nAuthorize = cdbl(request.params[3].get_str(), 0);
 		std::string sReturnAddress = DefaultRecAddress("Christian-Public-Key");
 		CBitcoinAddress returnAddress(sReturnAddress);
@@ -3291,8 +3264,9 @@ UniValue exec(const JSONRPCRequest& request)
 		if (nAmt < 100 || nAmt > 1000000)
 			throw std::runtime_error("Sorry, amount must be between 100 BBP and 1,000,000 BBP.");
 
-		if (nDuration < 7 || nDuration > 365)
-			throw std::runtime_error("Sorry, duration must be between 7 days and 365 days.");
+		// Todo: Change this to 7 days in prod, after we are done testing.
+		if (nDuration < 1 || nDuration > 365)
+			throw std::runtime_error("Sorry, duration must be between 1 days and 365 days.");
 
 		if (fProd)
 			throw std::runtime_error("Sorry, this feature can only be used in TestNet currently.");
@@ -3300,13 +3274,18 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("Staking Amount", nAmt));
 		results.push_back(Pair("Duration", nDuration));
 		int64_t nStakeTime = GetAdjustedTime();
-		
 		int64_t nReclaimTime = (86400 * nDuration) + nStakeTime;
+		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
 
 		results.push_back(Pair("Reclaim Date", TimestampToHRDate(nReclaimTime)));
 		results.push_back(Pair("Return Address", sReturnAddress));
+		
+		results.push_back(Pair("ROI %", RoundToString(GetROIBasedOnMaturity(nDuration, wm.ROI) * 100, 4)));
+		
 		std::string sPK = "DWS-" + sReturnAddress + "-" + RoundToString(nReclaimTime, 0);
-		std::string sPayload = "<MT>DWS</MT><MK>" + sPK + "</MK><MV><dws><returnaddress>" + sReturnAddress + "</returnaddress><duration>" 
+		std::string sPayload = "<MT>DWS</MT><MK>" + sPK + "</MK><MV><dws><returnaddress>" + sReturnAddress + "</returnaddress><burnheight>" 
+			+ RoundToString(chainActive.Tip()->nHeight, 0) 
+			+ "</burnheight><burntime>" + RoundToString(GetAdjustedTime(), 0) + "</burntime><roi>" + RoundToString(wm.ROI, 4) + "</roi><duration>" 
 			+ RoundToString(nDuration, 0) + "</duration><duedate>" + TimestampToHRDate(nReclaimTime) + "</duedate><amount>" + RoundToString(nAmt, 2) + "</amount></dws></MV>";
 		const Consensus::Params& consensusParams = Params().GetConsensus();
 
@@ -3334,9 +3313,55 @@ UniValue exec(const JSONRPCRequest& request)
 		}
 
 	}
-	else if (sItem == "testdws1")
+	else if (sItem == "dwsquote")
 	{
+		double dDetails = 0;
+		if (request.params.size() > 1)
+			dDetails = cdbl(request.params[1].get_str(), 0);
 
+		if (dDetails == 1)
+		{
+			std::vector<WhaleStake> w = GetDWS();
+			results.push_back(Pair("Total DWS Quantity", w.size()));
+
+			for (int i = 0; i < w.size(); i++)
+			{
+				WhaleStake ws = w[i];
+				if (ws.found && !ws.paid)
+				{
+					results.push_back(Pair("Record", i+1));
+					results.push_back(Pair("Amount", ws.Amount));
+					results.push_back(Pair("Reward", ws.RewardAmount));
+					results.push_back(Pair("Actual ROI %", RoundToString(ws.ActualROI * 100, 4)));
+					results.push_back(Pair("Return Address", ws.ReturnAddress));
+					results.push_back(Pair("Duration", ws.Duration));
+					results.push_back(Pair("Burn Height", ws.BurnHeight));
+					results.push_back(Pair("Maturity Height", ws.MaturityHeight));
+					results.push_back(Pair("Maturity Time", ws.MaturityTime));
+				}
+			}
+		}
+		// Call out for Whale Metrics
+		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
+		results.push_back(Pair("Total Future Commitments", wm.nTotalFutureCommitments));
+		results.push_back(Pair("Total Gross Future Commitments", wm.nTotalGrossFutureCommitments));
+
+		results.push_back(Pair("Total Commitments Due Today", wm.nTotalCommitmentsDueToday));
+		results.push_back(Pair("Total Gross Commitments Due Today", wm.nTotalGrossCommitmentsDueToday));
+
+		results.push_back(Pair("Total Burns Today", wm.nTotalBurnsToday));
+		results.push_back(Pair("Total Gross Burns Today", wm.nTotalGrossBurnsToday));
+
+		results.push_back(Pair("Total Monthly Commitments", wm.nTotalMonthlyCommitments));
+		results.push_back(Pair("Total Gross Monthly Commitments", wm.nTotalGrossMonthlyCommitments));
+
+		results.push_back(Pair("Total Annual Reward", wm.nTotalAnnualReward));
+		results.push_back(Pair("Saturation Percent Annual", RoundToString(wm.nSaturationPercentAnnual * 100, 8)));
+		results.push_back(Pair("Saturation Percent Monthly", RoundToString(wm.nSaturationPercentMonthly * 100, 8)));
+		results.push_back(Pair("30 day ROI %", RoundToString(GetROIBasedOnMaturity(30, wm.ROI) * 100, 4)));
+		results.push_back(Pair("90 day ROI %", RoundToString(GetROIBasedOnMaturity(90, wm.ROI) * 100, 4)));
+		results.push_back(Pair("180 day ROI %", RoundToString(GetROIBasedOnMaturity(180, wm.ROI) * 100, 4)));
+		results.push_back(Pair("365 day ROI %", RoundToString(GetROIBasedOnMaturity(365, wm.ROI) * 100, 4)));
 	}
 
 	else if (sItem == "boinc1")

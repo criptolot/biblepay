@@ -179,7 +179,7 @@ UniValue SentGSCCReport(int nHeight)
 
 double GetNecessaryCoinAgePercentageForPODC()
 {
-	std::string sCPID = GetResearcherCPID();
+	std::string sCPID = GetResearcherCPID(std::string());
 	if (sCPID.empty())
 	{
 		LogPrintf("GetNecessaryCoinAgePercentage::Researcher Not Linked.%f\n", 801);
@@ -422,7 +422,7 @@ bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError,
 	CReserveKey reservekey(pwalletMain);
 	double nCoinAgePercentage = UserSetting(sSpecificCampaignName + "_coinagepercentage", nDefaultCoinAgePercentage);
 	std::string sError2;
-	if (sSpecificCampaignName == "CAMEROON-ONE")
+	if (sSpecificCampaignName == "CAMEROON-ONE" || sSpecificCampaignName == "KAIROS")
 	{
 		nCoinAgePercentage = 0.0001;
 	}

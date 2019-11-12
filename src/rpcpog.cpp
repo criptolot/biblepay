@@ -1410,7 +1410,7 @@ UniValue ContributionReport()
 						}
 					 }
 				 }
-		  		 double nBudget = CSuperblock::GetPaymentsLimit(ii) / COIN;
+		  		 double nBudget = CSuperblock::GetPaymentsLimit(ii, false) / COIN;
 				 if (iProcessedBlocks >= (BLOCKS_PER_DAY*7) || (ii == nMaxDepth-1) || (nBudget > 5000000))
 				 {
 					 iProcessedBlocks = 0;
@@ -1667,6 +1667,10 @@ TxMessage GetTxMessage(std::string sMessage, int64_t nTime, int iPosition, std::
 		if (!t.fSporkSigValid) t.sMessageValue  = "";
 		t.fPassedSecurityCheck = t.fSporkSigValid;
 	}
+	else if (t.sMessageType == "DWS-BURN")
+	{
+		t.fPassedSecurityCheck = false;
+	}
 	else if (t.sMessageType == "PRAYER" && t.fPrayersMustBeSigned)
 	{
 		double dMinimumUnsignedPrayerDonation = GetSporkDouble("minimumunsignedprayerdonationamount", 3000);
@@ -1842,10 +1846,9 @@ void MemorizeBlockChainPrayers(bool fDuringConnectBlock, bool fSubThread, bool f
 					{
 						// Memorize each DWS txid-vout and burn amount (later the sancs will audit each one to ensure they are mature and in the main chain). 
 						// NOTE:  This data is automatically persisted during shutdowns and reboots and loaded efficiently into memory.
-						WriteCache("dws-burn", block.vtx[n]->GetHash().GetHex(), RoundToString(dAmount, 2), GetAdjustedTime());
+						std::string sXML = ExtractXML(sPrayer, "<dws>", "</dws>");
+						WriteCache("dws-burn", block.vtx[n]->GetHash().GetHex(), sXML, GetAdjustedTime());
 					}
-
-
 				}
 				double dAge = GetAdjustedTime() - block.GetBlockTime();
 				MemorizePrayer(sPrayer, block.GetBlockTime(), dTotalSent, 0, block.vtx[n]->GetHash().GetHex(), pindex->nHeight, dFoundationDonation, dAge, 0);
@@ -2735,7 +2738,7 @@ std::string GetPOGBusinessObjectList(std::string sType, std::string sFields)
 	int iNextSuperblock = 0;
 	int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
     std::string sData;  
-	CAmount nPaymentsLimit = CSuperblock::GetPaymentsLimit(iNextSuperblock);
+	CAmount nPaymentsLimit = CSuperblock::GetPaymentsLimit(iNextSuperblock, false);
 	nPaymentsLimit -= MAX_BLOCK_SUBSIDY * COIN;
 		
 	std::string sContract = GetGSCContract(iNextSuperblock, false);
@@ -3077,42 +3080,6 @@ std::string Path_Combine(std::string sPath, std::string sFileName)
 	return sFullPath;
 }
 
-double GetROI(double nTitheAmount)
-{
-	// For a given Tithe Amount, return the conceptual ROI
-	const Consensus::Params& consensusParams = Params().GetConsensus();
-	int iNextSuperblock = 0;
-	int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
-	CAmount nPaymentsLimit = CSuperblock::GetPaymentsLimit(iLastSuperblock);
-	nPaymentsLimit -= MAX_BLOCK_SUBSIDY * COIN;
-	std::string sContract = GetGSCContract(iLastSuperblock, false);
-	std::string sData = ExtractXML(sContract, "<DATA>", "</DATA>");
-	std::vector<std::string> vData = Split(sData.c_str(), "\n");
-	double dTotalPaid = 0;
-	double nTotalPoints = 0;
-	for (int i = 0; i < vData.size(); i++)
-	{
-		std::vector<std::string> vRow = Split(vData[i].c_str(), "|");
-		if (vRow.size() >= 6)
-		{
-			double nPoints = cdbl(vRow[2], 2);
-			double nProminence = cdbl(vRow[3], 4) * 100;
-			double nPayment = cdbl(vRow[5], 4);
-			CAmount nOwed = nPaymentsLimit * (nProminence / 100);
-			dTotalPaid += nPayment;
-			nTotalPoints += nPoints;
-		}
-	}
-
- 	double dPPP = dTotalPaid / nTotalPoints;
-	CAmount nTotalReq;
-	double dCoinAge = pwalletMain->GetAntiBotNetWalletWeight(0, nTotalReq);
-	double nPoints = cbrt(nTitheAmount) * dCoinAge;
-	double nEarned = (dPPP * nPoints) - nTitheAmount;
-	double nROI = (nEarned / nTitheAmount) * 100;
-	return nROI;
-} 
-
 void UpdateHealthInformation()
 {
 	// This is an optional BiblePay feature where we will display your sanctuaries health information in the pool.
@@ -3357,19 +3324,52 @@ std::string TeamToName(int iTeamID)
 	}
 }
 
-
-std::string GetResearcherCPID()
+std::string GetResElement(std::string data, int iElement)
 {
-	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
-	std::string sResData = ReadCache("CPK-WCG", sCPK);
-	// Format = 0 sCPK + 1 CPK_Nickname  +  2 nTime +   3 HexSecurityCode + 4 sSignature + 5 wcg username  + 6 wcg_sec_code + 7 wcg userid + 8 = CPID;
-	std::vector<std::string> vEle = Split(sResData.c_str(), "|");
-	LogPrintf("\nGetResearcherCPID %s for %s\n", sResData, sCPK);
-	if (vEle.size() < 9)
-		return "";
-	return vEle[8];
+	std::vector<std::string> vEle = Split(data.c_str(), "|");
+	if (iElement+1 > vEle.size())
+		return std::string();
+	return vEle[iElement];
 }
 
+std::string GetResDataBySearch(std::string sSearch)
+{
+	for (auto ii : mvApplicationCache) 
+	{
+		if (ii.first.first == "CPK-WCG")
+		{
+			std::pair<std::string, int64_t> v = mvApplicationCache[std::make_pair(ii.first.first, ii.first.second)];
+			int64_t nTimestamp = v.second;
+			std::string sTXID = ii.first.second;
+			std::string sValue = v.first;
+			std::string sCPID = GetResElement(sValue, 8);
+			std::string sNickName = GetResElement(sValue, 5);
+			if (boost::iequals(sCPID, sSearch) || boost::iequals(sNickName, sSearch))
+			{
+				return sValue;	
+			}
+		}
+	}
+}
+
+std::string GetResearcherCPID(std::string sSearch)
+{
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	std::string sResData;
+
+	if (sSearch.empty())
+	{
+		sResData = ReadCache("CPK-WCG", sCPK);
+	}
+	else
+	{
+		sResData = GetResDataBySearch(sSearch);
+	}
+	// Format = 0 sCPK + 1 CPK_Nickname  +  2 nTime +   3 HexSecurityCode + 4 sSignature + 5 wcg username  + 6 wcg_sec_code + 7 wcg userid + 8 = CPID;
+	if (fDebugSpam)
+		LogPrintf("\nGetResearcherCPID %s for %s\n", sResData, sCPK);
+	return GetResElement(sResData, 8);
+}
 
 bool VerifyMemoryPoolCPID(CTransaction tx)
 {
@@ -3419,39 +3419,281 @@ std::string GetEPArg(bool fPublic)
 	return sUsable;
 }
 
-void GetDWS()
+
+int64_t GetTxTime(uint256 blockHash, int& iHeight)
 {
+	BlockMap::iterator mi = mapBlockIndex.find(blockHash);
+	if (mi != mapBlockIndex.end())
+	{
+		CBlockIndex* pindexHistorical = mapBlockIndex[blockHash];              
+		iHeight = pindexHistorical->nHeight;
+		return pindexHistorical->GetBlockTime();
+	}
+	return 0;
+}
 
+CTransactionRef GetTx(uint256 txid)
+{
+	CTransactionRef tx1;
+	uint256 hashBlock1;
+	GetTransaction(txid, tx1, Params().GetConsensus(), hashBlock1, true);
+	return tx1;
+}
+
+WhaleStake GetWhaleStake(CTransactionRef tx1)
+{
+	// Pull up the actual burn
+	WhaleStake w;
 	const Consensus::Params& consensusParams = Params().GetConsensus();
+	
+	for (unsigned int i = 0; i < tx1->vout.size(); i++)
+	{
+		std::string sPK = PubKeyToAddress(tx1->vout[i].scriptPubKey);
+		if (sPK == consensusParams.BurnAddress)
+		{
+			w.XML = tx1->vout[i].sTxOutMessage;
+			w.Amount = (double)tx1->vout[i].nValue/COIN;
+			int nHeight = 0;
+			w.BurnTime = (int)cdbl(ExtractXML(w.XML, "<burntime>", "</burntime>"), 0);
+			w.BurnHeight = (int)cdbl(ExtractXML(w.XML, "<burnheight>", "</burnheight>"), 0);
+			w.Duration = (int)cdbl(ExtractXML(w.XML, "<duration>", "</duration>"), 0);
+			w.ROI = cdbl(ExtractXML(w.XML, "<roi>", "</roi>"), 4);
+			w.MaturityTime = (w.Duration * 86400) + w.BurnTime;
+			if (w.ROI > MAX_WHALE_ROI) 
+				w.ROI = 0;
+			if (w.ROI < 0) 
+				w.ROI = 0;
+			w.ActualROI = GetROIBasedOnMaturity(w.Duration, w.ROI);
+			w.RewardAmount = GetOwedBasedOnMaturity(w.Duration, w.ActualROI, w.Amount);
+			CAmount nTotalOwed = (w.Amount * COIN) + (w.RewardAmount * COIN) + 1527;
+			w.TotalOwed = (double)nTotalOwed / COIN;
+			w.MaturityHeight = (w.Duration * BLOCKS_PER_DAY) + w.BurnHeight;
+			w.ReturnAddress = ExtractXML(w.XML, "<returnaddress>", "</returnaddress>");
+			CBitcoinAddress addrWhale(w.ReturnAddress);
+			w.TXID = tx1->GetHash();
+			if (addrWhale.IsValid() && w.BurnHeight > 0 && w.BurnTime > 0 && w.Duration > 0 && w.ROI > 0 && w.RewardAmount > 0)
+			{
+				w.found = true;
+				w.paid = w.MaturityTime < GetAdjustedTime();
+			}
+			return w;
+		}
+	}
+	return w;
+}
 
+std::vector<WhaleStake> GetDWS()
+{
+	std::vector<WhaleStake> wStakes;
 	for (auto ii : mvApplicationCache) 
 	{
-		if (ii.first.first == "DWS")
+		if (ii.first.first == "DWS-BURN")
 		{
 			std::pair<std::string, int64_t> v = mvApplicationCache[std::make_pair(ii.first.first, ii.first.second)];
 			int64_t nTimestamp = v.second;
 			std::string sTXID = ii.first.second;
-			//double nAmount = v.first; <- Value *Store the duration and value here
-			// Pull up the burn
-			CTransactionRef tx1;
-			uint256 hashBlock1;
 			uint256 hashInput = uint256S(sTXID);
-			std::string sBurn;
-			if (GetTransaction(hashInput, tx1, Params().GetConsensus(), hashBlock1, true))
+			CTransactionRef tx1 = GetTx(hashInput);
+			WhaleStake w = GetWhaleStake(tx1);
+			if (w.found)
 			{
-				//CAmount nBurnAmount = tx1.vout[hashInputOrdinal].nValue;
-				for (unsigned int i = 0; i < tx1->vout.size(); i++)
-				{
-					std::string sPK = PubKeyToAddress(tx1->vout[i].scriptPubKey);
-
-					if (sPK == consensusParams.BurnAddress)
-					{
-						sBurn = tx1->vout[i].sTxOutMessage;
-    					double dAmount = tx1->vout[i].nValue / COIN;
-						LogPrintf("\nDWS TxID %s, Msg %s, Amount %f \n", sTXID, sBurn, dAmount);
-					}
-				}
+				wStakes.push_back(w);
+				if (fDebug || true)
+					LogPrintf("\nDWS BurnTime %f, MaturityTime %f, TxID %s, Msg %s, Amount %f, Duration %f, ROI %f \n", 
+						w.BurnTime, w.MaturityTime, w.TXID.GetHex(), w.XML, (double)w.Amount, w.Duration, w.ROI);
 			}
 		}
 	}
+	return wStakes;
 }
+
+CAmount GetAnnualDWSReward(int nHeight)
+{
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+
+    CAmount blockReward = GetBlockSubsidy(1, nHeight, consensusParams, false);
+	CAmount nTotal = BLOCKS_PER_DAY * blockReward * 30 * 12;
+	CAmount nDWS = nTotal * .10;
+	if (fDebugSpam)
+		LogPrintf("Annual Emission %f, DWS %f", (double)nTotal/COIN, (double)nDWS/COIN);
+	return nDWS;
+}
+
+WhaleMetric GetWhaleMetrics(int nHeight)
+{
+	std::vector<WhaleStake> wStakes = GetDWS();
+	WhaleMetric m;
+	int nStartHeight = nHeight - BLOCKS_PER_DAY;
+	int nMonthlyHeight = nHeight + (BLOCKS_PER_DAY * 30);
+	int nEndHeight = nHeight;
+	for (int i = 0; i < wStakes.size(); i++)
+	{
+		WhaleStake w = wStakes[i];
+		if (w.found)
+		{
+			if (w.MaturityHeight >= nStartHeight && w.MaturityHeight <= nEndHeight)
+			{
+				m.nTotalCommitmentsDueToday += w.RewardAmount;
+				m.nTotalGrossCommitmentsDueToday += w.Amount;
+			}
+			if (w.BurnHeight >= nStartHeight && w.BurnHeight <= nEndHeight)
+			{
+				m.nTotalBurnsToday += w.RewardAmount;
+				m.nTotalGrossBurnsToday += w.Amount;
+			}
+			if (w.MaturityHeight >= nHeight && w.MaturityHeight <= nMonthlyHeight)
+			{
+				m.nTotalMonthlyCommitments += w.RewardAmount;
+				m.nTotalGrossMonthlyCommitments += w.Amount;
+			}
+			if (w.MaturityHeight >= nStartHeight)
+			{
+				m.nTotalFutureCommitments += w.RewardAmount;
+				m.nTotalGrossFutureCommitments += w.Amount;
+			}
+		}
+
+	}
+	m.nTotalAnnualReward = (double)GetAnnualDWSReward(nHeight)/COIN;
+	// Saturation Level percentage
+	if (m.nTotalAnnualReward < 1) 
+		m.nTotalAnnualReward = 1;
+	// Calculate % taken out in last 30 days
+	m.nSaturationPercentMonthly = m.nTotalMonthlyCommitments / (m.nTotalAnnualReward / 12);
+	double nAvailable = 1 - (m.nSaturationPercentMonthly);
+	if (nAvailable > 1) nAvailable = 1;
+	if (nAvailable < 0) nAvailable = 0;
+	m.ROI = MAX_WHALE_ROI * nAvailable;
+
+	m.nSaturationPercentAnnual = m.nTotalFutureCommitments / m.nTotalAnnualReward;
+	if (m.nSaturationPercentAnnual > .99)
+		m.ROI = 0;
+
+	return m;
+}
+
+std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
+{
+	std::vector<WhaleStake> wStakes = GetDWS();
+	std::vector<WhaleStake> wReturnStakes;
+	int nStartHeight = nHeight - BLOCKS_PER_DAY + 1;
+	int nEndHeight = nHeight;
+	for (int i = 0; i < wStakes.size(); i++)
+	{
+		WhaleStake w = wStakes[i];
+		if (w.found)
+		{
+			if (w.MaturityHeight >= nStartHeight && w.MaturityHeight <= nEndHeight)
+			{
+				wReturnStakes.push_back(w);
+				nOwed += w.TotalOwed;
+			}
+		}
+	}
+	return wReturnStakes;
+}
+
+bool VerifyDynamicWhaleStake(CTransaction tx)
+{
+    std::string sXML = tx.GetTxMessage();
+	
+	// Verify each element matches the live quotes
+
+	// Verify the total does not breech saturation requirements
+	CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
+
+	WhaleStake w = GetWhaleStake(tx1);
+	if (!w.found)
+		return true;
+
+	// Verify the bounds (TODO: Before prod, change this to 7)
+	if (w.Duration < 1 || w.Duration > 365)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Duration out of bounds. %f", w.Duration);
+		return false;
+	}
+	if (w.Amount < 100 || w.Amount > 1000000)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Amount out of bounds. %f", w.Amount);
+		return false;
+	}
+
+	if (w.BurnHeight < (chainActive.Tip()->nHeight - 1) || w.BurnHeight > (chainActive.Tip()->nHeight + 1))
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Burn Height out of bounds. Current Height %f, Burn Height %f", chainActive.Tip()->nHeight, w.BurnHeight);
+		return false;
+	}
+
+	if (w.ROI < 0 || w.ROI > MAX_WHALE_ROI)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, ROI out of bounds = %f.", w.ROI);
+		return false;
+	}
+
+	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
+
+	if (w.ROI > (wm.ROI + .01) || w.ROI < (wm.ROI - .01))
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, ROI [%f] does not equal current screen quote of [%f].", w.ROI, wm.ROI);
+		return false;
+	}
+
+	if (w.BurnTime > (GetAdjustedTime() + (60 * 30)) || w.BurnTime < (GetAdjustedTime() - (60 * 30)))
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Burn time out of bounds.", w.BurnTime);
+		return false;
+	}
+
+	if (w.ROI < .01)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, ROI [%f] is too low to create a burn.", w.ROI);
+		return false;
+	}
+
+	if (wm.nSaturationPercentAnnual > .95)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our annual saturation is [%f]pct., we must reject burns until we free up more room.", wm.nSaturationPercentAnnual);
+		return false;
+	}
+
+	if (wm.nSaturationPercentMonthly > 1.0)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our monthly saturation is [%f]pct., we must reject burns until we free up more room.", wm.nSaturationPercentMonthly);
+		return false;
+	}
+	
+	if (wm.nTotalGrossBurnsToday > MAX_DAILY_WHALE_COMMITMENTS)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our daily whale commitments of %f are higher than the acceptable maximum of %f, please wait until tomorrow.", 
+			wm.nTotalBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);
+		return false;
+	}
+
+	LogPrintf("\nVerifyDynamicWhaleStake ACCEPTED :  Amount %f, Duration %f, SatPercentAnnual %f, SatPercentMonthly %f, Projected ROI %f, Burn ROI %f", 
+		w.Amount, w.Duration, wm.nSaturationPercentAnnual, wm.nSaturationPercentMonthly, wm.ROI, w.ROI);
+	return true;		
+}
+
+double GetROIBasedOnMaturity(double nDuration, double dROI)
+{
+	// Given a maturity duration range, adjust the final ROI 
+	if (nDuration > 365 || nDuration < 1) 
+		return 0;
+
+	double dComp1 = dROI * .499999;
+	double dComp2 = (nDuration / 364.9999) * dComp1;
+	double dTotal = dComp1 + dComp2;
+	if (dTotal > MAX_WHALE_ROI)
+		dTotal = MAX_WHALE_ROI;
+	return dTotal;
+}
+
+double GetOwedBasedOnMaturity(double nDuration, double dROI, double dAmount)
+{
+	if (nDuration > 365 || nDuration < 1)
+		return 0;
+	double dComp1 = (nDuration / 364.99999) * dROI;
+	double dTotal = dComp1 * dAmount;
+	return dTotal;
+}
+

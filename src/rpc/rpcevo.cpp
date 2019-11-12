@@ -1277,18 +1277,23 @@ UniValue sponsorchild(const JSONRPCRequest& request)
 	// Sponsor a CameroonOne Child
 	if (request.fHelp)
 		throw std::runtime_error(
-		"sponsorchild authorize"
-		"\nSponsors a new child through Cameroon One.  You may have more than one child per CPK (Currently we do not have a limit).  \n"
-		"Note:  We will send 50,000 BBP to the foundation as a donation each time you sponsor a child (this is to prevent Cameroon One abuse). \n "
-		"You must specify true to authorize the 50,000 bbp tithe.  Example:  sponsorchild authorize.");
+		"sponsorchild charityname authorize"
+		"\nSponsors a new child through one of our POOM charities.  You may have more than one child per CPK (Currently we do not have a limit).  \n"
+		"Note:  We will send 50,000 BBP to the foundation as a donation each time you sponsor a child (this is to prevent abuse). \n "
+		"You must specify true to authorize the 50,000 bbp tithe.  Example:  sponsorchild kairos authorize.");
 
-	if (request.params.size() != 1)
-			throw std::runtime_error("You must specify 'authorize' in order to approve a 50,000 BBP debit from your wallet to be tithed to the foundation.  ");
-	std::string sAuthorize = request.params[0].get_str();
+	if (request.params.size() != 2)
+			throw std::runtime_error("You must specify sponsorchild charityname 'authorize' in order to approve a 50,000 BBP debit from your wallet to be tithed to the foundation.  ");
+
+	std::string sCharity = request.params[0].get_str();
+	std::string sAuthorize = request.params[1].get_str();
 	if (sAuthorize != "authorize")
 		throw std::runtime_error("Sponsorship cancelled.");
+	if (sCharity != "cameroon-one" && sCharity != "kairos")
+		throw std::runtime_error("Charity name is not recognized.");
+
 	std::string sError;
-	std::string sProject = "cpk|cameroon-one";
+	std::string sProject = "cpk|" + sCharity;
     EnsureWalletIsUnlocked(pwalletMain);
 
 	CAmount nFee = 50000 * COIN;
@@ -1306,23 +1311,12 @@ UniValue sponsorchild(const JSONRPCRequest& request)
 	}
 	else
 	{
-		std::string sNarr = "Thank you for sponsoring a child through Cameroon One. "
-			"\nYour new child ID is: " + sChildId + "\nNOTE: You will not receive rewards for this child until Cameroon One posts a credit to your account for this child.  "
+		std::string sNarr = "Thank you for sponsoring a child through POOM. "
+			"\nYour new child ID is: " + sChildId + "\nNOTE: You will not receive rewards for this child until our POOM charity posts a credit to your account for this child.  "
 			"\nIt can take 7-14 days to provision a new child, receive and post your payment, so please, be patient. "
 			"\nTo check the status of your child, type 'listchildren' into the RPC."
-			"\nOption 1:  Please mail a check for $40.00 (this is a tax deductible donation) to:"
-			"\nCameroon One A/R"
-			"\n28 Hawthorne St Unit 1"
-			"\nBoston, MA 02119 USA"
-			"\n!NOTE! You must write Child ID #" + sChildId + " on your check."
-			"\nOption 2: [Preferred] For the most efficient/fastest credit use PayPal (accepting Credit Cards and international payments):"
-			"\nPayPal: Send money to https://PayPal.Me/CameroonONE "
-			"\nNOTE: Please paste the BiblePay hex child ID #" + sChildId + " in the Paypal NOTES textbox before submitting the payment."
-			"\nOption 3:  GlobalGiving Match:"
-			"\nTo use Global Giving, see this page https://www.globalgiving.org/recurring-donations-matched/ and set up a recurring donation, then notify Anna with CameroonONE <Anna.Cavolowsky@cameroonone.org> with your ChildID and verify the recurring donation is set up."
-			"\nOption 4:  Pay in BBP:"
-			"\nTo pay with BiblePay, send the converted amount (based on the midpoint of our coinmarketcap value) to Cameroon-One's wallet:  BHRiFZYUpHj2r3gxw7pHyvByTUk1dGb8vz"
-			"\nThen send an e-mail to 'Todd Finklestone <todd.justin@cameroonone.org>' with the BBP Amount sent, the TXID, and the Child ID you are paying for."
+			"\nPlease read this wiki page to know how to make a payment for your child:  https://wiki.biblepay.org/Paying_For_a_POOM_Sponsored_Child"
+			"\nAlternatively, you can pay by typing 'exec paysponsorship'."
 			"\n";
 
 		std::vector<std::string> vNarr = Split(sNarr.c_str(), "\n");
@@ -1403,13 +1397,14 @@ UniValue sendgscc(const JSONRPCRequest& request)
 
 UniValue getchildbalance(const JSONRPCRequest& request)
 {
-	if (request.fHelp || request.params.size() != 1)	
+	if (request.fHelp || request.params.size() != 2)	
 	{
-		throw std::runtime_error("getchildbalance:  Shows the balance in USD for a given child.  IE: getchildbalance childid.");
+		throw std::runtime_error("getchildbalance:  Shows the balance in USD for a given child.  IE: getchildbalance childid charity.");
 	}
     UniValue results(UniValue::VOBJ);
 	std::string sChildID = request.params[0].get_str();
-	double dBal = GetCameroonChildBalance(sChildID);	
+	std::string sCharity = request.params[1].get_str();
+	double dBal = GetChildBalance(sChildID, sCharity);	
 	results.push_back(Pair("Balance", dBal));
 	return results;
 }
@@ -1499,6 +1494,37 @@ UniValue hexblocktocoinbase(const JSONRPCRequest& request)
 	return results;
 }
 
+void EmitChild(CPK c, std::string sCharity, bool fAll, std::string sMyCPK, UniValue& results)
+{
+	std::string sCPK = c.sAddress;
+	std::string sChildID = c.sOptData;
+	std::string sBIODomain = GetSporkValue("bio-domain-" + sCharity);
+	std::string sBIOUrl = sBIODomain + sChildID + ".htm";
+	CPK userCPK = GetCPKFromProject("cpk", sCPK);
+	if (!sChildID.empty())
+	{
+		if (fAll || c.sAddress == sMyCPK)
+		{
+			results.push_back(Pair("Charity", sCharity));
+			results.push_back(Pair("Child ID", sChildID));
+			results.push_back(Pair("CPK", c.sAddress));
+			results.push_back(Pair("Biography", sBIOUrl));
+			double nBalance = GetChildBalance(sChildID, sCharity);
+			results.push_back(Pair("Balance", nBalance));
+	
+			if (nBalance == -999)
+				results.push_back(Pair("Notes", "This child is not provisioned yet."));
+			if (nBalance > 0)
+				results.push_back(Pair("Notes", "Child sponsorship is due."));
+			if (nBalance <= 0 && nBalance != -999)
+				results.push_back(Pair("Notes", "Good job, nothing due!"));		
+			results.push_back(Pair("---------", "--------------------------------------------------"));
+
+		}
+	}
+}
+
+
 UniValue listchildren(const JSONRPCRequest& request)
 {
 	// List sponsored children by the User's CPK
@@ -1509,38 +1535,25 @@ UniValue listchildren(const JSONRPCRequest& request)
 		"\nSpecify listchildren all to see all sponsored children."
 		"\nOtherwise, specify listchildren to see your sponsored children");
 	if (request.params.size() > 1)
-			throw std::runtime_error("You must specify listchildren or listchildren all.  All will list all children, otherwise we list your sponsored children. ");
+			throw std::runtime_error("You must specify listchildren or listchildren [optional=all]. ");
 	bool fAll = false;
 	if (request.params.size() > 0)
 		fAll = request.params[0].getValStr() == "true" || request.params[0].getValStr() == "all";
 
     UniValue results(UniValue::VOBJ);
-	results.push_back(Pair("List Of", "Cameroon-One Children"));
-	std::map<std::string, CPK> cp1 = GetChildMap("cpk|cameroon-one");
+	results.push_back(Pair("List Of", "POOM Children"));
 	std::string sMyCPK = DefaultRecAddress("Christian-Public-Key");
+	std::string sCharity = "cameroon-one";
+	std::map<std::string, CPK> cp1 = GetChildMap("cpk|" + sCharity);
 	for (std::pair<std::string, CPK> a : cp1)
 	{
-		std::string sCPK = a.second.sAddress;
-		std::string sChildID = a.second.sOptData;
-		std::string sBIOUrl = "https://biblepay.cameroonone.org/bios/" + sChildID + ".htm";
-		std::string sChildName; // We may or may not be able to retrieve this from the API (pending).
-		CPK userCPK = GetCPKFromProject("cpk", sCPK);
-		if (!sChildID.empty())
-		{
-			if (fAll || a.second.sAddress == sMyCPK)
-			{
-				results.push_back(Pair("Child ID", sChildID));
-				results.push_back(Pair("CPK", a.second.sAddress));
-				results.push_back(Pair("Biography", sBIOUrl));
-				double nBalance = GetCameroonChildBalance(sChildID);
-				results.push_back(Pair("Balance", nBalance));
-				if (nBalance == -999)
-					results.push_back(Pair("Notes", "This child is not provisioned yet."));
-				results.push_back(Pair("Nickname", Caption(userCPK.sNickName, 10)));
-				if (!sChildName.empty())
-					results.push_back(Pair("Child Name", sChildName));
-			}
-		}
+		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
+	}
+	sCharity = "kairos";
+	cp1 = GetChildMap("cpk|" + sCharity);
+	for (std::pair<std::string, CPK> a : cp1)
+	{
+		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
 	}
 	return results;
 }

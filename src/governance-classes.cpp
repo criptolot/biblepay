@@ -655,7 +655,7 @@ int Get24HourAvgBits(const CBlockIndex* pindexSource, int nPrevBits)
 	return (int)nAvg;
 }
 
-CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight)
+CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes)
 {
 	if (nBlockHeight < 1) return 0;
 
@@ -715,6 +715,7 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight)
     CAmount nPaymentsLimit = nSuperblockPartOfSubsidy * nSuperblockCycle * nBudgetFactor;
 	CAmount nAbsoluteMaxMonthlyBudget = MAX_BLOCK_SUBSIDY * BLOCKS_PER_DAY * 30 * .20 * COIN; // Ensure monthly budget is never > 20% of avg monthly total block emission regardless of low difficulty in PODC
 	if (nPaymentsLimit > nAbsoluteMaxMonthlyBudget) nPaymentsLimit = nAbsoluteMaxMonthlyBudget;
+	
 	if (Params().NetworkIDString() == "main")
 	{
 		if (nType == 0 && nBlockHeight > (consensusParams.EVOLUTION_CUTOVER_HEIGHT - 6150) && nPaymentsLimit > nMaxMonthlyBudget)
@@ -726,7 +727,17 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight)
 			nPaymentsLimit = nMaxDailyBudget;
 		}
 	}
-
+	// Dynamic Whale Staking - R Andrews - 11/11/2019
+	if (nType == 2 && fIncludeWhaleStakes)
+	{
+		double dTotalWhalePayments = 0;
+		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nBlockHeight, dTotalWhalePayments);
+		CAmount nTotalWhalePayments = dTotalWhalePayments * COIN;
+		LogPrintf("\nGetPaymentsLimit::Whale Payments=%f over %f recs.", dTotalWhalePayments, dws.size());
+		nPaymentsLimit += nTotalWhalePayments;
+	}
+	// End of Dynamic Whale Staking
+	
     LogPrint("net", "CSuperblock::GetPaymentsLimit -- Valid superblock height %d, payments max %d \n", (double)nBlockHeight, (double)nPaymentsLimit/COIN);
 	
     return nPaymentsLimit;
@@ -875,7 +886,7 @@ bool CSuperblock::IsValid(const CTransaction& txNew, int nBlockHeight, CAmount b
 
     // payments should not exceed limit
     CAmount nPaymentsTotalAmount = GetPaymentsTotalAmount();
-    CAmount nPaymentsLimit = GetPaymentsLimit(nBlockHeight);
+    CAmount nPaymentsLimit = GetPaymentsLimit(nBlockHeight, true);
     if (nPaymentsTotalAmount > nPaymentsLimit) {
         LogPrintf("CSuperblock::IsValid -- ERROR: Block invalid, payments limit exceeded: payments %lld, limit %lld\n", nPaymentsTotalAmount, nPaymentsLimit);
         return false;

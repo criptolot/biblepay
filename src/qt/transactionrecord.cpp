@@ -69,7 +69,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 				sub.IsGSCPayment = wtx.tx->IsGSCPayment();
 				sub.IsSuperblockPayment = wtx.tx->IsSuperblockPayment();
 				sub.IsABN = wtx.tx->IsABN();
-				
+				sub.IsWhaleReward = wtx.tx->IsWhaleReward();
+				sub.IsWhaleStake = wtx.tx->IsWhaleStake();
+
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address))
                 {
                     // Received by Biblepay Address
@@ -85,7 +87,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 if (wtx.IsCoinBase())
                 {
                     // BiblePay - RANDREWS - Check if one of our subtypes
-					if (sub.IsGSCPayment && i != 0)
+					if (sub.IsWhaleReward && i != 0)
+					{
+						sub.type = TransactionRecord::WhaleReward;
+					}
+					else if (sub.IsGSCPayment && i != 0)
 					{
 						sub.type = TransactionRecord::GSCPayment;
 					}
@@ -188,6 +194,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 					sub.type = TransactionRecord::CPKAssociation;  
 				if (wtx.tx->IsGSCTransmission())
 					sub.type = TransactionRecord::GSCTransmission;
+				if (wtx.tx->IsWhaleStake())
+					sub.type = TransactionRecord::WhaleStake;
+				if (wtx.tx->IsWhaleReward())
+					sub.type = TransactionRecord::WhaleReward;
+
             }
 
             CAmount nChange = wtx.GetChange();
@@ -245,6 +256,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 					else if (wtx.tx->IsGSCTransmission())
 					{
 						sub.type = TransactionRecord::GSCTransmission;
+					}
+					else if (wtx.tx->IsWhaleStake())
+					{
+						sub.type = TransactionRecord::WhaleStake;
 					}
 			    }
                 else

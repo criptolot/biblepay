@@ -95,7 +95,9 @@ public:
 		CPKAssociation,
 		GSCPayment,
 		SuperBlockPayment,
-		GSCTransmission
+		GSCTransmission,
+		WhaleStake,
+		WhaleReward
     };
 
     /** Number of confirmation recommended for accepting a transaction */
@@ -143,6 +145,12 @@ public:
 
     /** Whether the transaction was sent/received with a watch-only address */
     bool involvesWatchAddress;
+
+	/** If this is a Dynamic Whale Reward */
+	bool IsWhaleReward;
+
+	/** If this is a Dynamic Whale Stake */
+	bool IsWhaleStake;
 
 	/** If this is a PODC Research Payment */
 	bool IsGSCPayment;

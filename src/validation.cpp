@@ -923,10 +923,11 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 				return false;
 			}
 
-			if (!VerifyDynamicWhaleStake(tx))
+			CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
+			std::string sError2;
+			if (!VerifyDynamicWhaleStake(tx1, sError2))
 			{
-				LogPrintf("AcceptToMemoryPool::Dynamic Whale Burn rejected %s \n", 
-						tx.GetHash().GetHex());
+				LogPrintf("AcceptToMemoryPool::Dynamic Whale Burn rejected %s [%s]\n", tx.GetHash().GetHex(), sError2);
 				return false;
 			}
 
@@ -954,7 +955,6 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 					LogPrintf("AcceptToMemPool::TitheRejected_InvalidAmount; Amount %f ", (double)dTithe);
 					return false;
 				}
-				CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
 				bool fChecked = CheckAntiBotNetSignature(tx1, "gsc", "");
 				ProcessBLSCommand(tx1);
 				double dTithesMustBeSigned = GetSporkDouble("tithesmustbesigned", 0);

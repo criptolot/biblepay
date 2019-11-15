@@ -2438,8 +2438,9 @@ UniValue exec(const JSONRPCRequest& request)
 		{
 			throw std::runtime_error("Sorry, unable to save your researcher record because your WCG CPID is empty.  Please log into your WCG account and verify you are part of team BiblePay, and that the WCG verification code matches.");
 		}
+		std::string sEncVC = EncryptAES256(sVerificationCode, r.cpid);
 
-		bool fAdv = AdvertiseChristianPublicKeypair("cpk-wcg", "", sUserName + "|" + sVerificationCode + "|" + RoundToString(nID, 0) + "|" + r.cpid, "", false, fForce, 0, "", sError);
+		bool fAdv = AdvertiseChristianPublicKeypair("cpk-wcg", "", sUserName + "|" + sEncVC + "|" + RoundToString(nID, 0) + "|" + r.cpid, "", false, fForce, 0, "", sError);
 		if (!fAdv)
 		{
 			results.push_back(Pair("Error", sError));
@@ -3245,13 +3246,24 @@ UniValue exec(const JSONRPCRequest& request)
 		// Expirimental Feature:  Dynamic Whale Stake
 		// exec dws amount duration_in_days 0=test/1=authorize
 
+		std::string sHowey = "By typing I_AGREE in uppercase, you agree to the following conditions:"
+			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THIS BIBLEPAY, AND DO NOT EXPECT AN INCREASE IN VALUE."
+			"\n2.  I HAVE NOT BEEN PROMISED A PROFIT, AND BIBLEPAY IS NOT PROMISING ME ANY HOPES OF PROFIT IN ANY WAY."
+			"\n3.  BIBLEPAY IS NOT ACTING AS A COMMON ENTERPRISE OR THIRD PARTY IN THIS ENDEAVOR."
+			"\n4.  I HOLD BIBLEPAY AS A HARMLESS UTILITY."
+			"\n5.  I REALIZE I AM RISKING 100% OF MY CRYPTO-HOLDINGS BY BURNING IT, AND BIBLEPAY IS NOT OBLIGATED TO REFUND MY CRYPTO-HOLDINGS OR GIVE ME ANY REWARD.";
+			
+		std::string sHelp = "You must specify exec dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + sHowey;
+		
 		if (request.params.size() != 4 && request.params.size() != 5)
-			throw std::runtime_error("You must specify exec dws amount duration_in_days 0=test/1=authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].");
+			throw std::runtime_error(sHelp.c_str());
 
 		double nAmt = cdbl(request.params[1].get_str(), 2);
 		double nDuration = cdbl(request.params[2].get_str(), 0);
-		double nAuthorize = cdbl(request.params[3].get_str(), 0);
+		std::string sAuthorize = request.params[3].get_str();
 		std::string sReturnAddress = DefaultRecAddress("Christian-Public-Key");
+		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+
 		CBitcoinAddress returnAddress(sReturnAddress);
 		if (request.params.size() == 5)
 		{
@@ -3265,7 +3277,7 @@ UniValue exec(const JSONRPCRequest& request)
 			throw std::runtime_error("Sorry, amount must be between 100 BBP and 1,000,000 BBP.");
 
 		// Todo: Change this to 7 days in prod, after we are done testing.
-		if (nDuration < 1 || nDuration > 365)
+		if (nDuration < 1 || nDuration > 375)
 			throw std::runtime_error("Sorry, duration must be between 1 days and 365 days.");
 
 		if (fProd)
@@ -3280,12 +3292,12 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("Reclaim Date", TimestampToHRDate(nReclaimTime)));
 		results.push_back(Pair("Return Address", sReturnAddress));
 		
-		results.push_back(Pair("ROI %", RoundToString(GetROIBasedOnMaturity(nDuration, wm.ROI) * 100, 4)));
+		results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(nDuration, wm.DWU) * 100, 4)));
 		
 		std::string sPK = "DWS-" + sReturnAddress + "-" + RoundToString(nReclaimTime, 0);
 		std::string sPayload = "<MT>DWS</MT><MK>" + sPK + "</MK><MV><dws><returnaddress>" + sReturnAddress + "</returnaddress><burnheight>" 
 			+ RoundToString(chainActive.Tip()->nHeight, 0) 
-			+ "</burnheight><burntime>" + RoundToString(GetAdjustedTime(), 0) + "</burntime><roi>" + RoundToString(wm.ROI, 4) + "</roi><duration>" 
+			+ "</burnheight><cpk>" + sCPK + "</cpk><burntime>" + RoundToString(GetAdjustedTime(), 0) + "</burntime><dwu>" + RoundToString(wm.DWU, 4) + "</dwu><duration>" 
 			+ RoundToString(nDuration, 0) + "</duration><duedate>" + TimestampToHRDate(nReclaimTime) + "</duedate><amount>" + RoundToString(nAmt, 2) + "</amount></dws></MV>";
 		const Consensus::Params& consensusParams = Params().GetConsensus();
 
@@ -3293,7 +3305,7 @@ UniValue exec(const JSONRPCRequest& request)
 		if (!toAddress.IsValid())
 				throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Burn-To Address: ") + consensusParams.BurnAddress);
 
-		if (nAuthorize == 1)
+		if (sAuthorize == "I_AGREE")
 		{
 			bool fSubtractFee = false;
 			bool fInstantSend = false;
@@ -3301,25 +3313,40 @@ UniValue exec(const JSONRPCRequest& request)
 		    CWalletTx wtx;
 		
 			bool fSent = RPCSendMoney(sError, toAddress.Get(), nAmt * COIN, fSubtractFee, wtx, fInstantSend, sPayload);
+			// Verify the transaction first:
+			std::string sError2;
+			bool fSent2 = VerifyDynamicWhaleStake(wtx.tx, sError2);
+			sError += sError2;
 			if (!fSent || !sError.empty())
 			{
 				results.push_back(Pair("Error (Not Sent)", sError));
 			}
 			else
 			{
-				results.push_back(Pair("Results", "Burn was successful.  You will receive your original BBP back on the Reclaim Date, plus the stake reward.  Please give the wallet an extra 24 hours after the reclaim date to process the return stake.  "));
+				results.push_back(Pair("Results", "Burn was successful.  You will receive your original BBP back on the Reclaim Date, plus the stake reward.  Please give the wallet an extra 48 hours after the reclaim date to process the return stake.  "));
 				results.push_back(Pair("TXID", wtx.GetHash().GetHex()));
 			}
+		}
+		else
+		{
+			results.push_back(Pair("Test Mode", sHowey));
 		}
 
 	}
 	else if (sItem == "dwsquote")
 	{
+		if (request.params.size() != 2 && request.params.size() != 1)
+			throw std::runtime_error("You must specify exec dwsquote [optional 1=my whale stakes only, 2=all whale stakes] [optional 1=Include Paid/Unpaid, 2=Include Unpaid only (default)].");
+		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	
 		double dDetails = 0;
 		if (request.params.size() > 1)
 			dDetails = cdbl(request.params[1].get_str(), 0);
+		double dPaid = 2;
+		if (request.params.size() > 2)
+			dPaid = cdbl(request.params[2].get_str(), 0);
 
-		if (dDetails == 1)
+		if (dDetails == 1 || dDetails == 2)
 		{
 			std::vector<WhaleStake> w = GetDWS();
 			results.push_back(Pair("Total DWS Quantity", (int)w.size()));
@@ -3327,12 +3354,15 @@ UniValue exec(const JSONRPCRequest& request)
 			for (int i = 0; i < w.size(); i++)
 			{
 				WhaleStake ws = w[i];
-				if (ws.found && !ws.paid)
+				bool fIncForPayment = (!ws.paid && dPaid == 2) || (dPaid == 1);
+
+				if (ws.found && fIncForPayment && ((dDetails == 2) || (dDetails==1 && ws.CPK == sCPK)))
 				{
 					results.push_back(Pair("Record", i+1));
 					results.push_back(Pair("Amount", ws.Amount));
+					results.push_back(Pair("CPK", ws.CPK));
 					results.push_back(Pair("Reward", ws.RewardAmount));
-					results.push_back(Pair("Actual ROI %", RoundToString(ws.ActualROI * 100, 4)));
+					results.push_back(Pair("Actual DWU", RoundToString(ws.ActualDWU * 100, 4)));
 					results.push_back(Pair("Return Address", ws.ReturnAddress));
 					results.push_back(Pair("Duration", ws.Duration));
 					results.push_back(Pair("Burn Height", ws.BurnHeight));
@@ -3358,10 +3388,10 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("Total Annual Reward", wm.nTotalAnnualReward));
 		results.push_back(Pair("Saturation Percent Annual", RoundToString(wm.nSaturationPercentAnnual * 100, 8)));
 		results.push_back(Pair("Saturation Percent Monthly", RoundToString(wm.nSaturationPercentMonthly * 100, 8)));
-		results.push_back(Pair("30 day ROI %", RoundToString(GetROIBasedOnMaturity(30, wm.ROI) * 100, 4)));
-		results.push_back(Pair("90 day ROI %", RoundToString(GetROIBasedOnMaturity(90, wm.ROI) * 100, 4)));
-		results.push_back(Pair("180 day ROI %", RoundToString(GetROIBasedOnMaturity(180, wm.ROI) * 100, 4)));
-		results.push_back(Pair("365 day ROI %", RoundToString(GetROIBasedOnMaturity(365, wm.ROI) * 100, 4)));
+		results.push_back(Pair("30 day DWU", RoundToString(GetDWUBasedOnMaturity(30, wm.DWU) * 100, 4)));
+		results.push_back(Pair("90 day DWU", RoundToString(GetDWUBasedOnMaturity(90, wm.DWU) * 100, 4)));
+		results.push_back(Pair("180 day DWU", RoundToString(GetDWUBasedOnMaturity(180, wm.DWU) * 100, 4)));
+		results.push_back(Pair("365 day DWU", RoundToString(GetDWUBasedOnMaturity(365, wm.DWU) * 100, 4)));
 	}
 
 	else if (sItem == "boinc1")

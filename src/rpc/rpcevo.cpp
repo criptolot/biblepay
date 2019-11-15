@@ -1274,7 +1274,7 @@ UniValue createnonfinancialtransaction(const JSONRPCRequest& request)
 
 UniValue sponsorchild(const JSONRPCRequest& request)
 {
-	// Sponsor a CameroonOne Child
+	// Sponsor a Child
 	if (request.fHelp)
 		throw std::runtime_error(
 		"sponsorchild charityname authorize"
@@ -1291,8 +1291,14 @@ UniValue sponsorchild(const JSONRPCRequest& request)
 		throw std::runtime_error("Sponsorship cancelled.");
 	if (sCharity != "cameroon-one" && sCharity != "kairos")
 		throw std::runtime_error("Charity name is not recognized.");
-
 	std::string sError;
+
+	if (!Enrolled(sCharity, sError))
+	{
+		sError = "Sorry, CPK is not enrolled in project. [" + sError + "].  Error 795.  To continue, please type 'exec join campaign_name', then wait 3 blocks, then continue. ";
+		throw std::runtime_error(sError);
+	}
+
 	std::string sProject = "cpk|" + sCharity;
     EnsureWalletIsUnlocked(pwalletMain);
 

@@ -3386,8 +3386,9 @@ bool VerifyMemoryPoolCPID(CTransaction tx)
 	if (vEle.size() < 9)
 		return true;
 	std::string sCPID = vEle[8];
-	std::string sVerCode = vEle[6];
+	std::string sVerCode0 = vEle[6];
 	std::string sUN = vEle[5];
+	std::string sVerCode = DecryptAES256(sVerCode0, sCPID);
 	int nPurportedID = (int)cdbl(vEle[7], 0);
 	double nPoints = 0;
 	int nID = GetWCGMemberID(sUN, sVerCode, nPoints);
@@ -3457,21 +3458,21 @@ WhaleStake GetWhaleStake(CTransactionRef tx1)
 			w.BurnTime = (int)cdbl(ExtractXML(w.XML, "<burntime>", "</burntime>"), 0);
 			w.BurnHeight = (int)cdbl(ExtractXML(w.XML, "<burnheight>", "</burnheight>"), 0);
 			w.Duration = (int)cdbl(ExtractXML(w.XML, "<duration>", "</duration>"), 0);
-			w.ROI = cdbl(ExtractXML(w.XML, "<roi>", "</roi>"), 4);
+			w.CPK = ExtractXML(w.XML, "<cpk>", "</cpk>");
+			w.DWU = cdbl(ExtractXML(w.XML, "<dwu>", "</dwu>"), 4);
 			w.MaturityTime = (w.Duration * 86400) + w.BurnTime;
-			if (w.ROI > MAX_WHALE_ROI) 
-				w.ROI = 0;
-			if (w.ROI < 0) 
-				w.ROI = 0;
-			w.ActualROI = GetROIBasedOnMaturity(w.Duration, w.ROI);
-			w.RewardAmount = GetOwedBasedOnMaturity(w.Duration, w.ActualROI, w.Amount);
-			CAmount nTotalOwed = (w.Amount * COIN) + (w.RewardAmount * COIN) + 1527;
-			w.TotalOwed = (double)nTotalOwed / COIN;
+			if (w.DWU > MAX_WHALE_DWU) 
+				w.DWU = 0;
+			if (w.DWU < 0) 
+				w.DWU = 0;
+			w.ActualDWU = GetDWUBasedOnMaturity(w.Duration, w.DWU);
+			w.RewardAmount = GetOwedBasedOnMaturity(w.Duration, w.ActualDWU, w.Amount);
+			w.TotalOwed = cdbl(RoundToString(w.Amount + w.RewardAmount, 0) + ".1527", 4);
 			w.MaturityHeight = (w.Duration * BLOCKS_PER_DAY) + w.BurnHeight;
 			w.ReturnAddress = ExtractXML(w.XML, "<returnaddress>", "</returnaddress>");
 			CBitcoinAddress addrWhale(w.ReturnAddress);
 			w.TXID = tx1->GetHash();
-			if (addrWhale.IsValid() && w.BurnHeight > 0 && w.BurnTime > 0 && w.Duration > 0 && w.ROI > 0 && w.RewardAmount > 0)
+			if (addrWhale.IsValid() && w.BurnHeight > 0 && w.Duration > 0 && w.Amount > 0)
 			{
 				w.found = true;
 				w.paid = w.MaturityTime < GetAdjustedTime();
@@ -3495,12 +3496,12 @@ std::vector<WhaleStake> GetDWS()
 			uint256 hashInput = uint256S(sTXID);
 			CTransactionRef tx1 = GetTx(hashInput);
 			WhaleStake w = GetWhaleStake(tx1);
-			if (w.found)
+			if (w.found && w.RewardAmount > 0 && w.Amount > 0 && w.ActualDWU > 0)
 			{
 				wStakes.push_back(w);
 				if (fDebug || true)
-					LogPrintf("\nDWS BurnTime %f, MaturityTime %f, TxID %s, Msg %s, Amount %f, Duration %f, ROI %f \n", 
-						w.BurnTime, w.MaturityTime, w.TXID.GetHex(), w.XML, (double)w.Amount, w.Duration, w.ROI);
+					LogPrintf("\nDWS BurnTime %f, MaturityTime %f, TxID %s, Msg %s, Amount %f, Duration %f, DWU %f \n", 
+						w.BurnTime, w.MaturityTime, w.TXID.GetHex(), w.XML, (double)w.Amount, w.Duration, w.DWU);
 			}
 		}
 	}
@@ -3563,11 +3564,11 @@ WhaleMetric GetWhaleMetrics(int nHeight)
 	double nAvailable = 1 - (m.nSaturationPercentMonthly);
 	if (nAvailable > 1) nAvailable = 1;
 	if (nAvailable < 0) nAvailable = 0;
-	m.ROI = MAX_WHALE_ROI * nAvailable;
+	m.DWU = MAX_WHALE_DWU * nAvailable;
 
 	m.nSaturationPercentAnnual = m.nTotalFutureCommitments / m.nTotalAnnualReward;
 	if (m.nSaturationPercentAnnual > .99)
-		m.ROI = 0;
+		m.DWU = 0;
 
 	return m;
 }
@@ -3593,16 +3594,16 @@ std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
 	return wReturnStakes;
 }
 
-bool VerifyDynamicWhaleStake(CTransaction tx)
+bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 {
-    std::string sXML = tx.GetTxMessage();
+    std::string sXML = tx->GetTxMessage();
 	
 	// Verify each element matches the live quotes
 
 	// Verify the total does not breech saturation requirements
-	CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
+	LogPrintf("\nVERIFYDYNAMICWHALESTAKE::DATA[%s]\n", sXML);
 
-	WhaleStake w = GetWhaleStake(tx1);
+	WhaleStake w = GetWhaleStake(tx);
 	if (!w.found)
 		return true;
 
@@ -3610,89 +3611,100 @@ bool VerifyDynamicWhaleStake(CTransaction tx)
 	if (w.Duration < 1 || w.Duration > 365)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Duration out of bounds. %f", w.Duration);
+		sError = "Duration out of bounds.";
 		return false;
 	}
 	if (w.Amount < 100 || w.Amount > 1000000)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Amount out of bounds. %f", w.Amount);
+		sError = "Amount out of bounds.";
 		return false;
 	}
 
 	if (w.BurnHeight < (chainActive.Tip()->nHeight - 1) || w.BurnHeight > (chainActive.Tip()->nHeight + 1))
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Burn Height out of bounds. Current Height %f, Burn Height %f", chainActive.Tip()->nHeight, w.BurnHeight);
+		sError = "Burn height out of bounds.";
 		return false;
 	}
 
-	if (w.ROI < 0 || w.ROI > MAX_WHALE_ROI)
+	if (w.DWU < 0 || w.DWU > MAX_WHALE_DWU)
 	{
-		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, ROI out of bounds = %f.", w.ROI);
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, DWU out of bounds = %f.", w.DWU);
+		sError = "DWU Out of bounds.";
 		return false;
 	}
 
 	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
 
-	if (w.ROI > (wm.ROI + .01) || w.ROI < (wm.ROI - .01))
+	if (w.DWU > (wm.DWU + .01) || w.DWU < (wm.DWU - .01))
 	{
-		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, ROI [%f] does not equal current screen quote of [%f].", w.ROI, wm.ROI);
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, DWU [%f] does not equal current screen quote of [%f].", w.DWU, wm.DWU);
+		sError = "DWU does not equal current offered rate of " + RoundToString(wm.DWU, 4);
 		return false;
 	}
 
-	if (w.BurnTime > (GetAdjustedTime() + (60 * 30)) || w.BurnTime < (GetAdjustedTime() - (60 * 30)))
+	// We don't really need this, since we enforce by height, but let's widen it to have the timestamp for the users benefit (to see the HRDate)
+	if (w.BurnTime > (GetAdjustedTime() + (60 * 60 * 2)) || w.BurnTime < (GetAdjustedTime() - (60 * 60)))
 	{
-		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Burn time out of bounds.", w.BurnTime);
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Burn time out of bounds. %f", w.BurnTime);
+		sError = "Burn time out of bounds";
 		return false;
 	}
 
-	if (w.ROI < .01)
+	if (w.DWU < .01)
 	{
-		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, ROI [%f] is too low to create a burn.", w.ROI);
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, DWU [%f] is too low to create a burn.", w.DWU);
+		sError = "DWU too low to create a burn.";
 		return false;
 	}
 
 	if (wm.nSaturationPercentAnnual > .95)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our annual saturation is [%f]pct., we must reject burns until we free up more room.", wm.nSaturationPercentAnnual);
+		sError = "Sorry, our annual saturation level is too great to accept this burn until we free up more room.";
 		return false;
 	}
 
 	if (wm.nSaturationPercentMonthly > 1.0)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our monthly saturation is [%f]pct., we must reject burns until we free up more room.", wm.nSaturationPercentMonthly);
+		sError = "Sorry, our monthly saturation level is too high to accept this burn until we free up more room.";
 		return false;
 	}
 	
 	if (wm.nTotalGrossBurnsToday > MAX_DAILY_WHALE_COMMITMENTS)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our daily whale commitments of %f are higher than the acceptable maximum of %f, please wait until tomorrow.", 
-			wm.nTotalBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);
+			wm.nTotalGrossBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);
+		sError = "Sorry, our daily whale commitments are too high today.  Please try again tomorrow.";
 		return false;
 	}
 
-	LogPrintf("\nVerifyDynamicWhaleStake ACCEPTED :  Amount %f, Duration %f, SatPercentAnnual %f, SatPercentMonthly %f, Projected ROI %f, Burn ROI %f", 
-		w.Amount, w.Duration, wm.nSaturationPercentAnnual, wm.nSaturationPercentMonthly, wm.ROI, w.ROI);
-	return true;		
+	LogPrintf("\nVerifyDynamicWhaleStake ACCEPTED :  Amount %f, Duration %f, SatPercentAnnual %f, SatPercentMonthly %f, Projected DWU %f, Burn DWU %f", 
+		w.Amount, w.Duration, wm.nSaturationPercentAnnual, wm.nSaturationPercentMonthly, wm.DWU, w.DWU);
+	return true;
 }
 
-double GetROIBasedOnMaturity(double nDuration, double dROI)
+double GetDWUBasedOnMaturity(double nDuration, double dDWU)
 {
-	// Given a maturity duration range, adjust the final ROI 
+	// Given a maturity duration range, adjust the final DWU
 	if (nDuration > 365 || nDuration < 1) 
 		return 0;
 
-	double dComp1 = dROI * .499999;
+	double dComp1 = dDWU * .499999;
 	double dComp2 = (nDuration / 364.9999) * dComp1;
 	double dTotal = dComp1 + dComp2;
-	if (dTotal > MAX_WHALE_ROI)
-		dTotal = MAX_WHALE_ROI;
+	if (dTotal > MAX_WHALE_DWU)
+		dTotal = MAX_WHALE_DWU;
 	return dTotal;
 }
 
-double GetOwedBasedOnMaturity(double nDuration, double dROI, double dAmount)
+double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount)
 {
 	if (nDuration > 365 || nDuration < 1)
 		return 0;
-	double dComp1 = (nDuration / 364.99999) * dROI;
+	double dComp1 = (nDuration / 364.99999) * dDWU;
 	double dTotal = dComp1 * dAmount;
 	return dTotal;
 }

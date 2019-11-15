@@ -76,10 +76,11 @@ struct WhaleStake
 	int64_t BurnTime = 0;
 	int BurnHeight = 0;
 	int Duration = 0;
-	double ROI = 0;
-	double ActualROI = 0;
+	double DWU = 0;
+	double ActualDWU = 0;
 	int64_t MaturityTime = 0;
 	int MaturityHeight = 0;
+	std::string CPK = std::string();
 	uint256 TXID = uint256S("0x0");
 	std::string XML = std::string();
 	std::string ReturnAddress = std::string();
@@ -88,7 +89,7 @@ struct WhaleStake
 };
 
 static double MAX_DAILY_WHALE_COMMITMENTS = 5000000;
-static double MAX_WHALE_ROI = 2.0;
+static double MAX_WHALE_DWU = 2.0;
 struct WhaleMetric
 {
 	double nTotalFutureCommitments = 0;
@@ -107,7 +108,7 @@ struct WhaleMetric
 
 	double nSaturationPercentAnnual = 0;
 	double nSaturationPercentMonthly = 0;
-	double ROI = 0;
+	double DWU = 0;
 };
 
 struct BiblePayProposal
@@ -282,7 +283,6 @@ std::string GetAttachmentData(std::string sPath);
 std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath);
 std::string Path_Combine(std::string sPath, std::string sFileName);
 std::string DSQL_Ansi92Query(std::string sSQL);
-double GetROI(double nTitheAmount);
 void ProcessBLSCommand(CTransactionRef tx);
 void UpdateHealthInformation();
 BBPResult GetDecentralizedURL();
@@ -296,9 +296,9 @@ bool VerifyMemoryPoolCPID(CTransaction tx);
 std::string GetEPArg(bool fPublic);
 std::vector<WhaleStake> GetDWS();
 WhaleMetric GetWhaleMetrics(int nHeight);
-bool VerifyDynamicWhaleStake(CTransaction tx);
-double GetROIBasedOnMaturity(double nDuration, double dROI);
-double GetOwedBasedOnMaturity(double nDuration, double dROI, double dAmount);
+bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError);
+double GetDWUBasedOnMaturity(double nDuration, double dDWU);
+double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount);
 std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
 
 #endif

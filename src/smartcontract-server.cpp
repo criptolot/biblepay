@@ -832,7 +832,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		for (int iWhale = 0; iWhale < dws.size(); iWhale++)
 		{
 			WhaleStake ws = dws[iWhale];
-			// We already verified:  Burn was made successfully to the burn address, ROI has been checked for accuracy, ROI bounds and owed bounds has been checked, and the daily limit has been enforced
+			// We already verified:  Burn was made successfully to the burn address, DWU has been checked for accuracy, DWU bounds and owed bounds has been checked, and the daily limit has been enforced
 			// Note:  This vector only contains mature (owed) burns for this day.
 			if (ws.found && ws.TotalOwed > 0 && !ws.ReturnAddress.empty())
 			{
@@ -1461,6 +1461,9 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 	bool fGSCTime = (chainActive.Tip()->nHeight % nFreq == (BLOCKS_PER_DAY/2));
 	if (fGSCTime)
 		SendOutGSCs();
+
+	if (chainActive.Tip()->nHeight % 14 == 0)
+		LoadResearchers();
 
 	if (!fMasternodeMode)   
 		return "NOT_A_SANCTUARY";

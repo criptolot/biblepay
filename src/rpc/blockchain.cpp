@@ -2197,6 +2197,9 @@ UniValue exec(const JSONRPCRequest& request)
 		std::string sError;
 		std::string sXML;
 		WriteCache("vin", "coinage", "", GetAdjustedTime());
+		WriteCache("availablecoins", "age", "", GetAdjustedTime());
+		WriteCache("coin", "age", "", GetAdjustedTime());
+
 		double dTargetWeight = 0;
 		if (request.params.size() > 1)
 			dTargetWeight = cdbl(request.params[1].get_str(), 2);

@@ -2682,7 +2682,7 @@ void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe, const
 				// BIBLEPAY - ANTI-BOT NET RULES:
 				if (dMinCoinAge > 0) 
 				{
-					if (pcoin->tx->vout[i].nValue <= (GSC_DUST * COIN) || nDepth < GSC_MIN_CONFIRMS || pcoin->tx->vout[i].nValue == SANCTUARY_COLLATERAL * COIN) 
+					if (nDepth < 1 || pcoin->tx->vout[i].nValue <= (GSC_DUST * COIN) || pcoin->tx->vout[i].nValue == SANCTUARY_COLLATERAL * COIN) 
 					{
 						found = false;
 					}
@@ -3002,7 +3002,7 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
 				std::string sKeyPurseKey = cba.ToString();
 				std::string sKnownRecip = PubKeyToAddress(out.tx->tx->vout[out.i].scriptPubKey);
 
-				if (sKnownRecip != sKeyPurseKey)
+				if (sKnownRecip != sKeyPurseKey || nDepth < 1)
 					continue;
 				if (fDebugSpam)
 					LogPrintf(" Found matching Recip %s for %f ", sKnownRecip, (double)out.tx->tx->vout[out.i].nValue);
@@ -3620,7 +3620,7 @@ double CWallet::GetAntiBotNetWalletWeight(double nMinCoinAge, CAmount& nTotalReq
 		double nAge = 0;
 		double nWeight = GetCoinWeight(out, nAge);
 		
-		if (nWeight > 0)
+		if (nWeight > 0 && nDepth > 0)
 		{
 			nTotalRequired += nAmount;
 			nFoundCoinAge += nWeight;

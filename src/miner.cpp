@@ -192,8 +192,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     }
 
 	// BiblePay Anti-Bot-Net System
-	double nMinCoinAge = GetSporkDouble("requiredabnweight", 0);
 	std::string sABNLocator;
+	
+	/*
+	double nMinCoinAge = GetSporkDouble("requiredabnweight", 0);
 	if (nMinCoinAge > 0 && !fFunded)
 	{
 		CReserveKey reserve1(pwalletMain);
@@ -219,6 +221,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 				LogPrintf("\n***** CreateNewBlock::Unable to add ABN because %s *****\n", sError1.c_str());
 		}
 	}
+	*/
+
 
     
     int nPackagesSelected = 0;

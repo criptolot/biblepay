@@ -2570,6 +2570,7 @@ void SpendABN()
 	miABNTime = 0;
 }
 
+/*
 CWalletTx GetAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReserveKey& reservekey, std::string& sXML, std::string sPoolMiningPublicKey, std::string& sError)
 {
 	// Share the ABN among all threads, until it's spent or expires
@@ -2593,6 +2594,7 @@ CWalletTx GetAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReserveK
 		return mtxABN;
 	}
 }
+*/
 
 CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReserveKey& reservekey, std::string& sXML, std::string sPoolMiningPublicKey, std::string& sError)
 {
@@ -2606,12 +2608,6 @@ CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReser
 			return wtx;
 		}
 
-		if (pwalletMain->IsLocked() && msEncryptedString.empty())
-		{
-			WriteCache("poolthread0", "poolinfo4", "Unable to create abn tx (wallet locked)", GetAdjustedTime());
-			sError = "Sorry, the wallet must be unlocked to create an anti-botnet transaction.";
-			return wtx;
-		}
 		// In Phase 2, we do a dry run to assess the required Coin Amount in the Coin Stake
 		nReqCoins = 0;
 		nABNWeight = pwalletMain->GetAntiBotNetWalletWeight(nMinCoinAge, nReqCoins);
@@ -2631,21 +2627,6 @@ CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReser
 			sError = "Sorry, no coins available for an ABN transaction.";
 			return wtx;
 		}
-		// BiblePay - Use Encrypted string if we have it
-		bool bTriedToUnlock = false;
-		if (pwalletMain->IsLocked() && !msEncryptedString.empty())
-		{
-			bTriedToUnlock = true;
-			if (!pwalletMain->Unlock(msEncryptedString, false))
-			{
-				static int nNotifiedOfUnlockIssue = 0;
-				if (nNotifiedOfUnlockIssue == 0)
-					LogPrintf("\nUnable to unlock wallet with SecureString.\n");
-				nNotifiedOfUnlockIssue++;
-				sError = "Unable to unlock wallet with autounlock password provided";
-				return wtx;
-			}
-		}
 
 		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
 		CBitcoinAddress baCPKAddress(sCPK);
@@ -2661,8 +2642,6 @@ CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReser
 		bool bSigned = SignStake(sCPK, sMessage, sError, sSignature);
 		if (!bSigned) 
 		{
-			if (bTriedToUnlock)
-				pwalletMain->Lock();
 			sError = "CreateABN::Failed to sign.";
 			return wtx;
 		}
@@ -2679,7 +2658,11 @@ CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReser
 		std::vector<CRecipient> vecSend;
 		vecSend.push_back(recipient);
 		CAmount nFeeRequired = 0;
-		fCreated = pwalletMain->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, NULL, true, ALL_COINS, false, 0, sXML, nMinCoinAge, nAllocated);
+
+		std::string sPubPurseKey = GetEPArg(true);
+
+		fCreated = pwalletMain->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, NULL, true, ALL_COINS, false, 0, sXML, nMinCoinAge, nAllocated, .01, sPubPurseKey);
+
 		double nTest = GetAntiBotNetWeight(chainActive.Tip()->GetBlockTime(), wtx.tx, true, "");
 		sDebugInfo = "TargetWeight=" + RoundToString(nTargetABNWeight, 0) + ", UsingBBP=" + RoundToString((double)nUsed/COIN, 2) 
 				+ ", SpendingBBP=" + RoundToString((double)nAllocated/COIN, 2) + ", NeededWeight=" + RoundToString(nMinCoinAge, 0) + ", GotWeight=" + RoundToString(nTest, 2);
@@ -2694,8 +2677,6 @@ CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReser
 			WriteCache("poolthread0", "poolinfo4", sMiningInfo, GetAdjustedTime());
 		}
 	
-		if (bTriedToUnlock)
-			pwalletMain->Lock();
 		if (!fCreated)    
 		{
 			sError = "CreateABN::Fail::" + strError + "::" + sDebugInfo;

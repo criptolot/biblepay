@@ -312,7 +312,7 @@ CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary,
 	sXML += "<gscsig>" + sSignature + "</gscsig><abncpk>" + sCPK + "</abncpk><gsccampaign>" + sCampaign + "</gsccampaign><abnwgt>" 
 		+ RoundToString(nTargetCoinAge, 0) + "</abnwgt><diary>" + sDiary + "</diary>";
 	std::string strError;
-
+	
 	bool fCreated = pwalletMain->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, NULL, true, 
 		ALL_COINS, false, 0, sXML, nTargetCoinAge, nTargetSpend, .01, sPubPurseKey);
 

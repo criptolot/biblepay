@@ -2178,14 +2178,45 @@ UniValue exec(const JSONRPCRequest& request)
 			 throw std::runtime_error("You must specify the txid.");
 		std::string sTxId = request.params[1].get_str();
 		uint256 hashBlock = uint256();
-		CTransactionRef tx;
 		uint256 uTx = ParseHashV(sTxId, "txid");
-		if (GetTransaction(uTx, tx, Params().GetConsensus(), hashBlock, true))
+		COutPoint out1(uTx, 0);
+		BBPVin b = GetBBPVIN(out1, 0);
+		double nCoinAge = 0;
+		CAmount nDonation = 0;
+		std::string sCPK;
+		std::string sCampaignName;
+		std::string sDiary;
+
+		if (b.Found)
 		{
-		    CBlockIndex* pblockindex = mapBlockIndex[hashBlock];
-			if (!pblockindex) pblockindex = chainActive.Tip();
-			double nAuditedWeight = GetAntiBotNetWeight(pblockindex->GetBlockTime(), tx, true, "");
-			results.push_back(Pair("audited_weight", nAuditedWeight));
+		    CBlockIndex* pblockindex = mapBlockIndex[b.HashBlock];
+			int64_t nBlockTime = GetAdjustedTime();
+			if (pblockindex != NULL)
+			{
+				nBlockTime = pblockindex->GetBlockTime();
+				GetTransactionPoints(pblockindex, b.TxRef, nCoinAge, nDonation);
+				std::string sCPK = GetTxCPK(b.TxRef, sCampaignName);
+				results.push_back(Pair("campaign_name", sCampaignName));
+				results.push_back(Pair("coin_age", nCoinAge));
+			}
+			// For each VIN
+		    for (int i = 0; i < (int)b.TxRef->vin.size(); i++)
+			{
+			    const COutPoint &outpoint = b.TxRef->vin[i].prevout;
+				BBPVin bIn = GetBBPVIN(outpoint, nBlockTime);
+				if (bIn.Found)
+				{
+					results.push_back(Pair("Vin # " + RoundToString(i, 0), RoundToString((double)bIn.Amount/COIN, 2) + "bbp - " + bIn.Destination 
+						+ " - Coin*Age: " + RoundToString(bIn.CoinAge, 0)));
+				}
+			}
+	 	    // For each VOUT
+			for (int i = 0; i < b.TxRef->vout.size(); i++)
+		    {
+			 	CAmount nOutAmount = b.TxRef->vout[i].nValue;
+				std::string sDest = PubKeyToAddress(b.TxRef->vout[i].scriptPubKey);
+				results.push_back(Pair("VOUT #" + RoundToString(i, 0), RoundToString((double)nOutAmount/COIN, 2) + "bbp - " + sDest));
+		    }
 		}
 		else
 		{

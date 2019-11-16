@@ -68,6 +68,18 @@ struct Researcher
 	std::string CPK;
 };
 
+struct BBPVin
+{
+	COutPoint OutPoint;
+	uint256 HashBlock = uint256S("0x0");
+	int64_t BlockTime = 0;
+	double CoinAge = 0;
+	CAmount Amount = 0;
+	std::string Destination = std::string();
+	bool Found = false;
+	CTransactionRef TxRef;
+};
+
 struct WhaleStake
 {
 	double Amount = 0;
@@ -300,5 +312,6 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError);
 double GetDWUBasedOnMaturity(double nDuration, double dDWU);
 double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount);
 std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
+BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime);
 
 #endif

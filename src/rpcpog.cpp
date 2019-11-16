@@ -31,6 +31,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <openssl/md5.h>
+#include "txmempool.h"
 // For HTTPS (for the pool communication)
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -2550,7 +2551,7 @@ double GetAntiBotNetWeight(int64_t nBlockTime, CTransactionRef tx, bool fDebug, 
 	bool fSigned = CheckAntiBotNetSignature(tx, "abn", sSolver);
 	if (!fSigned) 
 	{
-		if (fDebugSpam && fDebug && nCoinAge > 0)
+		if (nCoinAge > 0)
 			LogPrintf("antibotnetsignature failed on tx %s with purported coin-age of %f \n",tx->GetHash().GetHex(), nCoinAge);
 		return 0;
 	}
@@ -2569,32 +2570,6 @@ void SpendABN()
 	mfABNSpent = true;
 	miABNTime = 0;
 }
-
-/*
-CWalletTx GetAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReserveKey& reservekey, std::string& sXML, std::string sPoolMiningPublicKey, std::string& sError)
-{
-	// Share the ABN among all threads, until it's spent or expires
-	int64_t nAge = GetAdjustedTime() - miABNTime;
-	if (nAge > (60 * 10) || mfABNSpent)
-	{
-        std::unique_lock<std::mutex> lock(cs_abn);
-		{
-			mtxABN = CreateAntiBotNetTx(pindexLast, nMinCoinAge, reservekey, sXML, sPoolMiningPublicKey, sError);
-			mfABNSpent = false;
-			miABNTime = GetAdjustedTime();
-			msABNXML = sXML;
-			msABNError = sError;
-			return mtxABN;
-		}
-	}
-	else
-	{
-		sXML = msABNXML;
-		sError = msABNError;
-		return mtxABN;
-	}
-}
-*/
 
 CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReserveKey& reservekey, std::string& sXML, std::string sPoolMiningPublicKey, std::string& sError)
 {
@@ -3690,3 +3665,66 @@ double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount)
 	return dTotal;
 }
 
+double GetVinAge(int64_t nVINTime, int64_t nSpendTime, CAmount nAmount)
+{
+	double nAge = (double)(nSpendTime - nVINTime) / 86400;
+	if (nAge < 000) nAge = 0;
+	if (nAge > 365) nAge = 365;
+	double nWeight = (nAmount / COIN) * nAge;
+	return nWeight;
+}
+
+BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime)
+{
+	BBPVin b;
+	
+	b.OutPoint = o;
+	b.HashBlock = uint256();
+
+	// Special case if the transaction is not in a block:
+
+    BOOST_FOREACH(const CTxMemPoolEntry& e, mempool.mapTx)
+    {
+        const uint256& hash = e.GetTx().GetHash();
+		if (hash == o.hash)
+		{
+			const CTransaction& tx = e.GetTx();
+			CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
+			b.TxRef = tx1;
+			b.BlockTime = GetAdjustedTime(); //Memory Pool
+			b.Amount = b.TxRef->vout[b.OutPoint.n].nValue;
+			b.Destination = PubKeyToAddress(b.TxRef->vout[b.OutPoint.n].scriptPubKey);
+			b.CoinAge = GetVinAge(b.BlockTime, nTxTime, b.Amount);
+			b.Found = true;
+			return b;
+		}
+    }
+
+
+	if (GetTransaction(b.OutPoint.hash, b.TxRef, Params().GetConsensus(), b.HashBlock, true))
+	{
+		BlockMap::iterator mi = mapBlockIndex.find(b.HashBlock);
+		if (mi != mapBlockIndex.end() && (*mi).second) 
+		{
+			CBlockIndex* pMNIndex = (*mi).second; 
+			b.BlockTime = pMNIndex->GetBlockTime();
+			if (b.OutPoint.n <= b.TxRef->vout.size()-1)
+			{
+				b.Amount = b.TxRef->vout[b.OutPoint.n].nValue;
+				b.Destination = PubKeyToAddress(b.TxRef->vout[b.OutPoint.n].scriptPubKey);
+				b.CoinAge = GetVinAge(b.BlockTime, nTxTime, b.Amount);
+			}
+			b.Found = true;
+			return b;
+		}
+		else
+		{
+			b.Destination = "NOT_IN_INDEX";
+			b.Amount = 0;
+		}
+	}
+	b.Destination = "NOT_FOUND";
+	b.Amount = 0;
+	return b;
+}
+	

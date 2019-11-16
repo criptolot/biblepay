@@ -2981,6 +2981,7 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
 	// R Andrews - BIBLEPAY - If this is an ABN or GSC, we need to sort the AvailableCoins vector by amount, and use the smallest coin-age(s) first
 	if (nMinCoinAge > 0)
 	{
+		
 		std::sort(vCoins.rbegin(), vCoins.rend(), CompareByCoinAge());
 		std::string sCache;
 		int nInputsConsumed = 0;
@@ -2996,19 +2997,9 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
 			int nDepth = pcoin->GetDepthInMainChain();
 			double nAge = 0;
 			double nWeight = GetCoinWeight(out, nAge);
-			if (nExactSpend > 0 && !sPursePubKey.empty())
-			{
-				CBitcoinAddress cba(sPursePubKey);
-				std::string sKeyPurseKey = cba.ToString();
-				std::string sKnownRecip = PubKeyToAddress(out.tx->tx->vout[out.i].scriptPubKey);
+ 			std::string sKnownRecip = PubKeyToAddress(out.tx->tx->vout[out.i].scriptPubKey);
 
-				if (sKnownRecip != sKeyPurseKey || nDepth < 1)
-					continue;
-				if (fDebugSpam)
-					LogPrintf(" Found matching Recip %s for %f ", sKnownRecip, (double)out.tx->tx->vout[out.i].nValue);
-			}
-
-			if (nWeight > 0)
+			if (nWeight > 0 && nDepth > 0 && sKnownRecip == sPursePubKey)
 			{
 				nTotalRequired += nAmount;
 				nFoundCoinAge += nWeight;
@@ -3652,7 +3643,13 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
     }
 
     CAmount nFeePay = fUseInstantSend ? CTxLockRequest().GetMinFee(true) : 0;
-
+	bool fPursePubKey = false;
+	CBitcoinAddress baPurse(sPursePubKey);
+	if (!sPursePubKey.empty())
+	{
+		fPursePubKey = baPurse.IsValid();
+	}
+				
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;
     unsigned int nSubtractFeeFromAmount = 0;
@@ -3814,8 +3811,11 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
 
                         // coin control: send change to custom address
                         if (coinControl && !boost::get<CNoDestination>(&coinControl->destChange))
+						{
                             scriptChange = GetScriptForDestination(coinControl->destChange);
-
+							if (fPursePubKey)
+								scriptChange = GetScriptForDestination(baPurse.Get());
+						}
                         // no coin control: send change to newly generated address
                         else
                         {
@@ -3827,14 +3827,10 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                             //  post-backup change.
 
                             // Reserve a new key pair from key pool
-							if (nExactSpend > 0 && !sPursePubKey.empty())
+							if (fPursePubKey)
 							{
 								// BBP - R Andrews - 11-4-2019 - Exact spent non-financial transaction send change back to external purse:
-						        CBitcoinAddress baPurse(sPursePubKey);
-							    if (baPurse.IsValid()) 
-								{
-									scriptChange = GetScriptForDestination(baPurse.Get());
-								}
+								scriptChange = GetScriptForDestination(baPurse.Get());
 							}
 							else
 							{

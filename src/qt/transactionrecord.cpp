@@ -69,9 +69,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 				sub.IsGSCPayment = wtx.tx->IsGSCPayment();
 				sub.IsSuperblockPayment = wtx.tx->IsSuperblockPayment();
 				sub.IsABN = wtx.tx->IsABN();
-				sub.IsWhaleReward = wtx.tx->IsWhaleReward();
 				sub.IsWhaleStake = wtx.tx->IsWhaleStake();
-
+				std::string sAmount = RoundToString((double)wtx.tx->vout[i].nValue/COIN, 4);
+				sub.IsWhaleReward = Contains(sAmount, ".1527");
+		
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address))
                 {
                     // Received by Biblepay Address
@@ -336,7 +337,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx, int numISLocks, int c
         }
     }
     // For generated transactions, determine maturity
-    else if (type == TransactionRecord::Generated || type == TransactionRecord::SuperBlockPayment || type == TransactionRecord::GSCPayment)
+    else if (type == TransactionRecord::Generated || type == TransactionRecord::SuperBlockPayment || type == TransactionRecord::GSCPayment || type == TransactionRecord::WhaleReward)
 	{
         if (wtx.GetBlocksToMaturity() > 0)
         {

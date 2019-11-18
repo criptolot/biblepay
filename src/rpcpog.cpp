@@ -1967,7 +1967,7 @@ std::string GetDomainFromURL(std::string sURL)
 
 bool TermPeekFound(std::string sData, int iBOEType)
 {
-	std::string sVerbs = "</html>|</HTML>|<EOF>|<END>|</account_out>|</am_set_info_reply>|</am_get_info_reply>";
+	std::string sVerbs = "</html>|</HTML>|<EOF>|<END>|</account_out>|</am_set_info_reply>|</am_get_info_reply>|</MemberStats>";
 	std::vector<std::string> verbs = Split(sVerbs, "|");
 	bool bFound = false;
 	for (int i = 0; i < verbs.size(); i++)
@@ -3389,12 +3389,10 @@ int64_t GetTxTime(uint256 blockHash, int& iHeight)
 	return 0;
 }
 
-CTransactionRef GetTx(uint256 txid)
+bool GetTxBBP(uint256 txid, CTransactionRef& tx1)
 {
-	CTransactionRef tx1;
 	uint256 hashBlock1;
-	GetTransaction(txid, tx1, Params().GetConsensus(), hashBlock1, true);
-	return tx1;
+	return GetTransaction(txid, tx1, Params().GetConsensus(), hashBlock1, true);
 }
 
 WhaleStake GetWhaleStake(CTransactionRef tx1)
@@ -3450,14 +3448,18 @@ std::vector<WhaleStake> GetDWS()
 			int64_t nTimestamp = v.second;
 			std::string sTXID = ii.first.second;
 			uint256 hashInput = uint256S(sTXID);
-			CTransactionRef tx1 = GetTx(hashInput);
-			WhaleStake w = GetWhaleStake(tx1);
-			if (w.found && w.RewardAmount > 0 && w.Amount > 0 && w.ActualDWU > 0)
+			CTransactionRef tx1;
+			bool fGot = GetTxBBP(hashInput, tx1);
+			if (fGot)
 			{
-				wStakes.push_back(w);
-				if (fDebug || true)
-					LogPrintf("\nDWS BurnTime %f, MaturityTime %f, TxID %s, Msg %s, Amount %f, Duration %f, DWU %f \n", 
-						w.BurnTime, w.MaturityTime, w.TXID.GetHex(), w.XML, (double)w.Amount, w.Duration, w.DWU);
+				WhaleStake w = GetWhaleStake(tx1);
+				if (w.found && w.RewardAmount > 0 && w.Amount > 0 && w.ActualDWU > 0)
+				{
+					wStakes.push_back(w);
+					if (fDebugSpam)
+						LogPrintf("\nDWS BurnTime %f, MaturityTime %f, TxID %s, Msg %s, Amount %f, Duration %f, DWU %f \n", 
+							w.BurnTime, w.MaturityTime, w.TXID.GetHex(), w.XML, (double)w.Amount, w.Duration, w.DWU);
+				}
 			}
 		}
 	}
@@ -3592,7 +3594,7 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 	}
 
 	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
-
+	
 	if (w.DWU > (wm.DWU + .01) || w.DWU < (wm.DWU - .01))
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, DWU [%f] does not equal current screen quote of [%f].", w.DWU, wm.DWU);
@@ -3634,6 +3636,16 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our daily whale commitments of %f are higher than the acceptable maximum of %f, please wait until tomorrow.", 
 			wm.nTotalGrossBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);
 		sError = "Sorry, our daily whale commitments are too high today.  Please try again tomorrow.";
+		return false;
+	}
+
+	WhaleMetric wmFuture = GetWhaleMetrics(w.MaturityHeight);
+	
+	if (wmFuture.nTotalGrossBurnsToday > MAX_DAILY_WHALE_COMMITMENTS)
+	{
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our future whale commitments of %f at the future height is higher than the acceptable maximum of %f, please try a different duration.", 
+			wmFuture.nTotalGrossBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);
+		sError = "Sorry, our daily whale commitments are too high on this future date.  Please try a different duration.";
 		return false;
 	}
 

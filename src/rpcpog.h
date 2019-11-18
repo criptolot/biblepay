@@ -313,5 +313,6 @@ double GetDWUBasedOnMaturity(double nDuration, double dDWU);
 double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount);
 std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
 BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime);
+bool GetTxBBP(uint256 txid, CTransactionRef& tx1);
 
 #endif

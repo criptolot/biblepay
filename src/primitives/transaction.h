@@ -10,6 +10,7 @@
 #include "script/script.h"
 #include "serialize.h"
 #include "uint256.h"
+#include <math.h>   // For floor
 
 /** Transaction types */
 enum {
@@ -317,8 +318,10 @@ public:
 
 	bool IsWhaleReward() const
 	{
-		CAmount nValueOut = GetValueOut();
-		return (nValueOut % 1527 == 0) ? true : false;
+		double nWhaleReward = (double)GetValueOut()/COIN;
+		double nWholePart = floor(nWhaleReward);
+		double nDecPart = nWhaleReward - nWholePart;
+		return (nDecPart == 1527);
 	}
 
 	bool IsSuperblockPayment() const

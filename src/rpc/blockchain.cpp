@@ -14,6 +14,11 @@
 #include "coins.h"
 #include "core_io.h"
 #include "consensus/validation.h"
+
+extern "C" {
+#include "crypto/pobh.h"
+}
+
 #include "instantx.h"
 #include "validation.h"
 #include "policy/policy.h"
@@ -51,6 +56,8 @@ struct CUpdatedBlock
 static std::mutex cs_blockchange;
 static std::condition_variable cond_blockchange;
 static CUpdatedBlock latestblock;
+
+
 
 extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry);
 void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex);
@@ -1776,9 +1783,12 @@ void BoincHelpfulHint(UniValue& e)
 {
 	e.push_back(Pair("Step 1", "Log into your WCG account at 'worldcommunitygrid.org' with your WCG E-mail address and WCG password."));
 	e.push_back(Pair("Step 2", "Click Settings | My Profile.  Record your 'Username' and 'Verification Code' and your 'CPID' (Cross-Project-ID)."));
-	e.push_back(Pair("Step 3", "From our RPC console, type, exec associate your_username your_verification_code"));
-	e.push_back(Pair("Step 4", "Wait for 5 blocks to pass.  Then type 'exec rac' again, and see if you are linked!  "));
-	e.push_back(Pair("Step 5", "Once you are linked you will receive daily rewards.  Please read about our minimum stake requirements per RAC here: wiki.biblepay.org/PODC"));
+	e.push_back(Pair("Step 3", "Click Settings | Data Sharing.  Ensure the 'Display my Data' radio button is selected.  Click Save. "));
+	e.push_back(Pair("Step 4", "Click My Contribution | My Team.  If you are not part of Team 'BiblePay' click Join Team | Search | BiblePay | Select BiblePay | Click Join Team | Save."));
+	e.push_back(Pair("Step 5", "NOTE: After choosing your team, and starting your research, please give WCG 24 hours for the CPID to propagate into BBP.  In the mean time you can start Boinc research - and ensure the computer is performing WCG tasks. "));
+	e.push_back(Pair("Step 6", "From our RPC console, type, exec associate your_username your_verification_code"));
+	e.push_back(Pair("Step 7", "Wait for 5 blocks to pass.  Then type 'exec rac' again, and see if you are linked!  "));
+	e.push_back(Pair("Step 8", "Once you are linked you will receive daily rewards.  Please read about our minimum stake requirements per RAC here: wiki.biblepay.org/PODC"));
 }
 
 UniValue exec(const JSONRPCRequest& request)
@@ -3275,6 +3285,16 @@ UniValue exec(const JSONRPCRequest& request)
 		}
 
 	}
+	else if (sItem == "getwcgmemberid")
+	{
+		if (request.params.size() < 3) 
+			throw std::runtime_error("Please specify exec wcg_user_name wcg_verification_code.");
+		std::string sUN = request.params[1].get_str();
+		std::string sVC = request.params[2].get_str();
+		double nPoints = 0;
+		int nID = GetWCGMemberID(sUN, sVC, nPoints);
+		results.push_back(Pair("ID", nID));
+	}
 	else if (sItem == "dws")
 	{
 		// Expirimental Feature:  Dynamic Whale Stake
@@ -3557,6 +3577,22 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("h3",h3.GetHex()));
 		results.push_back(Pair("h4",h4.GetHex()));
 		results.push_back(Pair("h5",h5.GetHex()));
+		uint256 startHash = uint256S("0x010203040506070809101112");
+
+		std::vector<unsigned char> vch11 = std::vector<unsigned char>(startHash.begin(), startHash.end());
+		unsigned char* converted = &vch11[0];
+		unsigned char* outHash = (unsigned char*)malloc(65);
+		initpobh();
+		uint8_t theHash[32] = {0x0};
+		POBH2(converted, theHash, outHash);
+		std::string X12(reinterpret_cast<char*>(outHash));
+		uint256 h2019 = uint256S(X12);
+		results.push_back(Pair("POBH2.0", h2019.GetHex()));
+		for (int i = 0; i < 100; i++)
+		{
+			POBH2(converted, theHash, outHash);
+		}
+
 	}
 	else
 	{

@@ -151,6 +151,10 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
 	{
 	     strHTML += "<b>" + tr("Source") + ":</b> " + tr("Superblock-Payment") + "<br>";
 	}
+	else if (wtx.tx->IsWhaleReward())
+	{
+	     strHTML += "<b>" + tr("Source") + ":</b> " + tr("Dynamic-Whale-Reward") + "<br>";
+	}
 	else if (wtx.tx->IsGSCPayment())
 	{
 	     strHTML += "<b>" + tr("Source") + ":</b> " + tr("Smart-Contract-Payment") + "<br>";

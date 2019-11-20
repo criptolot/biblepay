@@ -1254,6 +1254,7 @@ NOTE:   unlike bitcoin we are using PREVIOUS block height here,
         might be a good idea to change this to use prev bits
         but current height to avoid confusion.
 */
+
 CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params& consensusParams, bool fSuperblockPartOnly)
 {
 	double dDiff = 0;
@@ -1280,9 +1281,9 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 		451           18833.8828994796 
 		*/
 		
-    nSubsidyBase = (20000 / (pow((dDiff+1.0),2.0))) + 1;
-    if(nSubsidyBase > 20000) nSubsidyBase = 20000;
-        else if(nSubsidyBase < 5000) nSubsidyBase = 5000;
+    nSubsidyBase = (20000 / (pow((dDiff+1.0), 2.0))) + 1;
+    if (nSubsidyBase > 20000) nSubsidyBase = 20000;
+        else if (nSubsidyBase < 5000) nSubsidyBase = 5000;
 
     CAmount nSubsidy = nSubsidyBase * COIN;
     // Yearly decline of production by ~19.5% per year, projected ~5.2 Billion coins max by year 2050+.
@@ -1298,18 +1299,12 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     for (int i = iSubsidyDecreaseInterval; i <= nPrevHeight; i += iSubsidyDecreaseInterval) 
 	{
         nSubsidy -= (nSubsidy * iDeflationRate);
+		// Starting at height 166000, we increased our deflation rate to 20.04% (from 19.5%) to free extra BBP to pay for DWS Rewards (Dynamic-Whale-Staking):
+		if (i > consensusParams.PODC2_CUTOVER_HEIGHT)
+		{
+			iDeflationRate = .0167; // 1.67% per month, 20.04% annual
+		}
     }
-	// BIBLEPAY - QT
-	bool fEnabled = sporkManager.IsSporkActive(SPORK_30_QUANTITATIVE_TIGHTENING_ENABLED);
-	if (fEnabled && nPrevHeight > consensusParams.QTHeight)
-	{
-		double dPriorPrice = 0;
-		double dPriorPhase = 0;
-		double dQTPct = GetQTPhase(false, -1, nPrevHeight, dPriorPrice, dPriorPhase) / 100;
-		CAmount nQTAmount = nSubsidy * dQTPct;
-		nSubsidy -= nQTAmount;
-	}
-	// End of QT
 
     // Monthly Budget: 
 	// 10% to Charity budget, 5% for the IT budget, 2.5% PR, 2.5% P2P (this is 20% for Governance).  An additional 28.5% is held back for the generic superblock contract.  This equals 48.5% being escrowed.

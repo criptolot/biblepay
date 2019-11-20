@@ -730,11 +730,14 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 	// Dynamic Whale Staking - R Andrews - 11/11/2019
 	if (nType == 2 && fIncludeWhaleStakes)
 	{
+		/*
 		double dTotalWhalePayments = 0;
 		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nBlockHeight, dTotalWhalePayments);
 		CAmount nTotalWhalePayments = dTotalWhalePayments * COIN;
 		LogPrintf("\nGetPaymentsLimit::Whale Payments=%f over %f recs.", dTotalWhalePayments, dws.size());
 		nPaymentsLimit += nTotalWhalePayments;
+		*/
+		nPaymentsLimit += MAX_DAILY_WHALE_COMMITMENTS;
 	}
 	// End of Dynamic Whale Staking
 	

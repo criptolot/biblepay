@@ -158,6 +158,7 @@ struct Params {
 	int EVOLUTION_CUTOVER_HEIGHT;
 	int ABNHeight;
 	int FPOG_CUTOVER_HEIGHT;
+	int PODC2_CUTOVER_HEIGHT;
 	int LAST_TITHE_BLOCK;
 	int PODC_LAST_BLOCK;
 	// End of BiblePay Settings

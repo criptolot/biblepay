@@ -200,6 +200,7 @@ public:
         strNetworkID = "main";
 
 		consensus.FPOG_CUTOVER_HEIGHT = 100001;   // Feb 7th, 2019 (100,001)
+		consensus.PODC2_CUTOVER_HEIGHT = 166000;  // Go live height for PODC 2.0, DWS (Christmas 2019)
 		consensus.PODC_LAST_BLOCK = 107000; // March 13th, 2019
 
 		consensus.EVOLUTION_CUTOVER_HEIGHT = 123200; // June 2nd, 2019 
@@ -395,6 +396,8 @@ public:
         strNetworkID = "test";
 
 		consensus.PODC_LAST_BLOCK = 100; // March 13th, 2019
+		consensus.PODC2_CUTOVER_HEIGHT = 19000;  // Go live height for PODC 2.0, DWS (Christmas 2019)
+	
 		consensus.F7000_CUTOVER_HEIGHT = 100;
 		consensus.F12000_CUTOVER_HEIGHT = 100;
 		consensus.F13000_CUTOVER_HEIGHT = 100; 
@@ -583,6 +586,8 @@ public:
 		int BLOCKS_PER_DAY = 205;
 
 		consensus.nSubsidyHalvingInterval = 210240;
+		consensus.PODC2_CUTOVER_HEIGHT = 19000;  // Go live height for PODC 2.0, DWS (Christmas 2019)
+	
 		consensus.nMasternodePaymentsStartBlock = 4010; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
 		consensus.nMasternodePaymentsIncreaseBlock = 4030;
 		consensus.nMasternodePaymentsIncreasePeriod = 10;

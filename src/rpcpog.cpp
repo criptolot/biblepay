@@ -3047,8 +3047,11 @@ void UpdateHealthInformation()
 	// To enable the feature, set the key:  healthupdate=1 (this is the default for a sanctuary), or healthupdate=0 (to disable this on your sanctuary).
 	// Note: This code only works on sanctuaries (it does not work on home distributions).
 	// Assess GSC Health
+
+	double nNetEnabled = GetSporkDouble("ENABLE_SANC_HEALTH_CHECKUPS", 0);
+		
 	double iEnabled = cdbl(GetArg("-healthupdate", "1"), 0);
-	if (iEnabled == 0)
+	if (iEnabled == 0 || nNetEnabled == 0)
 		return;
 
  	int iNextSuperblock = 0;
@@ -3493,22 +3496,22 @@ WhaleMetric GetWhaleMetrics(int nHeight)
 			if (w.MaturityHeight >= nStartHeight && w.MaturityHeight <= nEndHeight)
 			{
 				m.nTotalCommitmentsDueToday += w.RewardAmount;
-				m.nTotalGrossCommitmentsDueToday += w.Amount;
+				m.nTotalGrossCommitmentsDueToday += w.TotalOwed;
 			}
 			if (w.BurnHeight >= nStartHeight && w.BurnHeight <= nEndHeight)
 			{
 				m.nTotalBurnsToday += w.RewardAmount;
-				m.nTotalGrossBurnsToday += w.Amount;
+				m.nTotalGrossBurnsToday += w.TotalOwed;
 			}
 			if (w.MaturityHeight >= nHeight && w.MaturityHeight <= nMonthlyHeight)
 			{
 				m.nTotalMonthlyCommitments += w.RewardAmount;
-				m.nTotalGrossMonthlyCommitments += w.Amount;
+				m.nTotalGrossMonthlyCommitments += w.TotalOwed;
 			}
 			if (w.MaturityHeight >= nStartHeight)
 			{
 				m.nTotalFutureCommitments += w.RewardAmount;
-				m.nTotalGrossFutureCommitments += w.Amount;
+				m.nTotalGrossFutureCommitments += w.TotalOwed;
 			}
 		}
 
@@ -3549,6 +3552,17 @@ std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
 			}
 		}
 	}
+	// This should not technically ever happen, but, nevertheless lets do this just so we can add anti-hard-fork rules for DWS (and for extra safety)
+	if (nOwed > MAX_DAILY_WHALE_COMMITMENTS)
+	{
+		double nAdjustment = MAX_DAILY_WHALE_COMMITMENTS / nOwed;
+		nAdjustment -= .01;
+		for (int i = 0; i < wReturnStakes.size(); i++)
+		{
+			wReturnStakes[i].TotalOwed = wReturnStakes[i].TotalOwed * nAdjustment;  // This will shave it down to the maximum allowed for the day (should never happen).
+		}
+	}
+
 	return wReturnStakes;
 }
 
@@ -3631,7 +3645,7 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 		return false;
 	}
 	
-	if (wm.nTotalGrossBurnsToday > MAX_DAILY_WHALE_COMMITMENTS)
+	if (wm.nTotalGrossBurnsToday + w.Amount + 1 > MAX_DAILY_WHALE_COMMITMENTS)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our daily whale commitments of %f are higher than the acceptable maximum of %f, please wait until tomorrow.", 
 			wm.nTotalGrossBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);
@@ -3641,7 +3655,7 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 
 	WhaleMetric wmFuture = GetWhaleMetrics(w.MaturityHeight);
 	
-	if (wmFuture.nTotalGrossBurnsToday > MAX_DAILY_WHALE_COMMITMENTS)
+	if (wmFuture.nTotalGrossBurnsToday + w.TotalOwed + 1 > MAX_DAILY_WHALE_COMMITMENTS)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our future whale commitments of %f at the future height is higher than the acceptable maximum of %f, please try a different duration.", 
 			wmFuture.nTotalGrossBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);

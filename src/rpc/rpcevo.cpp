@@ -636,7 +636,7 @@ UniValue protx_update_service(const JSONRPCRequest& request)
         throw std::runtime_error(strprintf("masternode with proTxHash %s not found", ptx.proTxHash.ToString()));
     }
 
-    if (keyOperator.GetPublicKey() != dmn->pdmnState->pubKeyOperator) {
+    if (keyOperator.GetPublicKey() != dmn->pdmnState->pubKeyOperator.Get()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("the operator key does not belong to the registered public key"));
     }
 
@@ -789,7 +789,7 @@ UniValue protx_update_registrar(const JSONRPCRequest& request)
     if (!dmn) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("masternode %s not found", ptx.proTxHash.ToString()));
     }
-    ptx.pubKeyOperator = dmn->pdmnState->pubKeyOperator;
+    ptx.pubKeyOperator = dmn->pdmnState->pubKeyOperator.Get();
     ptx.keyIDVoting = dmn->pdmnState->keyIDVoting;
     ptx.scriptPayout = dmn->pdmnState->scriptPayout;
 
@@ -884,7 +884,7 @@ UniValue protx_revoke(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("masternode %s not found", ptx.proTxHash.ToString()));
     }
 
-    if (keyOperator.GetPublicKey() != dmn->pdmnState->pubKeyOperator) {
+    if (keyOperator.GetPublicKey() != dmn->pdmnState->pubKeyOperator.Get()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("the operator key does not belong to the registered public key"));
     }
 
@@ -1048,7 +1048,7 @@ UniValue protx_list(const JSONRPCRequest& request)
             setOutpts.emplace(outpt);
         }
 
-        CDeterministicMNList mnList = deterministicMNManager->GetListForBlock(chainActive[height]->GetBlockHash());
+        CDeterministicMNList mnList = deterministicMNManager->GetListForBlock(chainActive[height]);
         mnList.ForEachMN(false, [&](const CDeterministicMNCPtr& dmn) {
             if (setOutpts.count(dmn->collateralOutpoint) ||
                 CheckWalletOwnsKey(pwallet, dmn->pdmnState->keyIDOwner) ||
@@ -1073,7 +1073,7 @@ UniValue protx_list(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "invalid height specified");
         }
 
-        CDeterministicMNList mnList = deterministicMNManager->GetListForBlock(chainActive[height]->GetBlockHash());
+        CDeterministicMNList mnList = deterministicMNManager->GetListForBlock(chainActive[height]);
         bool onlyValid = type == "valid";
         mnList.ForEachMN(onlyValid, [&](const CDeterministicMNCPtr& dmn) {
             ret.push_back(BuildDMNListEntry(pwallet, dmn, detailed));

@@ -83,6 +83,7 @@ libconftest.dylib*
 Makefile
 biblepay-qt
 Biblepay-Qt.app
+!/depends/Makefile
 
 # Unit-tests
 Makefile.test

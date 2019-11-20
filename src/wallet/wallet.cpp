@@ -3800,8 +3800,6 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                     if (nCoinType == ONLY_DENOMINATED) {
                         nFeeRet += nChange;
                         wtxNew.mapValue["DS"] = "1";
-                        // recheck skipped denominations during next mixing
-                        privateSendClient.ClearSkippedDenominations();
                     } else {
 
                         // Fill a vout to ourself
@@ -4104,6 +4102,7 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CCon
                 coin.BindWallet(this);
                 NotifyTransactionChanged(this, txin.prevout.hash, CT_UPDATED);
                 updated_hahes.insert(txin.prevout.hash);
+                privateSendClient.RemoveSkippedDenom(coin.tx->vout[txin.prevout.n].nValue);
             }
         }
 

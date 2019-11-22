@@ -3726,7 +3726,7 @@ double GetWhaleStakesInMemoryPool(std::string sCPK)
 		{
 			if (sCPK == w.CPK || sCPK.empty())
 			{
-				nTotal = w.TotalOwed;
+				nTotal += w.TotalOwed;
 			}
 		}
 	}

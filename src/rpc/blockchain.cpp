@@ -3408,7 +3408,7 @@ UniValue exec(const JSONRPCRequest& request)
 
 		if (dDetails == 1 || dDetails == 2)
 		{
-			std::vector<WhaleStake> w = GetDWS();
+			std::vector<WhaleStake> w = GetDWS(true);
 			results.push_back(Pair("Total DWS Quantity", (int)w.size()));
 
 			for (int i = 0; i < w.size(); i++)

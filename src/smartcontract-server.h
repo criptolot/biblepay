@@ -41,5 +41,6 @@ std::string GetCPIDElementByData(std::string sData, int iElement);
 double GetRequiredCoinAgeForPODC(double nRAC);
 double GetBBPPrice();
 bool VerifyChild(std::string childID, std::string sCharity);
+bool IsOverBudget(int nHeight, std::string sAmounts);
 
 #endif

@@ -233,7 +233,7 @@ std::string ExtractXML(std::string XMLdata, std::string key, std::string key_end
 bool Contains(std::string data, std::string instring);
 std::string GetVersionAlert();
 bool CheckNonce(bool f9000, unsigned int nNonce, int nPrevHeight, int64_t nPrevBlockTime, int64_t nBlockTime, const Consensus::Params& params);
-bool RPCSendMoney(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend=false, std::string sOptionalData = "");
+bool RPCSendMoney(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend=false, std::string sOptionalData = "", double nCoinAge = 0);
 bool FundWithExternalPurse(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, 
 	bool fUseInstantSend, CAmount nExactAmount, std::string sOptionalData, double dMinCoinAge, std::string sPursePubKey);
 
@@ -306,13 +306,14 @@ std::string GetResearcherCPID(std::string sSearch);
 bool CreateExternalPurse(std::string& sError);
 bool VerifyMemoryPoolCPID(CTransaction tx);
 std::string GetEPArg(bool fPublic);
-std::vector<WhaleStake> GetDWS();
-WhaleMetric GetWhaleMetrics(int nHeight);
+std::vector<WhaleStake> GetDWS(bool fIncludeMemoryPool);
+WhaleMetric GetWhaleMetrics(int nHeight, bool fIncludeMemoryPool);
 bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError);
 double GetDWUBasedOnMaturity(double nDuration, double dDWU);
 double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount);
 std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
 BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime);
 bool GetTxBBP(uint256 txid, CTransactionRef& tx1);
+double GetWhaleStakesInMemoryPool(std::string sCPK);
 
 #endif

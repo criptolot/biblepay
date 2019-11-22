@@ -2999,7 +2999,7 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
 			double nWeight = GetCoinWeight(out, nAge);
  			std::string sKnownRecip = PubKeyToAddress(out.tx->tx->vout[out.i].scriptPubKey);
 
-			if (nWeight > 0 && nDepth > 0 && sKnownRecip == sPursePubKey)
+			if (nWeight > 0 && nDepth > 0 && (sKnownRecip == sPursePubKey || sPursePubKey.empty()))
 			{
 				nTotalRequired += nAmount;
 				nFoundCoinAge += nWeight;

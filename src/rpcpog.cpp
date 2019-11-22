@@ -699,7 +699,7 @@ bool FundWithExternalPurse(std::string& sError, const CTxDestination &address, C
 }
 
 
-bool RPCSendMoney(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend, std::string sOptionalData)
+bool RPCSendMoney(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend, std::string sOptionalData, double nCoinAge)
 {
     CAmount curBalance = pwalletMain->GetBalance();
 
@@ -3440,7 +3440,7 @@ WhaleStake GetWhaleStake(CTransactionRef tx1)
 	return w;
 }
 
-std::vector<WhaleStake> GetDWS()
+std::vector<WhaleStake> GetDWS(fIncludeMemoryPool)
 {
 	std::vector<WhaleStake> wStakes;
 	for (auto ii : mvApplicationCache) 
@@ -3466,6 +3466,16 @@ std::vector<WhaleStake> GetDWS()
 			}
 		}
 	}
+
+	BOOST_FOREACH(const CTxMemPoolEntry& e, mempool.mapTx)
+    {
+        const CTransaction& tx = e.GetTx();
+		CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
+		WhaleStake w = GetWhaleStake(tx1);
+		if (w.found && w.RewardAmount > 0 && w.Amount > 0 && w.ActualDWU > 0)
+			wStakes.push_back(w);
+
+	}
 	return wStakes;
 }
 
@@ -3481,9 +3491,9 @@ CAmount GetAnnualDWSReward(int nHeight)
 	return nDWS;
 }
 
-WhaleMetric GetWhaleMetrics(int nHeight)
+WhaleMetric GetWhaleMetrics(int nHeight, bool fIncludeMemoryPool)
 {
-	std::vector<WhaleStake> wStakes = GetDWS();
+	std::vector<WhaleStake> wStakes = GetDWS(fIncludeMemoryPool);
 	WhaleMetric m;
 	int nStartHeight = nHeight - BLOCKS_PER_DAY;
 	int nMonthlyHeight = nHeight + (BLOCKS_PER_DAY * 30);
@@ -3560,6 +3570,7 @@ std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
 		for (int i = 0; i < wReturnStakes.size(); i++)
 		{
 			wReturnStakes[i].TotalOwed = wReturnStakes[i].TotalOwed * nAdjustment;  // This will shave it down to the maximum allowed for the day (should never happen).
+			wReturnStakes[i].TotalOwed = cdbl(RoundToString(wReturnStakes[i].TotalOwed, 0) + ".1527", 4);
 		}
 	}
 
@@ -3607,7 +3618,7 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 		return false;
 	}
 
-	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
+	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
 	
 	if (w.DWU > (wm.DWU + .01) || w.DWU < (wm.DWU - .01))
 	{
@@ -3644,16 +3655,16 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 		sError = "Sorry, our monthly saturation level is too high to accept this burn until we free up more room.";
 		return false;
 	}
-	
+
 	if (wm.nTotalGrossBurnsToday + w.Amount + 1 > MAX_DAILY_WHALE_COMMITMENTS)
 	{
-		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our daily whale commitments of %f are higher than the acceptable maximum of %f, please wait until tomorrow.", 
-			wm.nTotalGrossBurnsToday, MAX_DAILY_WHALE_COMMITMENTS);
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our daily whale commitments of %f (with %f in the mempool) are higher than the acceptable maximum of %f, please wait until tomorrow.", 
+			wm.nTotalGrossBurnsToday, nMemPoolTotal, MAX_DAILY_WHALE_COMMITMENTS);
 		sError = "Sorry, our daily whale commitments are too high today.  Please try again tomorrow.";
 		return false;
 	}
 
-	WhaleMetric wmFuture = GetWhaleMetrics(w.MaturityHeight);
+	WhaleMetric wmFuture = GetWhaleMetrics(w.MaturityHeight, true);
 	
 	if (wmFuture.nTotalGrossBurnsToday + w.TotalOwed + 1 > MAX_DAILY_WHALE_COMMITMENTS)
 	{
@@ -3698,6 +3709,25 @@ double GetVinAge(int64_t nVINTime, int64_t nSpendTime, CAmount nAmount)
 	if (nAge > 365) nAge = 365;
 	double nWeight = (nAmount / COIN) * nAge;
 	return nWeight;
+}
+
+double GetWhaleStakesInMemoryPool(std::string sCPK)
+{
+	double nTotal = 0;
+	BOOST_FOREACH(const CTxMemPoolEntry& e, mempool.mapTx)
+    {
+        const CTransaction& tx = e.GetTx();
+		CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
+		WhaleStake w = GetWhaleStake(tx1);
+		if (w.found)
+		{
+			if (sCPK == w.CPK || sCPK.empty())
+			{
+				nTotal = w.TotalOwed;
+			}
+		}
+	}
+	return nTotal;
 }
 
 BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime)

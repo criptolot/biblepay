@@ -1291,6 +1291,11 @@ UniValue sponsorchild(const JSONRPCRequest& request)
 		throw std::runtime_error("Sponsorship cancelled.");
 	if (sCharity != "cameroon-one" && sCharity != "kairos")
 		throw std::runtime_error("Charity name is not recognized.");
+
+	double nNoChildrenAvailable = GetSporkDouble("NoChildrenAvailable" + sCharity, 0);
+	if (nNoChildrenAvailable == 1)
+		throw std::runtime_error("Sorry, " + sCharity + " has no children available to sponsor.");
+
 	std::string sError;
 
 	if (!Enrolled(sCharity, sError))

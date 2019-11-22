@@ -2050,9 +2050,9 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("last_payments_limit", (double)nLastLimit/COIN));
 		CAmount nNextLimit = CSuperblock::GetPaymentsLimit(iNextSuperblock, false);
 		results.push_back(Pair("next_payments_limit", (double)nNextLimit/COIN));
-		bool fOverbudget = dTotal > (nNextLimit/COIN);
-		results.push_back(Pair("overbudget", fOverbudget));
-		if (fOverbudget)
+		bool fOverBudget = IsOverBudget(iNextSuperblock, sAmounts);
+		results.push_back(Pair("overbudget", fOverBudget));
+		if (fOverBudget)
 			results.push_back(Pair("! CAUTION !", "Superblock exceeds budget, will be rejected."));
 	
 		bool fTriggered = CSuperblockManager::IsSuperblockTriggered(iNextSuperblock);
@@ -3338,11 +3338,16 @@ UniValue exec(const JSONRPCRequest& request)
 		if (fProd)
 			throw std::runtime_error("Sorry, this feature can only be used in TestNet currently.");
 
+		double nTotalStakes = GetWhaleStakesInMemoryPool(sCPK);
+		if (nTotalStakes > 256000)
+			throw std::runtime_error("Sorry, you currently have " + RoundToString(nTotalStakes, 2) + "BBP in whale stakes pending at height " 
+			+ RoundToString(chainActive.Tip()->nHeight, 0) + ".  Please wait until the current block passes before issuing a new DWS. ");
+
 		results.push_back(Pair("Staking Amount", nAmt));
 		results.push_back(Pair("Duration", nDuration));
 		int64_t nStakeTime = GetAdjustedTime();
 		int64_t nReclaimTime = (86400 * nDuration) + nStakeTime;
-		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
+		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
 
 		results.push_back(Pair("Reclaim Date", TimestampToHRDate(nReclaimTime)));
 		results.push_back(Pair("Return Address", sReturnAddress));
@@ -3367,7 +3372,7 @@ UniValue exec(const JSONRPCRequest& request)
 			std::string sError;
 		    CWalletTx wtx;
 		
-			bool fSent = RPCSendMoney(sError, toAddress.Get(), nAmt * COIN, fSubtractFee, wtx, fInstantSend, sPayload);
+			bool fSent = RPCSendMoney(sError, toAddress.Get(), nAmt * COIN, fSubtractFee, wtx, fInstantSend, sPayload, 1);
 			// Verify the transaction first:
 			std::string sError2;
 			bool fSent2 = VerifyDynamicWhaleStake(wtx.tx, sError2);
@@ -3390,7 +3395,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "dwsquote")
 	{
-		if (request.params.size() != 2 && request.params.size() != 1)
+		if (request.params.size() != 1 && request.params.size() != 2 && request.params.size() != 3)
 			throw std::runtime_error("You must specify exec dwsquote [optional 1=my whale stakes only, 2=all whale stakes] [optional 1=Include Paid/Unpaid, 2=Include Unpaid only (default)].");
 		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
 	
@@ -3427,7 +3432,7 @@ UniValue exec(const JSONRPCRequest& request)
 			}
 		}
 		// Call out for Whale Metrics
-		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight);
+		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
 		results.push_back(Pair("Total Future Commitments", wm.nTotalFutureCommitments));
 		results.push_back(Pair("Total Gross Future Commitments", wm.nTotalGrossFutureCommitments));
 

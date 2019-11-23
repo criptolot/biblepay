@@ -417,7 +417,6 @@ crypto_libbiblepay_crypto_a_SOURCES += \
   crypto/shavite.c \
   crypto/simd.c \
   crypto/skein.c \
-  crypto/pobh.c \
   crypto/sph_blake.h \
   crypto/sph_bmw.h \
   crypto/sph_cubehash.h \
@@ -430,9 +429,8 @@ crypto_libbiblepay_crypto_a_SOURCES += \
   crypto/sph_shavite.h \
   crypto/sph_simd.h \
   crypto/sph_skein.h \
-  crypto/sph_types.h \
-  crypto/pobh.h
-
+  crypto/sph_types.h 
+ 
 # consensus: shared between all executables that validate any consensus rules.
 libbiblepay_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbiblepay_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)

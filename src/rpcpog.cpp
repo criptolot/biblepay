@@ -3622,11 +3622,12 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 	}
 
 	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
-	
-	if (w.DWU > (wm.DWU + .01) || w.DWU < (wm.DWU - .01))
+	WhaleMetric wm_history = GetWhaleMetrics(chainActive.Tip()->nHeight, false);
+	// screen quote
+	if (w.DWU > (std::max(wm_history.DWU + .025, wm.DWU + .025)) || w.DWU < (std::min(wm_history.DWU - .025, wm.DWU - .025)))
 	{
-		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, DWU [%f] does not equal current screen quote of [%f].", w.DWU, wm.DWU);
-		sError = "DWU does not equal current offered rate of " + RoundToString(wm.DWU, 4);
+		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, DWU [%f] does not equal current screen quote of [%f].", w.DWU, wm_history.DWU);
+		sError = "DWU does not equal current offered DWU of " + RoundToString(wm_history.DWU, 4);
 		return false;
 	}
 

@@ -170,14 +170,15 @@ OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) 
             ui->labelPrivateSendEnabled->setToolTip(tr("Automatic backups are disabled, no mixing available!"));
         }
     } else {
-        if(!privateSendClient.fEnablePrivateSend){
+        if(!privateSendClient.fEnablePrivateSend)
+		{
             ui->togglePrivateSend->setText(tr("Start Mixing"));
         } else {
             ui->togglePrivateSend->setText(tr("Stop Mixing"));
         }
 		// R Andrews - ToDo: move private send button to the menu 
-		ui->togglePrivateSend->setVisible(false);
-		ui->privateSendInfo->setVisible(false);
+		// ui->togglePrivateSend->setVisible(false);
+		// ui->privateSendInfo->setVisible(false);
 		// End of BiblePay
 
         // Disable privateSendClient builtin support for automatic backups while we are in GUI,

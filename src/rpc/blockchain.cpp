@@ -15,10 +15,6 @@
 #include "core_io.h"
 #include "consensus/validation.h"
 
-extern "C" {
-#include "crypto/pobh.h"
-}
-
 #include "instantx.h"
 #include "validation.h"
 #include "policy/policy.h"
@@ -3371,8 +3367,22 @@ UniValue exec(const JSONRPCRequest& request)
 			bool fInstantSend = false;
 			std::string sError;
 		    CWalletTx wtx;
-		
-			bool fSent = RPCSendMoney(sError, toAddress.Get(), nAmt * COIN, fSubtractFee, wtx, fInstantSend, sPayload, 1);
+			// Dry Run step 1:
+		    std::vector<CRecipient> vecDryRun;
+			int nChangePosRet = -1;
+			CScript scriptDryRun = GetScriptForDestination(toAddress.Get());
+			CAmount nSend = nAmt * COIN;
+			CRecipient recipientDryRun = {scriptDryRun, nSend, false, fSubtractFee};
+			vecDryRun.push_back(recipientDryRun);
+			double dMinCoinAge = 1;
+			CAmount nFeeRequired = 0;
+
+			CReserveKey reserveKey(pwalletMain);
+	
+			bool fSent = pwalletMain->CreateTransaction(vecDryRun, wtx, reserveKey, nFeeRequired, nChangePosRet, sError, NULL, true, 
+				ALL_COINS, fInstantSend, 0, sPayload, dMinCoinAge, 0, 0, "");
+
+			//bool fSent = RPCSendMoney(sError, toAddress.Get(), nAmt * COIN, fSubtractFee, wtx, fInstantSend, sPayload, 1);
 			// Verify the transaction first:
 			std::string sError2;
 			bool fSent2 = VerifyDynamicWhaleStake(wtx.tx, sError2);
@@ -3383,6 +3393,12 @@ UniValue exec(const JSONRPCRequest& request)
 			}
 			else
 			{
+				CValidationState state;
+				if (!pwalletMain->CommitTransaction(wtx, reserveKey, g_connman.get(), state, NetMsgType::TX))
+				{
+					throw JSONRPCError(RPC_WALLET_ERROR, "Whale-Stake-Commit failed.");
+				}
+				
 				results.push_back(Pair("Results", "Burn was successful.  You will receive your original BBP back on the Reclaim Date, plus the stake reward.  Please give the wallet an extra 48 hours after the reclaim date to process the return stake.  "));
 				results.push_back(Pair("TXID", wtx.GetHash().GetHex()));
 			}
@@ -3584,21 +3600,6 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("h4",h4.GetHex()));
 		results.push_back(Pair("h5",h5.GetHex()));
 		uint256 startHash = uint256S("0x010203040506070809101112");
-
-		std::vector<unsigned char> vch11 = std::vector<unsigned char>(startHash.begin(), startHash.end());
-		unsigned char* converted = &vch11[0];
-		unsigned char* outHash = (unsigned char*)malloc(65);
-		initpobh();
-		uint8_t theHash[32] = {0x0};
-		POBH2(converted, theHash, outHash);
-		std::string X12(reinterpret_cast<char*>(outHash));
-		uint256 h2019 = uint256S(X12);
-		results.push_back(Pair("POBH2.0", h2019.GetHex()));
-		for (int i = 0; i < 100; i++)
-		{
-			POBH2(converted, theHash, outHash);
-		}
-
 	}
 	else
 	{

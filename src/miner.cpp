@@ -934,6 +934,26 @@ bool CreateBlockForStratum(std::string sAddress, std::string& sError, CBlock& bl
 
 void static BibleMiner(const CChainParams& chainparams, int iThreadID, int iFeatureSet)
 {
+
+	/*
+					if (fPoolMiningMode)
+					{
+						if (UintToArith256(hash) <= hashTargetPool)
+						{
+							bool fNonce = CheckNonce(f9000, pblock->nNonce, pindexPrev->nHeight, pindexPrev->nTime, pblock->GetBlockTime(), consensusParams);
+							if (UintToArith256(hash) <= hashTargetPool && fNonce && hashTargetPool > 0)
+							{
+								nLastShareSubmitted = GetAdjustedTime();
+								UpdatePoolProgress(pblock, sPoolMiningAddress, hashTargetPool, pindexPrev, sMinerGuid, sWorkID, iThreadID, nThreadWork, nThreadStart, pblock->nNonce, sWorkerID);
+								hashTargetPool = UintToArith256(uint256S("0x0"));
+								nThreadStart = GetTimeMillis();
+								nThreadWork = 0;
+								nLastPoolShareSolved = GetAdjustedTime();
+							}
+						}
+					}
+	*/
+
 	LogPrintf("BibleMiner -- started thread %f \n", (double)iThreadID);
     int64_t nThreadStart = GetTimeMillis();
 	int64_t nLastGSC = GetAdjustedTime();
@@ -1060,7 +1080,6 @@ recover:
 			*/
 
 
-
 			if (!fProd && mempool.size() == 0 && GetSporkDouble("SLEEP_DURING_EMPTY_BLOCKS", 0) == 1)
                 MilliSleep(1000 * 60 * 7);
            
@@ -1141,27 +1160,10 @@ recover:
 					// the BibleHash of the blockhash must be less than the target.
 					// The BibleHash is generated from chained bible verses, AES encryption, MD5, X11, and the custom biblepay.c hash
 					uint256 x11_hash = pblock->GetHash();
-					uint256 hash;
-					hash = BibleHashClassic(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, NULL, false, f7000, f8000, f9000, fTitheBlocksActive, pblock->nNonce, consensusParams);
+					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight);
+
 					nHashesDone += 1;
 					nThreadWork += 1;
-					
-					if (fPoolMiningMode)
-					{
-						if (UintToArith256(hash) <= hashTargetPool)
-						{
-							bool fNonce = CheckNonce(f9000, pblock->nNonce, pindexPrev->nHeight, pindexPrev->nTime, pblock->GetBlockTime(), consensusParams);
-							if (UintToArith256(hash) <= hashTargetPool && fNonce && hashTargetPool > 0)
-							{
-								nLastShareSubmitted = GetAdjustedTime();
-								UpdatePoolProgress(pblock, sPoolMiningAddress, hashTargetPool, pindexPrev, sMinerGuid, sWorkID, iThreadID, nThreadWork, nThreadStart, pblock->nNonce, sWorkerID);
-								hashTargetPool = UintToArith256(uint256S("0x0"));
-								nThreadStart = GetTimeMillis();
-								nThreadWork = 0;
-								nLastPoolShareSolved = GetAdjustedTime();
-							}
-						}
-					}
 
 					if (UintToArith256(hash) <= hashTarget)
 					{
@@ -1191,7 +1193,7 @@ recover:
 						
 					pblock->nNonce += 1;
 			
-					if ((pblock->nNonce & 0xFF) == 0)
+					if ((pblock->nNonce & 0xFFF) == 0)
 					{
 						// If the user is pool mining, and has not found a share in 15 minutes, get new work
 						int64_t nStagnantWorkElapsedTime = GetAdjustedTime() - nLastPoolShareSolved;

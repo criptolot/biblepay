@@ -2624,6 +2624,15 @@ CAmount CWallet::GetImmatureWatchOnlyBalance() const
     return nTotal;
 }
 
+
+bool IsPODCDenominated(CAmount nAmount)
+{
+	double dAmt = (double)nAmount / COIN;
+	std::string sAmt = RoundToString(dAmt, 4);
+	bool fPODCDenominated = Contains(sAmt, ".001");
+	return fPODCDenominated;
+}
+
 void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe, const CCoinControl *coinControl, bool fIncludeZeroValue, 
 	AvailableCoinsType nCoinType, bool fUseInstantSend, double dMinCoinAge, CAmount nMinimumSpend) const
 {
@@ -2670,6 +2679,9 @@ void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe, const
 				{
                     if (CPrivateSend::IsCollateralAmount(pcoin->tx->vout[i].nValue)) continue; // do not use collateral amounts
                     found = !CPrivateSend::IsDenominatedAmount(pcoin->tx->vout[i].nValue);
+					// Do not use BBP_DENOMINATED (PODC) coins either
+					if (IsPODCDenominated(pcoin->tx->vout[i].nValue) || nDepth < 1)
+						found = false;
 	            }
 				else if(nCoinType == ONLY_1000) 
 				{

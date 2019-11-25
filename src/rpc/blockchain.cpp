@@ -3382,7 +3382,6 @@ UniValue exec(const JSONRPCRequest& request)
 			bool fSent = pwalletMain->CreateTransaction(vecDryRun, wtx, reserveKey, nFeeRequired, nChangePosRet, sError, NULL, true, 
 				ALL_COINS, fInstantSend, 0, sPayload, dMinCoinAge, 0, 0, "");
 
-			//bool fSent = RPCSendMoney(sError, toAddress.Get(), nAmt * COIN, fSubtractFee, wtx, fInstantSend, sPayload, 1);
 			// Verify the transaction first:
 			std::string sError2;
 			bool fSent2 = VerifyDynamicWhaleStake(wtx.tx, sError2);

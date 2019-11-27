@@ -222,7 +222,7 @@ public:
 		consensus.nBudgetPaymentsCycleBlocks = BLOCKS_PER_DAY * 30; // Monthly
 		consensus.nBudgetPaymentsWindowBlocks = 100;
 		//  RANDREWS:  This is removed in Evo - consensus.nBudgetProposalEstablishingTime = 60 * 60 * 24;  // One Day
-		consensus.nInstantSendConfirmationsRequired = 6;
+		consensus.nInstantSendConfirmationsRequired = 1;
 		consensus.nSuperblockStartBlock = 21710; // The first superblock
 		consensus.nSuperblockCycle = BLOCKS_PER_DAY * 30; // Monthly
 		consensus.nDCCSuperblockStartBlock = 33451; //F11000 CUTOVER HEIGHT + 11
@@ -416,7 +416,7 @@ public:
 		consensus.nMasternodePaymentsStartBlock = 2001;
 		consensus.nMasternodePaymentsIncreaseBlock = 2001;
 		consensus.nMasternodePaymentsIncreasePeriod = BLOCKS_PER_DAY * 30;
-		consensus.nInstantSendConfirmationsRequired = 6;
+		consensus.nInstantSendConfirmationsRequired = 1;
 		consensus.nInstantSendKeepLock = 6;
 		consensus.nBudgetPaymentsStartBlock = 2002;
 		consensus.QTHeight = 5000;
@@ -563,11 +563,12 @@ public:
 			boost::assign::map_list_of
 				(1,     uint256S("0xde31388eddd9e0ea515353628a0ca1f167466f09c45b10354de10459c7c018f2"))
 				(5000,  uint256S("0xc63bfaaddcb4714c594b701ae8bd6320cef3221df7b33d781d0400ca5a1348b9"))
+				(18610, uint256S("0x778067c8239f02166519359a82d2e0b5bea19a94df7344442dad9fb65ff013f8"))
 		};
 
         chainTxData = ChainTxData{
-            1568991927, // * UNIX timestamp of last known number of transactions
-            54664,       // * total number of transactions between genesis and that timestamp
+            1574877650, // * UNIX timestamp of last known number of transactions
+            29477,       // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
             0.01        // * estimated number of transactions per second after that timestamp
         };

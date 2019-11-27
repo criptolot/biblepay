@@ -38,9 +38,10 @@ double GetChildBalance(std::string sChildID, std::string sCharity);
 double GetProminenceCap(std::string sCampaignName, double nPoints, double nProminence);
 std::string GetCPIDByCPK(std::string sCPK);
 std::string GetCPIDElementByData(std::string sData, int iElement);
-double GetRequiredCoinAgeForPODC(double nRAC);
+double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID);
 double GetBBPPrice();
 bool VerifyChild(std::string childID, std::string sCharity);
 bool IsOverBudget(int nHeight, std::string sAmounts);
+std::string CheckGSCHealth();
 
 #endif

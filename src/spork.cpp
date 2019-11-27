@@ -320,7 +320,8 @@ std::string CSporkManager::GetSporkNameByID(int nSporkID)
         case SPORK_20_INSTANTSEND_LLMQ_BASED:           return "SPORK_20_INSTANTSEND_LLMQ_BASED";
 		case SPORK_31_GSC_BUFFER:                       return "SPORK_31_GSC_BUFFER";
         default:
-            LogPrint("spork", "CSporkManager::GetSporkNameByID -- Unknown Spork ID %d\n", nSporkID);
+			if (fDebugSpam)
+				LogPrint("spork", "CSporkManager::GetSporkNameByID -- Unknown Spork ID %d\n", nSporkID);
             return "Unknown";
     }
 }

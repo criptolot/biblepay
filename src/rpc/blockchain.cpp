@@ -3028,7 +3028,7 @@ UniValue exec(const JSONRPCRequest& request)
 			double nTotalCoinAge = pwalletMain->GetAntiBotNetWalletWeight(0, nReqCoins);
 			results.push_back(Pair("external_purse_total_coin_age", nTotalCoinAge));
 			results.push_back(Pair("coin_age_percent_required", nCAR));
-			double nCoinAgeReq = GetRequiredCoinAgeForPODC(r.rac);
+			double nCoinAgeReq = GetRequiredCoinAgeForPODC(r.rac, r.teamid);
 			if (nTotalCoinAge < nCoinAgeReq)
 			{
 				results.push_back(Pair("NOTE!", "Coins must have a maturity of at least 5 confirms for your coin*age to count.  (See current depth in coin control)."));

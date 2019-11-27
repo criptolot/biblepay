@@ -204,7 +204,7 @@ double GetNecessaryCoinAgePercentageForPODC()
 		LogPrintf("Sorry, wallet coin age is below 1.%f\n", 804);
 		return 0;
 	}
-	double nReqForRAC = GetRequiredCoinAgeForPODC(r.rac);
+	double nReqForRAC = GetRequiredCoinAgeForPODC(r.rac, r.teamid);
 	if (nReqForRAC < 1)
 	{
 		LogPrintf("Sorry, accumulated coin-age is below 1.%f\n", 805);

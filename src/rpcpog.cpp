@@ -3585,9 +3585,7 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
     std::string sXML = tx->GetTxMessage();
 	
 	// Verify each element matches the live quotes
-
 	// Verify the total does not breech saturation requirements
-	LogPrintf("\nVERIFYDYNAMICWHALESTAKE::DATA[%s]\n", sXML);
 
 	WhaleStake w = GetWhaleStake(tx);
 	if (!w.found)
@@ -3609,7 +3607,8 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 
 	if (w.BurnHeight < (chainActive.Tip()->nHeight - 1) || w.BurnHeight > (chainActive.Tip()->nHeight + 1))
 	{
-		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Burn Height out of bounds. Current Height %f, Burn Height %f", chainActive.Tip()->nHeight, w.BurnHeight);
+		if (fDebugSpam)
+			LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Burn Height out of bounds. Current Height %f, Burn Height %f", chainActive.Tip()->nHeight, w.BurnHeight);
 		sError = "Burn height out of bounds.";
 		return false;
 	}

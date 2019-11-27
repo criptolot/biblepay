@@ -57,13 +57,32 @@ std::string GetTxCPK(CTransactionRef tx, std::string& sCampaignName)
 	return sCPK;
 }
 
-double GetRequiredCoinAgeForPODC(double nRAC)
+double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID)
 {
 	// Todo for Prod Release:  Make sporks here
 	// We currently require RAC ^ 1.3 in coin-age
 	// Any CPIDs with RAC <= 250 are unbanked (they require 0 coin age).
-	double nAgeRequired = pow(nRAC, 1.3);
-	if (nRAC <= 250) 
+
+	// This poll: https://forum.biblepay.org/index.php?topic=476.0
+	// sets our model to require ^1.6 for GRC and ^1.3 for BBP
+	double nExponent = 0;
+	if (nTeamID == 35006)
+	{
+		// BBP requires 1.3
+		nExponent = 1.3;
+	}
+	else if (nTeamID == 30513)
+	{
+		// GRC requires 1.6
+		nExponent = 1.6;
+	}
+	else
+	{
+		// We do not allow other teams;
+		return 9999999999;
+	}
+	double nAgeRequired = pow(nRAC, nExponent);
+	if (nRAC <= 250 && nTeamID == 35006)
 	{
 		// Mark the researcher as Unbanked here:
 		nAgeRequired = 0;
@@ -664,12 +683,12 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 	{
 		if (r.second.found && r.second.cpid.length() == 32)
 		{
-			double nCoinAgeRequired = GetRequiredCoinAgeForPODC(r.second.rac);
+			double nCoinAgeRequired = GetRequiredCoinAgeForPODC(r.second.rac, r.second.teamid);
 			if (nCoinAgeRequired > r.second.CoinAge)
 			{
 				// Reduce the researchers RAC to the applicable coinAge staked:
 				r.second.rac = pow(r.second.rac - 1, 1/1.3);
-				nCoinAgeRequired = GetRequiredCoinAgeForPODC(r.second.rac);
+				nCoinAgeRequired = GetRequiredCoinAgeForPODC(r.second.rac, r.second.teamid);
 			}
 
 			bool fApplicable = r.second.CoinAge >= nCoinAgeRequired;
@@ -1399,24 +1418,31 @@ UniValue GetProminenceLevels(int nHeight, std::string sFilterNickName)
 void SendDistressSignal()
 {
 	static int64_t nLastReset = 0;
-	if (GetAdjustedTime() - nLastReset > (60 * 30))
+	if (GetAdjustedTime() - nLastReset > (60 * 60 * 1))
 	{
 		// Node will try to pull the gobjects again
-		/*
-		LogPrintf("SmartContract-Server::SendDistressSignal: Node is missing a gobject, pulling...%f\n", GetAdjustedTime());
+		LogPrintf("\nSmartContract-Server::SendDistressSignal: Node is missing a gobject, pulling...%f\n", GetAdjustedTime());
 		masternodeSync.Reset();
 		masternodeSync.SwitchToNextAsset(*g_connman);
 		nLastReset = GetAdjustedTime();
-		*/
+		ReassessAllChains();
 	}
 }
 
-void CheckGSCHealth()
+static int64_t nLastQuorumHashCheckup = 0;
+std::string CheckGSCHealth()
 {
-	// This is for Non-Sancs
-	bool bImpossible = (!masternodeSync.IsSynced() || fLiteMode);
-	if (bImpossible)
-		return;
+	double nCheckGSCOptionDisabled = GetSporkDouble("disablegschealthcheck", 0);
+	if (nCheckGSCOptionDisabled == 1)
+		return "DISABLED";
+	if (nLastQuorumHashCheckup == 0)
+		nLastQuorumHashCheckup = GetAdjustedTime();
+
+	int64_t nQHA = GetAdjustedTime() - nLastQuorumHashCheckup;
+	if (nQHA < (60 * 60 * 1))
+			return "WAITING";
+	nLastQuorumHashCheckup = GetAdjustedTime();
+
 	int iNextSuperblock = 0;
 	int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
 	std::string sAddresses;
@@ -1425,13 +1451,15 @@ void CheckGSCHealth()
 	uint256 uGovObjHash = uint256S("0x0");
 	uint256 uPAMHash = uint256S("0x0");
 	GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
-	int iRequiredVotes = GetRequiredQuorumLevel(iNextSuperblock);
-	int nBlocksLeft = iNextSuperblock - chainActive.Tip()->nHeight;
-	if (nBlocksLeft < BLOCKS_PER_DAY / 2)
+	uint256 hPam = GetPAMHash(sAddresses, sAmounts);
+	std::string sContract = GetGSCContract(iLastSuperblock, true);
+	uint256 hPAMHash2 = GetPAMHashByContract(sContract);
+	if (uGovObjHash == uint256S("0x0") || (hPAMHash2 != hPam))
 	{
-		if (uGovObjHash == uint256S("0x0"))
-			SendDistressSignal();
+		SendDistressSignal();
+		return "DISTRESS";
 	}
+	return "HEALTHY";
 }
 
 void SendOutGSCs()

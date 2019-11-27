@@ -1956,6 +1956,18 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
         }
     }
 
+
+	// If the last block is old, maybe the chain needs re-assessed:
+	if (chainActive.Tip())
+	{
+		int64_t nAge = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();
+		if (nAge > (60 * 60 * 2))
+		{
+			LogPrintf("\nLast block age is %f, Reassessing chains...", nAge);
+			ReassessAllChains();
+		}
+	}
+
     // As LoadBlockIndex can take several minutes, it's possible the user
     // requested to kill the GUI during the last operation. If so, exit.
     // As the program has not fully started yet, Shutdown() is possibly overkill.

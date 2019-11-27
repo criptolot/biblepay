@@ -26,6 +26,7 @@
 #include "script/script.h"
 #include "script/sigcache.h"
 #include "script/standard.h"
+#include "smartcontract-server.h"
 #include "timedata.h"
 #include "tinyformat.h"
 #include "txdb.h"
@@ -2356,7 +2357,8 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
 
 	// BIBLEPAY : CHECK TRANSACTIONS FOR INSTANTSEND	
 
-     if (sporkManager.IsSporkActive(SPORK_3_INSTANTSEND_BLOCK_FILTERING)) {	
+     if (sporkManager.IsSporkActive(SPORK_3_INSTANTSEND_BLOCK_FILTERING) && sporkManager.IsSporkActive(SPORK_16_INSTANTSEND_AUTOLOCKS)) 
+	 {	
         // Require other nodes to comply, send them some data in case they are missing it.	
         for (const auto& tx : block.vtx) {	
             // skip txes that have no inputs	
@@ -2369,7 +2371,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
                     // TODO: relay instantsend data/proof.	
                     LOCK(cs_main);	
                     mapRejectedBlocks.insert(std::make_pair(block.GetHash(), GetTime()));	
-                    return state.DoS(10, error("ConnectBlock(BIBLEPAY): transaction %s conflicts with transaction lock %s", tx->GetHash().ToString(), hashLocked.ToString()),	
+			        return state.DoS(10, error("ConnectBlock(BIBLEPAY): transaction %s conflicts with transaction lock %s", tx->GetHash().ToString(), hashLocked.ToString()),	
                                      REJECT_INVALID, "conflict-tx-lock");	
                 }	
             }	
@@ -3680,6 +3682,8 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 	//////////////////////////////////////////////////////////  BIBLEPAY //////////////////////////////////////////////////////////////////////////
 	//                               Additional Checks for GSC (Generic-Smart-Contracts) and for ABN (Anti-Bot-Net) rules                        //
 	//                                                                                                                                           //
+
+	/*
 	double dDiff = GetDifficulty(pindexPrev);
 	double dDiffThreshhold = fProd ? 1000 : 1;
 	bool fActivateAdvancedFeatures = dDiff > dDiffThreshhold;
@@ -3725,9 +3729,14 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 			}
 		}
 	}
-	bool bIsSuperblock = CSuperblock::IsValidBlockHeight(nHeight) || CSuperblock::IsSmartContract(nHeight);
+
+	*/
+
+
+
+	bool bGSCSuperblock = CSuperblock::IsSmartContract(nHeight);
 	CAmount nPayments = block.vtx[0]->GetValueOut();
-	if (nHeight > consensusParams.EVOLUTION_CUTOVER_HEIGHT && bIsSuperblock && nPayments < ((MAX_BLOCK_SUBSIDY + 1) * COIN) && !LateBlockIndex(pindexPrev, 15))
+	if (nHeight > consensusParams.EVOLUTION_CUTOVER_HEIGHT && bGSCSuperblock && nPayments < ((MAX_BLOCK_SUBSIDY + 1) * COIN) && !LateBlockIndex(pindexPrev, (60 * 60 * 8)))
 	{
 		LogPrintf("\nContextualCheckBlock::CheckGSCSuperblock, Block Height %f, This superblock has no recipients!", (double)nHeight);
 		return false; // return state.DoS(1, false, REJECT_INVALID, "invalid-gsc-recipient-count", false, "Invalid GSC recipient count");
@@ -3755,7 +3764,10 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             if (ppindex)
                 *ppindex = pindex;
             if (pindex->nStatus & BLOCK_FAILED_MASK)
+			{	
+				CheckGSCHealth();
                 return state.Invalid(error("%s: block %s is marked invalid", __func__, hash.ToString()), 0, "duplicate");
+			}
             return true;
         }
 		// R ANDREWS - Biblepay needs to find the previous block before checking the block header
@@ -3770,7 +3782,10 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
 		if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
+		{
+			CheckGSCHealth();
             return state.DoS(1, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
+		}
 
 		if (pindexPrev->nStatus & BLOCK_CONFLICT_CHAINLOCK)	
             // it's ok-ish, the other node is probably missing the latest chainlock	
@@ -5057,6 +5072,8 @@ void KillBlockchainFiles()
 	boost::filesystem::remove_all(pathEvo);
 	boost::filesystem::path pathMnpayments = GetDataDir() / "mnpayments.dat";
 	if(boost::filesystem::exists(pathMnpayments)) boost::filesystem::remove(pathMnpayments); 
+	boost::filesystem::path pathIS = GetDataDir() / "instantsend.dat";
+	if(boost::filesystem::exists(pathMnpayments)) boost::filesystem::remove(pathIS); 
 	boost::filesystem::path pathGov = GetDataDir() / "governance.dat";
 	if(boost::filesystem::exists(pathGov)) boost::filesystem::remove(pathGov); 
 	boost::filesystem::path pathMncache = GetDataDir() / "mncache.dat";

@@ -315,5 +315,7 @@ std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
 BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime);
 bool GetTxBBP(uint256 txid, CTransactionRef& tx1);
 double GetWhaleStakesInMemoryPool(std::string sCPK);
+std::string GetCPKByCPID(std::string sCPID);
+int GetNextPODCTransmissionHeight(int height);
 
 #endif

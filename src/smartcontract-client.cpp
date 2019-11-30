@@ -105,8 +105,7 @@ bool CheckCampaign(std::string sName)
 	return false;
 }
 
-
-UniValue SentGSCCReport(int nHeight)
+UniValue SentGSCCReport(int nHeight, std::string sMyCPK)
 {
 	UniValue results(UniValue::VOBJ);
 	
@@ -126,7 +125,7 @@ UniValue SentGSCCReport(int nHeight)
 
 	CBlockIndex* pindex = FindBlockByHeight(nMinDepth);
 	const Consensus::Params& consensusParams = Params().GetConsensus();
-	std::string sMyCPK = DefaultRecAddress("Christian-Public-Key");
+
 	double nTotalPoints = 0;
 	if (sMyCPK.empty())
 		return NullUniValue;
@@ -220,7 +219,8 @@ double GetNecessaryCoinAgePercentageForPODC()
 }
 	
 
-CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary, CBlockIndex* pindexLast, double nCoinAgePercentage, CAmount nFoundationDonation, CReserveKey& reservekey, std::string& sXML, std::string& sError)
+CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary, CBlockIndex* pindexLast, double nCoinAgePercentage, CAmount nFoundationDonation, 
+	CReserveKey& reservekey, std::string& sXML, std::string& sError, std::string& sWarning)
 {
 	CWalletTx wtx;
 
@@ -236,6 +236,10 @@ CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary,
 	{
 		nCoinAgePercentage = GetNecessaryCoinAgePercentageForPODC();
 		LogPrintf("\nCreateGSCClientTransmission::Attempting to use %f in coinagepercentage.", nCoinAgePercentage);
+		if (nCoinAgePercentage > .95)
+		{
+			sWarning = "WARNING!  PODC is using " + RoundToString(nCoinAgePercentage, 2) + "% of your coin age.  This means your RAC may be reduced, resulting in a lower PODC reward. ";
+		}
 	}
 
 	CAmount nPayment1 = (nReqCoins * nCoinAgePercentage) + (1*COIN);
@@ -374,23 +378,25 @@ bool CreateAllGSCTransmissions(std::string& sError)
 {
 	std::map<std::string, std::string> mCampaigns = GetSporkMap("spork", "gsccampaigns");
 	std::string sErrorEnrolled;
-	std::string sError1;
 	// For each enrolled campaign:
 	for (auto s : mCampaigns)
 	{
 		if (Enrolled(s.first, sErrorEnrolled))
 		{
-			sError1 = std::string();
-			CreateGSCTransmission(false, "", sError1, s.first);
+			std::string sError1 = std::string();
+			std::string sWarning = std::string();
+			CreateGSCTransmission(false, "", sError1, s.first, sWarning);
 			if (!sError1.empty())
 			{
 				LogPrintf("\nCreateAllGSCTransmissions %f, Campaign %s, Error [%s].\n", GetAdjustedTime(), s.first, sError1);
 			}
+			if (!sWarning.empty())
+				LogPrintf("\nWARNING [%s]", sWarning);
 		}
 	}
 }
 
-bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError, std::string sSpecificCampaignName)
+bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError, std::string sSpecificCampaignName, std::string& sWarning)
 {
 	boost::to_upper(sSpecificCampaignName);
 	if (sSpecificCampaignName == "HEALING")
@@ -413,8 +419,8 @@ bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError,
 	std::string sError1;
 	if (!Enrolled(sSpecificCampaignName, sError1))
 	{
-			sError = "Sorry, CPK is not enrolled in project. [" + sError1 + "].  Error 795. ";
-			return false;
+		sError = "Sorry, CPK is not enrolled in project. [" + sError1 + "].  Error 795. ";
+		return false;
 	}
 
 	LogPrintf("\nSmartContract-Client::Creating Client side transaction for campaign %s ", sSpecificCampaignName);
@@ -427,7 +433,7 @@ bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError,
 		nCoinAgePercentage = 0.0001;
 	}
 	CAmount nFoundationDonation = 0;
-	CWalletTx wtx = CreateGSCClientTransmission(sSpecificCampaignName, sDiary, chainActive.Tip(), nCoinAgePercentage, nFoundationDonation, reservekey, sXML, sError);
+	CWalletTx wtx = CreateGSCClientTransmission(sSpecificCampaignName, sDiary, chainActive.Tip(), nCoinAgePercentage, nFoundationDonation, reservekey, sXML, sError, sWarning);
 	LogPrintf("\nCreated client side transmission - %s [%s] with txid %s ", sXML, sError, wtx.tx->GetHash().GetHex());
 	// Bubble any error to getmininginfo - or clear the error
 	if (!sError.empty())

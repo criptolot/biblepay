@@ -3311,6 +3311,22 @@ std::string GetResDataBySearch(std::string sSearch)
 	}
 }
 
+int GetNextPODCTransmissionHeight(int height)
+{
+	int nFreq = (int)cdbl(GetArg("-dailygscfrequency", RoundToString(BLOCKS_PER_DAY, 0)), 0);
+	int nHeight = height - (height % nFreq) + (BLOCKS_PER_DAY / 2);
+	if (nHeight < height)
+		nHeight += BLOCKS_PER_DAY;
+	return nHeight;
+}
+
+std::string GetCPKByCPID(std::string sCPID)
+{
+	std::string sResData = GetResDataBySearch(sCPID);
+	// Format = 0 sCPK + 1 CPK_Nickname  +  2 nTime +   3 HexSecurityCode + 4 sSignature + 5 wcg username  + 6 wcg_sec_code + 7 wcg userid + 8 = CPID;
+	return GetResElement(sResData, 0);
+}
+
 std::string GetResearcherCPID(std::string sSearch)
 {
 	std::string sCPK = DefaultRecAddress("Christian-Public-Key");

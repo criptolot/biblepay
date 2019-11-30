@@ -698,38 +698,41 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 			}
 			else 
 			{
-				std::string sCPK = r.second.CPK;
-				double nPoints = r.second.rac * 1;
-				// CPK 
-				CPK c = mPoints[sCPK];
-				c.sCampaign = sCampaignName;
-				c.sAddress = sCPK;
-				CPK localCPK = GetCPKFromProject("cpk", sCPK);
-				c.sNickName = localCPK.sNickName;
-				c.nPoints += nPoints;
-				c.cpid = r.second.cpid;
-				mCampaignPoints[sCampaignName] += nPoints;
-				mPoints[sCPK] = c;
-				// CPK-Campaign
-				CPK cCPKCampaignPoints = mCPKCampaignPoints[sCPK + sCampaignName];
-				cCPKCampaignPoints.sAddress = sCPK;
-				cCPKCampaignPoints.sNickName = c.sNickName;
-				cCPKCampaignPoints.nPoints += nPoints;
-				cCPKCampaignPoints.cpid = r.second.cpid;
-				mCPKCampaignPoints[sCPK + sCampaignName] = cCPKCampaignPoints;
-				if (dDebugLevel == 1)
+				std::string sCPK = GetCPKByCPID(r.second.cpid);
+				if (!sCPK.empty())
 				{
-					LogPrintf("\nCPK %s , NN %s, Points %f, Campaign %s, coinage %f, usertotal %f ",
-							sCPK, localCPK.sNickName, (double)nPoints, c.sCampaign, (double)r.second.CoinAge, (double)c.nPoints);
-				}
-				if (!sAnalyzeUser.empty() && sAnalyzeUser == c.sNickName)
-				{
-					std::string sInfo = "User: " + sCPK + ", NickName: " 
-									+ localCPK.sNickName + ", Points: " + RoundToString(nPoints, 2) 
-									+ ", Campaign: " + c.sCampaign + ", CoinAge: " + RoundToString(r.second.CoinAge, 4) 
-									+ ", CPID: " + r.second.cpid + ", RAC: " + RoundToString(r.second.rac, 4) 
-									+ ", UserTotal: " + RoundToString(c.nPoints, 2) + "\n";
-					sAnalysisData1 += sInfo;
+					double nPoints = r.second.rac * 1;
+					// CPK 
+					CPK c = mPoints[sCPK];
+					c.sCampaign = sCampaignName;
+					c.sAddress = sCPK;
+					CPK localCPK = GetCPKFromProject("cpk", sCPK);
+					c.sNickName = localCPK.sNickName;
+					c.nPoints += nPoints;
+					c.cpid = r.second.cpid;
+					mCampaignPoints[sCampaignName] += nPoints;
+					mPoints[sCPK] = c;
+					// CPK-Campaign
+					CPK cCPKCampaignPoints = mCPKCampaignPoints[sCPK + sCampaignName];
+					cCPKCampaignPoints.sAddress = sCPK;
+					cCPKCampaignPoints.sNickName = c.sNickName;
+					cCPKCampaignPoints.nPoints += nPoints;
+					cCPKCampaignPoints.cpid = r.second.cpid;
+					mCPKCampaignPoints[sCPK + sCampaignName] = cCPKCampaignPoints;
+					if (dDebugLevel == 1)
+					{
+						LogPrintf("\nCPK %s , NN %s, Points %f, Campaign %s, coinage %f, usertotal %f ",
+								sCPK, localCPK.sNickName, (double)nPoints, c.sCampaign, (double)r.second.CoinAge, (double)c.nPoints);
+					}
+					if (!sAnalyzeUser.empty() && sAnalyzeUser == c.sNickName)
+					{
+						std::string sInfo = "User: " + sCPK + ", NickName: " 
+										+ localCPK.sNickName + ", Points: " + RoundToString(nPoints, 2) 
+										+ ", Campaign: " + c.sCampaign + ", CoinAge: " + RoundToString(r.second.CoinAge, 4) 
+										+ ", CPID: " + r.second.cpid + ", RAC: " + RoundToString(r.second.rac, 4) 
+										+ ", UserTotal: " + RoundToString(c.nPoints, 2) + "\n";
+						sAnalysisData1 += sInfo;
+					}
 				}
 			}
 		}

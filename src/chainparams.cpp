@@ -396,7 +396,7 @@ public:
         strNetworkID = "test";
 
 		consensus.PODC_LAST_BLOCK = 100; // March 13th, 2019
-		consensus.PODC2_CUTOVER_HEIGHT = 19000;  // Go live height for PODC 2.0, DWS (Christmas 2019)
+		consensus.PODC2_CUTOVER_HEIGHT = 21000;  // Go live height for PODC 2.0, DWS (Christmas 2019)
 	
 		consensus.F7000_CUTOVER_HEIGHT = 100;
 		consensus.F12000_CUTOVER_HEIGHT = 100;

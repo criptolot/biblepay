@@ -1393,14 +1393,17 @@ UniValue sendgscc(const JSONRPCRequest& request)
 		throw std::runtime_error("Campaign does not exist.");
 	WriteCache("gsc", "errors", "", GetAdjustedTime());
 	std::string sError;
+	std::string sWarning;
     UniValue results(UniValue::VOBJ);
-	bool fCreated = CreateGSCTransmission(true, sDiary, sError, sCampaignName);
+	bool fCreated = CreateGSCTransmission(true, sDiary, sError, sCampaignName, sWarning);
 
 	if (!sError.empty())
 		results.push_back(Pair("Error!", sError));
 	std::string sFullError = ReadCache("gsc", "errors");
 	if (!sFullError.empty())
 		results.push_back(Pair("Error!", sFullError));
+	if (!sWarning.empty())
+		results.push_back(Pair("Warning!", sWarning));
 	if (fCreated)
 		results.push_back(Pair("Results", fCreated));
  	return results;

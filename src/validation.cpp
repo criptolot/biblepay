@@ -3732,14 +3732,16 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 
 	*/
 
-
-
-	bool bGSCSuperblock = CSuperblock::IsSmartContract(nHeight);
-	CAmount nPayments = block.vtx[0]->GetValueOut();
-	if (nHeight > consensusParams.EVOLUTION_CUTOVER_HEIGHT && bGSCSuperblock && nPayments < ((MAX_BLOCK_SUBSIDY + 1) * COIN) && !LateBlockIndex(pindexPrev, (60 * 60 * 8)))
+	if (pindexPrev)
 	{
-		LogPrintf("\nContextualCheckBlock::CheckGSCSuperblock, Block Height %f, This superblock has no recipients!", (double)nHeight);
-		return false; // return state.DoS(1, false, REJECT_INVALID, "invalid-gsc-recipient-count", false, "Invalid GSC recipient count");
+		bool bGSCSuperblock = CSuperblock::IsSmartContract(nHeight);
+		CAmount nPayments = block.vtx[0]->GetValueOut();
+		if (nHeight > consensusParams.PODC2_CUTOVER_HEIGHT && nHeight > consensusParams.EVOLUTION_CUTOVER_HEIGHT 
+			&& bGSCSuperblock && nPayments < ((MAX_BLOCK_SUBSIDY + 1) * COIN) && !LateBlock(block, pindexPrev, 60 * 8))
+		{
+			LogPrintf("\nContextualCheckBlock::CheckGSCSuperblock, Block Height %f, This superblock has no recipients!", (double)nHeight);
+			return false; // return state.DoS(1, false, REJECT_INVALID, "invalid-gsc-recipient-count", false, "Invalid GSC recipient count");
+		}
 	}
 
 	//                                                                                                                                           //

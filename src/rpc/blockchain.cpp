@@ -2808,7 +2808,18 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "sentgsc")
 	{
-		UniValue s = SentGSCCReport(0);
+		if (request.params.size() > 3)
+			throw std::runtime_error("sentgsc: Reports on the GSC transmissions and ABN transmissions over the last 7 days.  You may optionally specify the CPK and the height: sentgsc cpk height.");
+		std::string sMyCPK;
+		if (request.params.size() > 1)
+			sMyCPK = request.params[1].get_str();
+		if (sMyCPK.empty())
+			sMyCPK = DefaultRecAddress("Christian-Public-Key");
+		double nHeight = 0;
+		if (request.params.size() > 2)
+			nHeight = cdbl(request.params[2].get_str(), 0);
+
+		UniValue s = SentGSCCReport(nHeight, sMyCPK);
 		return s;
 	}
 	else if (sItem == "revivesanc")
@@ -3006,13 +3017,12 @@ UniValue exec(const JSONRPCRequest& request)
 		}
 		else
 		{
-			results.push_back(Pair("CPK", myCPK.sAddress));
+			std::string sMyCPK = GetCPKByCPID(sCPID);
+			results.push_back(Pair("CPK", sMyCPK));
 			results.push_back(Pair("wcg_teamid", r.teamid));
-			int nFreq = (int)cdbl(GetArg("-dailygscfrequency", RoundToString(BLOCKS_PER_DAY, 0)), 0);
-			int nHeight = chainActive.Tip()->nHeight - (chainActive.Tip()->nHeight % nFreq) + (BLOCKS_PER_DAY / 2);
+			int nHeight = GetNextPODCTransmissionHeight(chainActive.Tip()->nHeight);
 			results.push_back(Pair("next_podc_gsc_transmission", nHeight));
 			std::string sTeamName = TeamToName(r.teamid);
-			
 			bool fWhitelisted = sTeamName == "Unknown" ? false : true;
 			if (!fWhitelisted)
 				results.push_back(Pair("Warning!", "** You must join team BiblePay or Gridcoin to be compensated for Research Activity in PODC. **"));
@@ -3033,7 +3043,11 @@ UniValue exec(const JSONRPCRequest& request)
 			{
 				results.push_back(Pair("NOTE!", "Coins must have a maturity of at least 5 confirms for your coin*age to count.  (See current depth in coin control)."));
 			}
-	
+			
+			if (nTotalCoinAge < nCoinAgeReq || nTotalCoinAge == 0)
+			{
+				results.push_back(Pair("WARNING!", "BiblePay requires staking collateral to be stored in your Christian-Public-Key (External Purse) to be available for GSC transmissions.  You currently do not have enough coin age in your external purse.  This means your PODC reward will be reduced to a commensurate amount of RAC.  Please read our PODC 2.0 guide about sending bankroll notes to yourself.  "));
+			}
 			results.push_back(Pair("coin_age_required", nCoinAgeReq));
 			results.push_back(Pair("wcg_id", r.id));
 			results.push_back(Pair("rac", r.rac));

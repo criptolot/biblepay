@@ -2463,7 +2463,7 @@ UniValue exec(const JSONRPCRequest& request)
 		if (!r.found && !fForce && nID > 0)
 		{
 			std::string sErr = "Sorry, we found you as a researcher in WCG, but we were unable to locate you on the team.  "
-				 "Please join team BiblePay or team Gridcoin to proceed.  Please type 'exec rac' to see more helpful hints.  "
+				 "Please join team BiblePay to proceed.  Please type 'exec rac' to see more helpful hints.  "
                  "NOTE:  You may check back again once every 12 hours to see if you are on the team. ";
 			throw std::runtime_error(sErr.c_str());
 		}
@@ -3019,19 +3019,28 @@ UniValue exec(const JSONRPCRequest& request)
 		{
 			std::string sMyCPK = GetCPKByCPID(sCPID);
 			results.push_back(Pair("CPK", sMyCPK));
-			results.push_back(Pair("wcg_teamid", r.teamid));
+			if (r.teamid > 0)
+				results.push_back(Pair("wcg_teamid", r.teamid));
 			int nHeight = GetNextPODCTransmissionHeight(chainActive.Tip()->nHeight);
 			results.push_back(Pair("next_podc_gsc_transmission", nHeight));
 			std::string sTeamName = TeamToName(r.teamid);
-			bool fWhitelisted = sTeamName == "Unknown" ? false : true;
-			if (!fWhitelisted)
-				results.push_back(Pair("Warning!", "** You must join team BiblePay or Gridcoin to be compensated for Research Activity in PODC. **"));
-			results.push_back(Pair("team_name", sTeamName));
-			results.push_back(Pair("researcher_nickname", r.nickname));
+			double nConfiguration = GetSporkDouble("PODCTeamConfiguration", 0);
+			if (nConfiguration == 1)
+			{
+				bool fWhitelisted = sTeamName == "Unknown" ? false : true;
+				if (!fWhitelisted)
+					results.push_back(Pair("Warning!", "** You must join team BiblePay or Gridcoin to be compensated for Research Activity in PODC. **"));
+			}
+			if (!sTeamName.empty())
+				results.push_back(Pair("team_name", sTeamName));
+			if (!r.nickname.empty())
+				results.push_back(Pair("researcher_nickname", r.nickname));
 			if (!r.country.empty())
 				results.push_back(Pair("researcher_country", r.country));
-			results.push_back(Pair("total_wcg_boinc_credit", r.totalcredit));
-			results.push_back(Pair("total_wcg_points", r.wcgpoints));
+			if (r.totalcredit > 0)
+				results.push_back(Pair("total_wcg_boinc_credit", r.totalcredit));
+			if (r.wcgpoints > 0)
+				results.push_back(Pair("total_wcg_points", r.wcgpoints));
 			// Print out the current coin age requirements
 			double nCAR = GetNecessaryCoinAgePercentageForPODC();
 			CAmount nReqCoins = 0;
@@ -3221,6 +3230,38 @@ UniValue exec(const JSONRPCRequest& request)
 		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
 		results.push_back(Pair("DWS payables owed", dTotalWhalePayments));
 		results.push_back(Pair("DWS quantity", (int)dws.size()));
+		// GovLimit total
+		int nLastSuperblock = 0;
+		int nNextSuperblock = 0;
+		GetGovSuperblockHeights(nNextSuperblock, nLastSuperblock);
+		nLastSuperblock += 20;
+		CBlockIndex* pindex = FindBlockByHeight(nLastSuperblock);
+		CBlock block;
+		results.push_back(Pair("GetGovLimit", "Report v1.1"));
+		for (int nHeight = nLastSuperblock; nHeight > 0; nHeight -= BLOCKS_PER_DAY)
+		{
+
+			CBlockIndex* pindex = FindBlockByHeight(nHeight);
+			if (pindex) 
+			{
+				CAmount nTotal = 0;
+		
+				if (ReadBlockFromDisk(block, pindex, consensusParams)) 
+				{
+					for (unsigned int i = 0; i < block.vtx[0]->vout.size(); i++)
+    				{
+						nTotal += block.vtx[0]->vout[i].nValue;
+					}
+					if (nTotal/COIN > MAX_BLOCK_SUBSIDY && block.vtx[0]->vout.size() < 7)
+					{
+						std::string sRow = "Total: " + RoundToString(nTotal/COIN, 2) + ", Size: " + RoundToString(block.vtx.size(), 0);
+						results.push_back(Pair(RoundToString(nHeight, 0), sRow));
+					}
+				}
+			}
+
+		}
+
 	}
 	else if (sItem == "hexblocktojson")
 	{
@@ -3310,6 +3351,7 @@ UniValue exec(const JSONRPCRequest& request)
 	{
 		// Expirimental Feature:  Dynamic Whale Stake
 		// exec dws amount duration_in_days 0=test/1=authorize
+		const Consensus::Params& consensusParams = Params().GetConsensus();
 
 		std::string sHowey = "By typing I_AGREE in uppercase, you agree to the following conditions:"
 			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THIS BIBLEPAY, AND DO NOT EXPECT AN INCREASE IN VALUE."
@@ -3341,12 +3383,11 @@ UniValue exec(const JSONRPCRequest& request)
 		if (nAmt < 100 || nAmt > 1000000)
 			throw std::runtime_error("Sorry, amount must be between 100 BBP and 1,000,000 BBP.");
 
-		// Todo: Change this to 7 days in prod, after we are done testing.
-		if (nDuration < 1 || nDuration > 375)
-			throw std::runtime_error("Sorry, duration must be between 1 days and 365 days.");
-
-		if (fProd)
-			throw std::runtime_error("Sorry, this feature can only be used in TestNet currently.");
+		if (nDuration < 7 || nDuration > 365)
+			throw std::runtime_error("Sorry, duration must be between 7 days and 365 days.");
+	
+		if (fProd && chainActive.Tip()->nHeight < consensusParams.PODC2_CUTOVER_HEIGHT)
+			throw std::runtime_error("Sorry, this feature is not available yet.  Please wait until the mandatory upgrade height passes. ");
 
 		double nTotalStakes = GetWhaleStakesInMemoryPool(sCPK);
 		if (nTotalStakes > 256000)
@@ -3369,7 +3410,6 @@ UniValue exec(const JSONRPCRequest& request)
 			+ RoundToString(chainActive.Tip()->nHeight, 0) 
 			+ "</burnheight><cpk>" + sCPK + "</cpk><burntime>" + RoundToString(GetAdjustedTime(), 0) + "</burntime><dwu>" + RoundToString(wm.DWU, 4) + "</dwu><duration>" 
 			+ RoundToString(nDuration, 0) + "</duration><duedate>" + TimestampToHRDate(nReclaimTime) + "</duedate><amount>" + RoundToString(nAmt, 2) + "</amount></dws></MV>";
-		const Consensus::Params& consensusParams = Params().GetConsensus();
 
 		CBitcoinAddress toAddress(consensusParams.BurnAddress);
 		if (!toAddress.IsValid())
@@ -3447,19 +3487,18 @@ UniValue exec(const JSONRPCRequest& request)
 
 				if (ws.found && fIncForPayment && ((dDetails == 2) || (dDetails==1 && ws.CPK == sCPK)))
 				{
-					results.push_back(Pair("Record", i+1));
-					results.push_back(Pair("Amount", ws.Amount));
-					results.push_back(Pair("CPK", ws.CPK));
-					results.push_back(Pair("Reward", ws.RewardAmount));
-					results.push_back(Pair("Actual DWU", RoundToString(ws.ActualDWU * 100, 4)));
-					results.push_back(Pair("Return Address", ws.ReturnAddress));
-					results.push_back(Pair("Duration", ws.Duration));
-					results.push_back(Pair("Burn Height", ws.BurnHeight));
-					results.push_back(Pair("Maturity Height", ws.MaturityHeight));
-					results.push_back(Pair("Maturity Time", ws.MaturityTime));
+					// results.push_back(Pair("Return Address", ws.ReturnAddress));
+					int nRewardHeight = GetWhaleStakeSuperblockHeight(ws.MaturityHeight);
+					std::string sRow = "Burned: " + RoundToString(ws.Amount, 2) + ", Reward: " + RoundToString(ws.TotalOwed, 2) + ", DWU: " 
+						+ RoundToString(ws.ActualDWU*100, 4) + ", Duration: " + RoundToString(ws.Duration, 0) + ", BurnHeight: " + RoundToString(ws.BurnHeight, 0) 
+						+ ", RewardHeight: " + RoundToString(nRewardHeight, 0) + " [" + RoundToString(ws.MaturityHeight, 0) + "], MaturityDate: " + TimestampToHRDate(ws.MaturityTime);
+					std::string sKey = ws.CPK + " " + RoundToString(i+1, 0);
+					// ToDo: Add parameter to show the return_to_address if user desires it
+					results.push_back(Pair(sKey, sRow));
 				}
 			}
 		}
+		results.push_back(Pair("Metrics", "v1.1"));
 		// Call out for Whale Metrics
 		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
 		results.push_back(Pair("Total Future Commitments", wm.nTotalFutureCommitments));

@@ -27,9 +27,9 @@ class CGovernanceObject;
 class CGovernanceVote;
 
 // BiblePay - During Evolution Cutover we transition to v70718, Prod is on v70737 as of 11-27-2019
-static const int MIN_GOVERNANCE_PEER_PROTO_VERSION = 70749;
+static const int MIN_GOVERNANCE_PEER_PROTO_VERSION = 70737;
 
-static const int GOVERNANCE_FILTER_PROTO_VERSION = 70749;
+static const int GOVERNANCE_FILTER_PROTO_VERSION = 70737;
 static const int GOVERNANCE_POSE_BANNED_VOTES_VERSION = 70215;
 
 static const double GOVERNANCE_FILTER_FP_RATE = 0.001;

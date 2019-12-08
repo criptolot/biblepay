@@ -79,7 +79,7 @@ bool IsOldBudgetBlockValueValid(const CBlock& block, int nBlockHeight, CAmount b
 bool IsBlockValueValid(const CBlock& block, int nBlockHeight, CAmount blockReward, std::string& strErrorRet)
 {
     const Consensus::Params& consensusParams = Params().GetConsensus();
-    bool isBlockRewardValueMet = (block.vtx[0]->GetValueOut() <= blockReward);
+	bool isBlockRewardValueMet = (block.vtx[0]->GetValueOut() <= blockReward);
 
     strErrorRet = "";
 
@@ -104,6 +104,15 @@ bool IsBlockValueValid(const CBlock& block, int nBlockHeight, CAmount blockRewar
 	if (fDebugSpam)
 		LogPrint("gobject", "block.vtx[0]->GetValueOut() %lld <= nSuperblockMaxValue %lld\n", block.vtx[0]->GetValueOut()/COIN, nSuperblockMaxValue/COIN);
 
+	// Dec. 25th 2019 go-live Prod rule for bridge between hybrid mode and deterministic mode:
+	bool fSuperblock = CSuperblock::IsValidBlockHeight(nBlockHeight) || CSuperblock::IsDCCSuperblock(nBlockHeight) || CSuperblock::IsSmartContract(nBlockHeight);
+	if (nBlockHeight < consensusParams.PODC2_CUTOVER_HEIGHT && fSuperblock)
+	{
+        if (fDebug)
+			LogPrintf("%s -- WARNING: Running in hybrid cutover mode, checking superblock max bounds only\n", __func__);
+		return isSuperblockMaxValueMet;
+	}
+		
     if (!CSuperblock::IsValidBlockHeight(nBlockHeight) && !CSuperblock::IsDCCSuperblock(nBlockHeight) && !CSuperblock::IsSmartContract(nBlockHeight)) 
 	{
         // can't possibly be a superblock, so lets just check for block reward limits

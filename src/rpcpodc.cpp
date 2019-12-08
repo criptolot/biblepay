@@ -365,7 +365,7 @@ std::map<std::string, Researcher> GetPayableResearchers()
     {
 		if (myResearcher.second.found)
 		{
-			if (myResearcher.second.teamid == 35006 || myResearcher.second.teamid == 30513)
+			if (myResearcher.second.rac > 1)
 			{
 				std::string sSourceCPK = cpid_reverse_lookup[myResearcher.second.cpid];
 				std::string sSignedCPID = GetCPIDByCPK(sSourceCPK);

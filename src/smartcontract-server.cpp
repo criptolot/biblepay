@@ -57,6 +57,7 @@ std::string GetTxCPK(CTransactionRef tx, std::string& sCampaignName)
 	return sCPK;
 }
 
+static double N_MAX = 9999999999;
 double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID)
 {
 	// Todo for Prod Release:  Make sporks here
@@ -66,23 +67,56 @@ double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID)
 	// This poll: https://forum.biblepay.org/index.php?topic=476.0
 	// sets our model to require ^1.6 for GRC and ^1.3 for BBP
 	double nExponent = 0;
-	if (nTeamID == 35006)
+	double nConfiguration = GetSporkDouble("PODCTeamConfiguration", 0);
+	// 0 = BBP=1.3, All other teams are 1.6
+	// 1 = BBP=1.3, GRC = 1.6, All other teams not welcome
+	// 2 = BBP=1.3, All other teams not welcome
+	if (nConfiguration == 0)
 	{
-		// BBP requires 1.3
-		nExponent = 1.3;
+		if (nTeamID == 35006)
+		{
+			nExponent = 1.3;
+		}
+		else 
+		{
+			nExponent = 1.6;
+		}
 	}
-	else if (nTeamID == 30513)
+	else if (nConfiguration == 1)
 	{
-		// GRC requires 1.6
-		nExponent = 1.6;
+		if (nTeamID == 35006)
+		{
+			nExponent = 1.3;
+		}
+		else if (nTeamID == 30513)
+		{
+			// GRC
+			nExponent = 1.6;
+		}
+		else
+		{
+			return N_MAX;
+		}
+	}
+	else if (nConfiguration == 2)
+	{
+		if (nTeamID == 35006)
+		{
+			nExponent = 1.3;
+		}
+		else
+		{
+			return N_MAX;
+		}
 	}
 	else
 	{
-		// We do not allow other teams;
-		return 9999999999;
+		return N_MAX;
 	}
+
+	double nUnbankedThreshhold = GetSporkDouble("PODCUNBANKEDTHRESHHOLD", 250);
 	double nAgeRequired = pow(nRAC, nExponent);
-	if (nRAC <= 250 && nTeamID == 35006)
+	if (nRAC <= nUnbankedThreshhold && nTeamID == 35006)
 	{
 		// Mark the researcher as Unbanked here:
 		nAgeRequired = 0;
@@ -684,7 +718,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		if (r.second.found && r.second.cpid.length() == 32)
 		{
 			double nCoinAgeRequired = GetRequiredCoinAgeForPODC(r.second.rac, r.second.teamid);
-			if (nCoinAgeRequired > r.second.CoinAge)
+			if (nCoinAgeRequired > r.second.CoinAge && nCoinAgeRequired != N_MAX)
 			{
 				// Reduce the researchers RAC to the applicable coinAge staked:
 				r.second.rac = pow(r.second.rac - 1, 1/1.3);
@@ -694,7 +728,8 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 			bool fApplicable = r.second.CoinAge >= nCoinAgeRequired;
 			if (!fApplicable)
 			{
-				LogPrintf("\nAssessBlocks::Researcher not applicable because CoinAge req %f is less than %f for CPID %s", nCoinAgeRequired, r.second.CoinAge, r.second.cpid);
+				if (fDebug && nCoinAgeRequired != N_MAX)
+					LogPrintf("\nAssessBlocks::Researcher not applicable because CoinAge req %f is less than %f for CPID %s", nCoinAgeRequired, r.second.CoinAge, r.second.cpid);
 			}
 			else 
 			{

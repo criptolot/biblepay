@@ -200,7 +200,7 @@ public:
         strNetworkID = "main";
 
 		consensus.FPOG_CUTOVER_HEIGHT = 100001;   // Feb 7th, 2019 (100,001)
-		consensus.PODC2_CUTOVER_HEIGHT = 166000;  // Go live height for PODC 2.0, DWS (Christmas 2019)
+		consensus.PODC2_CUTOVER_HEIGHT = 166075;  // Go live height for PODC 2.0, DWS (Christmas 2019) (166050=monthly superblock, 166070=daily GSC)
 		consensus.PODC_LAST_BLOCK = 107000; // March 13th, 2019
 
 		consensus.EVOLUTION_CUTOVER_HEIGHT = 123200; // June 2nd, 2019 
@@ -238,12 +238,12 @@ public:
 		consensus.BIP66Height = 123200; // 00000000000b1fa2dfa312863570e13fae9ca7b5566cb27e55422620b469aefa
 
 		consensus.DIP0001Height = 220000;
-		// CRITICAL - Update this to the correct DIP3 height in PROD
+		// The correct DIP3 height in PROD
 		consensus.DIP0003Height = 133891;
 		consensus.DIP0003EnforcementHeight = 133891;
 		consensus.DIP0003HeightPhase2 = 133891;
-		consensus.LLMQHeight = 200000; // CRITICAL TODO:  Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
-		consensus.nSanctuaryPaymentsPhaseIIHeight = 200000; // Critical TODO:  Set this at the Go-Live height for .14 
+		consensus.LLMQHeight = 175000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
+		consensus.nSanctuaryPaymentsPhaseIIHeight = 166075; // Set this at the Go-Live height for .14 
 
 		consensus.QTHeight = 124000;  // Note to future forkers of BiblePay!  This height must be > (BLOCKS_PER_DAY * 32)!  Thank you for forking biblepay and thank you for your support!
 		consensus.powLimit = uint256S("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); 

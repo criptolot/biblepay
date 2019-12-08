@@ -2085,13 +2085,19 @@ std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName
 		}
 		//  Variables used to read the response from the server
 		int size;
-		char buf[1024];
+		int iChunkSize = 1024;
 		clock_t begin = clock();
 		std::string sData = "";
+		if (iMaxSize > 512000)
+		{
+			sData.reserve(iMaxSize);
+			iChunkSize = 65536;
+		}
+		char buf[iChunkSize+1];
 		for(;;)
 		{
 			//  Get chunks of the response 1023 at the time.
-			size = BIO_read(bio, buf, 1023);
+			size = BIO_read(bio, buf, iChunkSize);
 			if(size <= 0)
 			{
 				break;
@@ -3019,7 +3025,7 @@ BBPResult DSQL_ReadOnlyQuery(std::string sXMLSource)
 {
 	std::string sDomain = "https://web.biblepay.org";
 	int iTimeout = 30000;
-	int iSize = 1000000;
+	int iSize = 24000000;
 	BBPResult b;
 	b.Response = BiblepayHTTPSPost(true, 0, "", "", "", sDomain, sXMLSource, 443, "", iTimeout, iSize, 4);
 	return b;
@@ -3208,7 +3214,14 @@ int LoadResearchers()
 	// On wallet boot, we load the Boinc Researchers (Cancer Miners, Aids researchers, and/or WCG researchers) in from DSQL, then again every 24 hours we refresh the collection.
 	
 	static int MIN_RESEARCH_SZ = 3;
+	if (fDebug)
+		LogPrintf("LoadResearchers Start %f", GetAdjustedTime());
+
 	BBPResult b = DSQL_ReadOnlyQuery("wwwroot/certs/wcgrac.xml");
+
+	if (fDebug)
+		LogPrintf("LoadResearchers End %f", GetAdjustedTime());
+
 	if (fDebugSpam)
 		LogPrintf("Researchers %s ", b.Response);
 
@@ -3258,7 +3271,7 @@ int LoadResearchers()
 				LogPrintf(";cpid %s - team %f, id %f, rac %f, \n", r.cpid, r.teamid, r.id, r.rac);
 		}
 	}
-	if (fDebug)
+	if (true || fDebug)
 		LogPrintf("LoadResearchers::Processed %f CPIDs.\n", mvResearchers.size());
 	FILE *outFile = fopen(sTarget.c_str(), "w");
 	fputs(b.Response.c_str(), outFile);
@@ -3510,6 +3523,24 @@ CAmount GetAnnualDWSReward(int nHeight)
 	return nDWS;
 }
 
+int GetWhaleStakeSuperblockHeight(int nHeight)
+{
+	int nOffset = BLOCKS_PER_DAY * 2; // Voting occurs on a contract that is settled and 1 day old
+	int nSBHeight = nHeight - (nHeight % 205) + 20 + nOffset;
+	/*
+	int nSuperblockStartBlock = Params().GetConsensus().nDCCSuperblockStartBlock;
+    int nSuperblockCycle = Params().GetConsensus().nDCCSuperblockCycle;
+	for (int nSB = nSuperblockStartBlock; nSB < nHeight + BLOCKS_PER_DAY + nOffset; nSB += nSuperblockCycle)
+	{
+		int nStart = nSB + nOffset;
+		int nEnd = nSB + nOffset + BLOCKS_PER_DAY;
+		if (nHeight >= nStart && nHeight <= nEnd)
+			return nSB;
+	}
+	*/
+	return nSBHeight;
+}
+
 WhaleMetric GetWhaleMetrics(int nHeight, bool fIncludeMemoryPool)
 {
 	std::vector<WhaleStake> wStakes = GetDWS(fIncludeMemoryPool);
@@ -3608,7 +3639,7 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 		return true;
 
 	// Verify the bounds (TODO: Before prod, change this to 7)
-	if (w.Duration < 1 || w.Duration > 365)
+	if (w.Duration < 7 || w.Duration > 365)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Duration out of bounds. %f", w.Duration);
 		sError = "Duration out of bounds.";
@@ -3701,7 +3732,7 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 double GetDWUBasedOnMaturity(double nDuration, double dDWU)
 {
 	// Given a maturity duration range, adjust the final DWU
-	if (nDuration > 365 || nDuration < 1) 
+	if (nDuration > 365 || nDuration < 7) 
 		return 0;
 
 	double dComp1 = dDWU * .499999;
@@ -3714,7 +3745,7 @@ double GetDWUBasedOnMaturity(double nDuration, double dDWU)
 
 double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount)
 {
-	if (nDuration > 365 || nDuration < 1)
+	if (nDuration > 365 || nDuration < 7)
 		return 0;
 	double dComp1 = (nDuration / 364.99999) * dDWU;
 	double dTotal = dComp1 * dAmount;

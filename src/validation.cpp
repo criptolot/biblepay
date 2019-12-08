@@ -3742,6 +3742,53 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 			LogPrintf("\nContextualCheckBlock::CheckGSCSuperblock, Block Height %f, This superblock has no recipients!", (double)nHeight);
 			return false; // return state.DoS(1, false, REJECT_INVALID, "invalid-gsc-recipient-count", false, "Invalid GSC recipient count");
 		}
+
+		// Extra Safety Layer for Dynamic Whale Staking (This routine is designed to remove the danger of any hacker slipping a whale payment in via createBlock, then brute force mining it with > 51% hashpower, and it being non-approved by a Sanctuary in our GSC (meaning that blocks > the base governance limit should be as safe as any other block, as we are specifically checking the DWS burn(ed) amounts and recipients here):
+		if (bGSCSuperblock)
+		{
+			int64_t nBlockAge = GetAdjustedTime() - block.GetBlockTime();
+			CAmount nPaymentsLimitBase = CSuperblock::GetPaymentsLimit(nHeight, false);
+			CAmount nPaymentsLimitDWS = CSuperblock::GetPaymentsLimit(nHeight, true);
+			// If the block is within one day old, or newer:
+			if (nBlockAge < 86400 && nPayments > nPaymentsLimitBase)
+			{
+				double dTotalWhalePayments = 0;
+				// Note that this vector contains payable whale stakes that point to burned transactions that are actually in our chain (see GetDWS)
+				std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight - BLOCKS_PER_DAY, dTotalWhalePayments);
+				std::string sBlock;
+				std::string sDWS;
+				std::string sRecips;
+				for (int k = 0; k < block.vtx[0]->vout.size(); k++)
+				{
+					sBlock += RoundToString(block.vtx[0]->vout[k].nValue/COIN, 0) + "|";
+					sRecips += PubKeyToAddress(block.vtx[0]->vout[k].scriptPubKey) + "|";
+				}
+				bool fDWSRecipientsVerified = true;
+				double dTotalWhalesPaid = 0;
+				for (int m = 0; m < dws.size(); m++)
+				{
+					sDWS += RoundToString(dws[m].TotalOwed, 2) + "|";
+					dTotalWhalesPaid += dws[m].TotalOwed;
+					if (dws[m].TotalOwed > 1)
+					{
+						// Recipient must be in the block and the amount must be in the superblock
+						if (!Contains(sRecips, dws[m].ReturnAddress) || !Contains(sBlock, RoundToString(dws[m].TotalOwed, 0)))
+						{
+							LogPrintf("\nContextualCheckBlock::CheckDWS::DWS Recipient not in daily superblock %s for amount %f", dws[m].ReturnAddress, dws[m].TotalOwed);
+							fDWSRecipientsVerified = false;
+						}
+					}
+				}
+				double nEnforceDWSHFRule = GetSporkDouble("EnforceDWSHFRule", 0);
+				LogPrintf("\nContextualCheckBlock::CheckPayableWhaleStakes::Verified %f, Block %s, DWS %s, Base Limit %f, DWS Limit %f, WhalePaymentsIncluded %f, ActualBlock Rewards %f",
+					fDWSRecipientsVerified, sBlock, sDWS, (double)nPaymentsLimitBase/COIN, (double)nPaymentsLimitDWS/COIN, dTotalWhalePayments, (double)nPayments/COIN);
+				if (!fDWSRecipientsVerified && nEnforceDWSHFRule == 1)
+				{
+					LogPrintf("\nContextualCheckBlock::CheckPayableWhaleStakes::FAILED::Block Rejected.  TotalClaimed %f", dTotalWhalesPaid);
+					return false;
+				}
+			}
+		}
 	}
 
 	//                                                                                                                                           //
@@ -5080,7 +5127,9 @@ void KillBlockchainFiles()
 	if(boost::filesystem::exists(pathGov)) boost::filesystem::remove(pathGov); 
 	boost::filesystem::path pathMncache = GetDataDir() / "mncache.dat";
 	if(boost::filesystem::exists(pathMncache)) boost::filesystem::remove(pathMncache); 
-}  
+	boost::filesystem::path pathBanlist = GetDataDir() / "banlist.dat";
+	if(boost::filesystem::exists(pathBanlist)) boost::filesystem::remove(pathBanlist);
+}
 
 void ConnectNonFinancialTransactions(const CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams)
 {

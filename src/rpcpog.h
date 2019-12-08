@@ -317,5 +317,6 @@ bool GetTxBBP(uint256 txid, CTransactionRef& tx1);
 double GetWhaleStakesInMemoryPool(std::string sCPK);
 std::string GetCPKByCPID(std::string sCPID);
 int GetNextPODCTransmissionHeight(int height);
+int GetWhaleStakeSuperblockHeight(int nHeight);
 
 #endif

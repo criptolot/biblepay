@@ -238,7 +238,19 @@ CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary,
 		LogPrintf("\nCreateGSCClientTransmission::Attempting to use %f in coinagepercentage.", nCoinAgePercentage);
 		if (nCoinAgePercentage > .95)
 		{
-			sWarning = "WARNING!  PODC is using " + RoundToString(nCoinAgePercentage, 2) + "% of your coin age.  This means your RAC may be reduced, resulting in a lower PODC reward. ";
+			sWarning = "WARNING!  PODC is using " + RoundToString(nCoinAgePercentage, 2) + "% of your coin age.  This means your RAC will be reduced, resulting in a lower PODC reward. ";
+			// Side by side comparison - by Sun K. 
+			std::string sCPID = GetResearcherCPID(std::string());
+			if (!sCPID.empty())
+			{
+				Researcher r = mvResearchers[sCPID];
+				if (r.found && r.rac > 1)
+				{
+					double nReqForNonBBP = GetRequiredCoinAgeForPODC(r.rac, r.teamid);
+					double nReqForBBP = GetRequiredCoinAgeForPODC(r.rac, 35006);
+					sWarning += " (Team BiblePay requires " + RoundToString(nReqForBBP, 0) + " in coin-age, while Non-BiblePay teams require " + RoundToString(nReqForNonBBP, 0) + ".) ";
+				}
+			}
 		}
 	}
 

@@ -2017,6 +2017,14 @@ static double HTTP_PROTO_VERSION = 2.0;
 std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
 	std::string sSolution, int iTimeoutSecs, int iMaxSize, int iBOE)
 {
+	std::string sData;
+	int iChunkSize = 1024;
+	if (iMaxSize > 512000)
+	{
+		sData.reserve(iMaxSize);
+		iChunkSize = 65536;
+	}
+	
 	// The OpenSSL version of BiblepayHTTPSPost *only* works with SSL websites, hence the need for BiblePayHTTPPost(2) (using BOOST).  The dev team is working on cleaning this up before the end of 2019 to have one standard version with cleaner code and less internal parts. //
 	try
 	{
@@ -2085,19 +2093,12 @@ std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName
 		}
 		//  Variables used to read the response from the server
 		int size;
-		int iChunkSize = 1024;
 		clock_t begin = clock();
-		std::string sData = "";
-		if (iMaxSize > 512000)
-		{
-			sData.reserve(iMaxSize);
-			iChunkSize = 65536;
-		}
-		char buf[iChunkSize+1];
+		char buf[65536];
 		for(;;)
 		{
-			//  Get chunks of the response 1023 at the time.
-			size = BIO_read(bio, buf, iChunkSize);
+			//  Get chunks of the response
+			size = BIO_read(bio, buf, 65535);
 			if(size <= 0)
 			{
 				break;
@@ -2337,7 +2338,6 @@ bool InstantiateOneClickMiningEntries()
 	WriteKey("genproclimit", "1");
 	// WriteKey("poolport","80");
 	// WriteKey("workerid","");
-	// WriteKey("pool","https://pool.biblepay.org");
 	WriteKey("gen","1");
 	return true;
 }
@@ -3031,6 +3031,16 @@ BBPResult DSQL_ReadOnlyQuery(std::string sXMLSource)
 	return b;
 }
 
+BBPResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML)
+{
+	std::string sDomain = "https://web.biblepay.org";
+	int iTimeout = 30;
+	int iSize = 24000000;
+	BBPResult b;
+	b.Response = BiblepayHTTPSPost(true, 0, "", "", sXML, sDomain, sEndpoint, 443, "", iTimeout, iSize, 4);
+	return b;
+}
+
 std::string Path_Combine(std::string sPath, std::string sFileName)
 {
 	if (sFileName.empty())
@@ -3042,7 +3052,7 @@ std::string Path_Combine(std::string sPath, std::string sFileName)
 	return sFullPath;
 }
 
-void UpdateHealthInformation()
+void UpdateHealthInformation(int iType)
 {
 	// This is an optional BiblePay feature where we will display your sanctuaries health information in the pool.
 	// This allows you to see your sancs health even if you host with one of our turnkey providers (such as Apollon).
@@ -3058,28 +3068,35 @@ void UpdateHealthInformation()
 		
 	double iEnabled = cdbl(GetArg("-healthupdate", "1"), 0);
 	if (iEnabled == 0 || nNetEnabled == 0)
-		return;
+	{
+		if (iType != 1)
+			return;
+	}
 
  	int iNextSuperblock = 0;
 	int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
+	
 	std::string sAddresses;
 	std::string sAmounts;
 	int iVotes = 0;
 	uint256 uGovObjHash = uint256S("0x0");
 	uint256 uPAMHash = uint256S("0x0");
+	const CChainParams& chainparams = Params();
+	
 	GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
 	std::string sXML;
 	uint256 hPam = GetPAMHash(sAddresses, sAmounts);
 	sXML = "<GSCVOTES>" + RoundToString(iVotes, 0) + "</GSCVOTES><PAMHASH>" + hPam.GetHex() + "</PAMHASH>";
 	sXML += "<BLOCKS>" + RoundToString(chainActive.Tip()->nHeight, 0) + "</BLOCKS>";
 	sXML += "<HASH>" + chainActive.Tip()->GetBlockHash().GetHex() + "</HASH>";
+	sXML += "<AGENT>" + FormatFullVersion() + "</AGENT><NETWORKID>" + chainparams.NetworkIDString() + "</NETWORKID>";
 	// Post the Health information
 	int SSL_PORT = 443;
 	int TRANSMISSION_TIMEOUT = 30000;
 	int CONNECTION_TIMEOUT = 15;
 	std::string sResponse;
-	std::string sHealthPage = "Action.aspx?action=health-post";
-	std::string sHost = "https://" + GetSporkValue("pool");
+	std::string sHost = "https://web.biblepay.org";
+	std::string sHealthPage = "BMS/SANCTUARY_HEALTH_REQUEST?solution=" + sXML;
 	sResponse = BiblepayHTTPSPost(true, 0, "POST", "", "", sHost, sHealthPage, SSL_PORT, sXML, CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, 0);
 	std::string sError = ExtractXML(sResponse,"<ERROR>","</ERROR>");
 	std::string sResponseInner = ExtractXML(sResponse,"<RESPONSE>","</RESPONSE>");
@@ -3596,6 +3613,7 @@ WhaleMetric GetWhaleMetrics(int nHeight, bool fIncludeMemoryPool)
 
 std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
 {
+	const Consensus::Params& consensusParams = Params().GetConsensus();
 	std::vector<WhaleStake> wStakes = GetDWS(false);
 	std::vector<WhaleStake> wReturnStakes;
 	int nStartHeight = nHeight - BLOCKS_PER_DAY + 1;
@@ -3607,8 +3625,11 @@ std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
 		{
 			if (w.MaturityHeight >= nStartHeight && w.MaturityHeight <= nEndHeight)
 			{
-				wReturnStakes.push_back(w);
-				nOwed += w.TotalOwed;
+				if (w.BurnHeight > consensusParams.PODC2_CUTOVER_HEIGHT)
+				{
+					wReturnStakes.push_back(w);
+					nOwed += w.TotalOwed;
+				}
 			}
 		}
 	}
@@ -3834,3 +3855,46 @@ BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime)
 	return b;
 }
 	
+std::string SearchChain(int nBlocks, std::string sDest)
+{
+	if (!chainActive.Tip()) 
+		return std::string();
+	int nMaxDepth = chainActive.Tip()->nHeight;
+	int nMinDepth = nMaxDepth - nBlocks;
+	if (nMinDepth < 1) 
+		nMinDepth = 1;
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+	std::string sData;
+	CBlockIndex* pindex = FindBlockByHeight(nMinDepth);
+	while (pindex && pindex->nHeight < nMaxDepth)
+	{
+		if (pindex->nHeight < chainActive.Tip()->nHeight) 
+			pindex = chainActive.Next(pindex);
+		CBlock block;
+		if (ReadBlockFromDisk(block, pindex, consensusParams)) 
+		{
+			for (unsigned int n = 0; n < block.vtx.size(); n++)
+			{
+				std::string sMsg = GetTransactionMessage(block.vtx[n]);
+				std::string sCPK = ExtractXML(sMsg, "<cpk>", "</cpk>");
+				std::string sUSD = ExtractXML(sMsg, "<amount_usd>", "</amount_usd>");
+				std::string sChildID = ExtractXML(sMsg, "<childid>", "</childid>");
+				boost::trim(sChildID);
+
+				for (int i = 0; i < block.vtx[n]->vout.size(); i++)
+				{
+					double dAmount = block.vtx[n]->vout[i].nValue / COIN;
+					std::string sPK = PubKeyToAddress(block.vtx[n]->vout[i].scriptPubKey);
+					if (sPK == sDest && dAmount > 0 && !sChildID.empty())
+					{
+						std::string sRow = "<row><block>" + RoundToString(pindex->nHeight, 0) + "</block><destination>" + sPK + "</destination><cpk>" + sCPK + "</cpk><childid>" 
+							+ sChildID + "</childid><amount>" + RoundToString(dAmount, 2) + "</amount><amount_usd>" 
+							+ sUSD + "</amount_usd><txid>" + block.vtx[n]->GetHash().GetHex() + "</txid></row>";
+						sData += sRow;
+					}
+				}
+			}
+		}
+	}
+	return sData;
+}

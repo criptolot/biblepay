@@ -33,10 +33,10 @@ static const int MIN_INSTANTSEND_PROTO_VERSION      = 70213;
 
 /// For how long we are going to accept votes/locks
 /// after we saw the first one for a specific transaction
-static const int INSTANTSEND_LOCK_TIMEOUT_SECONDS   = 30;
+static const int INSTANTSEND_LOCK_TIMEOUT_SECONDS   = 60;
 /// For how long we are going to keep invalid votes and votes for failed lock attempts,
 /// must be greater than INSTANTSEND_LOCK_TIMEOUT_SECONDS
-static const int INSTANTSEND_FAILED_TIMEOUT_SECONDS = 90;
+static const int INSTANTSEND_FAILED_TIMEOUT_SECONDS = 180;
 
 extern bool fEnableInstantSend;
 

@@ -1545,7 +1545,7 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 		std::string sWatchman = WatchmanOnTheWall(false, sContr);
 		if (fDebugSpam)
 			LogPrintf("WatchmanOnTheWall::Status %s Contract %s", sWatchman, sContr);
-		UpdateHealthInformation();
+		UpdateHealthInformation(0);
 	}
 	bool fStratisExport = (chainActive.Tip()->nHeight % BLOCKS_PER_DAY == 0) && fMasternodeMode;
 	if (fStratisExport)

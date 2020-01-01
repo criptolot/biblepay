@@ -1873,6 +1873,47 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("pinfo", nMN));
 		results.push_back(Pair("elapsed", nElapsed));
 	}
+	else if (sItem == "poom_payments")
+	{
+		if (request.params.size() != 3)
+			throw std::runtime_error("You must specify poom_payments charity_name type [XML/Auto].");
+		std::string sCharity = request.params[1].get_str();
+		std::string sType = request.params[2].get_str();
+		std::string sDest = GetSporkValue(sCharity + "-RECEIVE-ADDRESS");
+		if (sDest.empty())
+			throw std::runtime_error("Unable to find charity " + sCharity);
+
+		std::string CP = SearchChain(BLOCKS_PER_DAY * 31, sDest);
+		int payment_id = 0;
+		if (sType == "XML")
+		{
+			results.push_back(Pair("payments", CP));
+		}
+		else
+		{
+			std::vector<std::string> vRows = Split(CP.c_str(), "<row>");
+			for (int i = 0; i < vRows.size(); i++)
+			{
+				std::string sCPK = ExtractXML(vRows[i], "<cpk>", "</cpk>");
+				std::string sChildID = ExtractXML(vRows[i], "<childid>", "</childid>");
+				std::string sAmount = ExtractXML(vRows[i], "<amount>", "</amount>");
+				std::string sUSD = ExtractXML(vRows[i], "<amount_usd>", "</amount_usd>");
+				std::string sBlock = ExtractXML(vRows[i], "<block>", "</block>");
+				std::string sTXID = ExtractXML(vRows[i], "<txid>", "</txid>");
+				if (!sChildID.empty())
+				{
+					payment_id++;
+					results.push_back(Pair("Payment #", payment_id));
+					results.push_back(Pair("CPK", sCPK));
+					results.push_back(Pair("childid", sChildID));
+					results.push_back(Pair("Amount", sAmount));
+					results.push_back(Pair("Amount_USD", sUSD));
+					results.push_back(Pair("Block #", sBlock));
+					results.push_back(Pair("TXID", sTXID));
+				}
+			}
+		}
+	}
 	else if (sItem == "versioncheck")
 	{
 		std::string sNarr = GetVersionAlert();
@@ -2390,7 +2431,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "tuhi")
 	{
-		UpdateHealthInformation();
+		UpdateHealthInformation(0);
 	}
 	else if (sItem == "funddsql")
 	{
@@ -2697,38 +2738,16 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "price")
 	{
-		bool fEnabled = sporkManager.IsSporkActive(SPORK_30_QUANTITATIVE_TIGHTENING_ENABLED);
-		double nMaxPerc = GetSporkDouble("qtmaxpercentage", 0);
-	
-		if (fEnabled && nMaxPerc > 0)
-		{
-			double dPriorPrice = 0;
-			double dPriorPhase = 0;
-			double dCurPhase = GetQTPhase(false, -1, chainActive.Tip()->nHeight, dPriorPrice, dPriorPhase);
-			results.push_back(Pair("consensus_price", dPriorPrice));
-			results.push_back(Pair("qt_phase", dCurPhase));
-			results.push_back(Pair("qt_prior_phase", dPriorPhase));
-			double out_BTC = 0;
-			double dPrice = GetPBase(out_BTC);
-			double dFuturePhase = GetQTPhase(true, dPrice, chainActive.Tip()->nHeight, dPriorPrice, dPriorPhase);
-			results.push_back(Pair("qt_future_phase", dFuturePhase));
-			results.push_back(Pair("qt_enabled", fEnabled));
-			results.push_back(Pair("cur_price", RoundToString(dPrice, 12)));
-			double dBBP = GetCryptoPrice("bbp");
-			double dBTC = GetCryptoPrice("btc");
-			results.push_back(Pair("BBP/BTC", RoundToString(dBBP, 12)));
-			results.push_back(Pair("BTC/USD", dBTC));
-		}
-		else
-		{
-			double dBBP = GetCryptoPrice("bbp");
-			double dBTC = GetCryptoPrice("btc");
-			results.push_back(Pair("QT", "Disabled"));
-			results.push_back(Pair("BBP/BTC", RoundToString(dBBP, 12)));
-			results.push_back(Pair("BTC/USD", dBTC));
-			double nPrice = GetBBPPrice();
-			results.push_back(Pair("BBP/USD", nPrice));
-		}
+		double dBBP = GetCryptoPrice("bbp");
+		double dBTC = GetCryptoPrice("btc");
+		double dDASH = GetCryptoPrice("dash");
+		results.push_back(Pair("BBP/BTC", RoundToString(dBBP, 12)));
+		results.push_back(Pair("DASH/BTC", RoundToString(dDASH, 12)));
+		results.push_back(Pair("BTC/USD", dBTC));
+		double nPrice = GetBBPPrice();
+		double nDashPriceUSD = dBTC * dDASH;
+		results.push_back(Pair("DASH/USD", nDashPriceUSD));
+		results.push_back(Pair("BBP/USD", nPrice));
 	}
 	else if (sItem == "paysponsorship")
 	{
@@ -3029,7 +3048,7 @@ UniValue exec(const JSONRPCRequest& request)
 			{
 				bool fWhitelisted = sTeamName == "Unknown" ? false : true;
 				if (!fWhitelisted)
-					results.push_back(Pair("Warning!", "** You must join team BiblePay or Gridcoin to be compensated for Research Activity in PODC. **"));
+					results.push_back(Pair("Warning!", "** You must join team BiblePay or a whitelisted team to be compensated for Research Activity in PODC. **"));
 			}
 			if (!sTeamName.empty())
 				results.push_back(Pair("team_name", sTeamName));
@@ -3190,8 +3209,8 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "testhttps")
 	{
-		std::string sURL = "https://" + GetSporkValue("pool");
-		std::string sRestfulURL = "SAN/LastMandatoryVersion.htm";
+		std::string sURL = "https://" + GetSporkValue("bms");
+		std::string sRestfulURL = "BMS/LAST_MANDATORY_VERSION";
 		std::string sResponse = BiblepayHTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 25, 10000, 1);
 		results.push_back(Pair(sRestfulURL, sResponse));
 	}
@@ -3336,6 +3355,14 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("Remember", "Now you must fund your external address with enough capital to make daily PODC/GSC stakes."));
 		}
 
+	}
+	else if (sItem == "testdp")
+	{
+		BBPResult b = DSQL_ReadOnlyQuery("BMS/BBP_PRICE_QUOTE");
+		results.push_back(Pair("PQ", b.Response));
+		b = DSQL_ReadOnlyQuery("BMS/SANCTUARY_HEALTH_REQUEST");
+		results.push_back(Pair("HR", b.Response));
+		UpdateHealthInformation(1);
 	}
 	else if (sItem == "getwcgmemberid")
 	{

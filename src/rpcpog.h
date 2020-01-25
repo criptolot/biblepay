@@ -320,5 +320,7 @@ std::string GetCPKByCPID(std::string sCPID);
 int GetNextPODCTransmissionHeight(int height);
 int GetWhaleStakeSuperblockHeight(int nHeight);
 std::string SearchChain(int nBlocks, std::string sDest);
+std::string GetResDataBySearch(std::string sSearch);
+int GetWCGIdByCPID(std::string sSearch);
 
 #endif

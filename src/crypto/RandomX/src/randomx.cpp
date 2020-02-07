@@ -381,45 +381,6 @@ extern "C" {
 		machine->hashAndFill(output, RANDOMX_HASH_SIZE, machine->tempHash);
 	}
 
-	/*
-	int64_t charTo64bitNum(char a[]) 
-	{
-		int64_t n = 0;
-		memcpy(&n, a, 8);
-		return n;
-	}
-	*/
-
-	void CharToHash(const void* tempHashIn, size_t tempHashSize, uint64_t tempHashOut[])
-	{
-		if (tempHashSize != 32)
-		{
-			printf("\nIllegal instruction in temphash %f ", 32);
-			return;
-		}
-		memcpy(tempHashOut, tempHashIn, 8);
-	}
-
-	void randomx_calculate_hash_next_leapfrog(randomx_vm* machine, const void* tempHashIn, size_t tempHashSize, const void* nextInput, size_t nextInputSize, void* output) 
-	{
-		alignas(16) uint64_t tempHash[8];
-		CharToHash(tempHashIn, tempHashSize, tempHash);
-		//machine->initScratchpad(&tempHash);
-
-		machine->hashAndFill(lastBlake, RANDOMX_HASH_SIZE, tempHash);
-
-		machine->resetRoundingMode();
-		for (uint32_t chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
-			machine->run(machine->tempHash);
-			blake2b(machine->tempHash, sizeof(machine->tempHash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
-		}
-		machine->run(machine->tempHash);
-
-		// Finish current hash and fill the scratchpad for the next hash at the same time
-		blake2b(machine->tempHash, sizeof(machine->tempHash), nextInput, nextInputSize, nullptr, 0);
-		machine->hashAndFill(output, RANDOMX_HASH_SIZE, machine->tempHash);
-	}
-
 	#define SEEDHASH_EPOCH_BLOCKS	2048	/* Must be same as BLOCKS_SYNCHRONIZING_MAX_COUNT in cryptonote_config.h */
 	#define SEEDHASH_EPOCH_LAG		64
 	uint64_t rx_seedheight(const uint64_t height) 

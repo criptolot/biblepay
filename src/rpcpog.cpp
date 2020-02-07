@@ -1067,6 +1067,10 @@ bool CheckNonce(bool f9000, unsigned int nNonce, int nPrevHeight, int64_t nPrevB
 {
 	if (!f9000 || nPrevHeight > params.EVOLUTION_CUTOVER_HEIGHT && nPrevHeight <= params.ANTI_GPU_HEIGHT) 
 		return true;
+
+	if (nPrevHeight >= params.RANDOMX_HEIGHT)
+		return true;
+
 	int64_t MAX_AGE = 30 * 60;
 	int NONCE_FACTOR = 256;
 	int MAX_NONCE = 512;
@@ -3963,4 +3967,34 @@ std::string SearchChain(int nBlocks, std::string sDest)
 		}
 	}
 	return sData;
+}
+
+uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t nBlockTime)
+{
+	static int MAX_AGE = 60 * 30;
+	int64_t nElapsed = nBlockTime - nPrevBlockTime;
+	if (nElapsed > MAX_AGE)
+	{
+		arith_uint256 bnHash = UintToArith256(bbp_hash);
+		static int64_t nDivisor = 8400;
+		bnHash *= 700;
+		bnHash /= nDivisor;
+		uint256 nBH = ArithToUint256(bnHash);
+		return nBH;
+	}
+	return bbp_hash;
+}
+
+std::string ReverseHex(std::string const & src)
+{
+    assert(src.size() % 2 == 0);
+    std::string result;
+    result.reserve(src.size());
+
+    for (std::size_t i = src.size(); i != 0; i -= 2)
+    {
+        result.append(src, i - 2, 2);
+    }
+
+    return result;
 }

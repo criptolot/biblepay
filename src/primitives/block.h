@@ -10,6 +10,7 @@
 #include "serialize.h"
 #include "uint256.h"
 
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -27,7 +28,8 @@ public:
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
-	std::string sBlockMessage;
+	uint256 RandomXKey;
+	std::string RandomXData;
 
     CBlockHeader()
     {
@@ -44,6 +46,11 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+		if (this->nVersion >= 0x50000000UL && this->nVersion < 0x60000000UL)
+		{
+			READWRITE(RandomXKey);
+			READWRITE(RandomXData);
+		}
     }
 
     void SetNull()
@@ -54,7 +61,8 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
-		sBlockMessage = "";
+		RandomXData = std::string();
+		RandomXKey.SetNull();
     }
 
     bool IsNull() const
@@ -62,7 +70,8 @@ public:
         return (nBits == 0);
     }
 
-    uint256 GetHash() const;
+    uint256 GetHash(int iThreadID = 0) const;
+	
 	uint256 GetHashBible() const;
 
     int64_t GetBlockTime() const
@@ -116,7 +125,8 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
-		block.sBlockMessage  = sBlockMessage;
+		block.RandomXData    = RandomXData;
+		block.RandomXKey     = RandomXKey;
 		return block;
     }
 

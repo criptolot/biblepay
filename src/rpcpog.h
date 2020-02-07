@@ -322,5 +322,7 @@ int GetWhaleStakeSuperblockHeight(int nHeight);
 std::string SearchChain(int nBlocks, std::string sDest);
 std::string GetResDataBySearch(std::string sSearch);
 int GetWCGIdByCPID(std::string sSearch);
+uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t nBlockTime);
+std::string ReverseHex(std::string const & src);
 
 #endif

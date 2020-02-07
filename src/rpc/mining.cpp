@@ -39,6 +39,7 @@
 #include <boost/shared_ptr.hpp>
 #include <univalue.h>
 extern std::unordered_map<std::string, std::string> mapArgs;  // setgenerate needs this map
+static std::mutex cs_mining;
 
 /**
  * Return average network hashes per second based on the last 'lookup' blocks,
@@ -124,7 +125,10 @@ UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nG
     {
 		std::string sPMPK;
 		int iThreadID = 0;
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, sPMPK, "", iThreadID));
+		uint256 uRXKey = uint256S("0x01");
+		std::vector<unsigned char> vchRXHeader = ParseHex("00");
+	
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, sPMPK, uRXKey, vchRXHeader));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -270,10 +274,10 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"currentblocksize\": nnn,   (numeric) The last block size\n"
             "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
-            "  \"errors\": \"...\"            (string) Current errors\n"
+            "  \"errors\": \"...\"          (string) Current errors\n"
             "  \"networkhashps\": nnn,      (numeric) The network hashes per second\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
-            "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
+            "  \"chain\": \"xxxx\",         (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "}\n"
 		    "\nExamples:\n"
             + HelpExampleCli("getmininginfo", "")
@@ -361,20 +365,29 @@ std::string gbt_vb_name(const Consensus::DeploymentPos pos) {
 
 UniValue getblockforstratum(const JSONRPCRequest& request)
 {
+	std::unique_lock<std::mutex> lock(cs_mining);
+
 	if (request.fHelp)
-		throw std::runtime_error("getblockforstratum::Generates a block for p2pool/stratum with or without ABN support.  Returns block hex.  Returns 'ERROR' populated with an error.");
+		throw std::runtime_error("getblockforstratum::Generates a block for p2pool/stratum with or without ABN support.  Returns block hex.  Pass getblockforstratum receiveaddress, randomxkey, randomxheader as hex.  Returns 'ERROR' populated with an error.");
 	std::string sError;
 	std::string sHexDifficulty;
 	int nBits = 0;
 	std::string sAddress;
+	std::string sKey;
+	std::string sHeader;
 	if (request.params.size() > 0)
-    {
         sAddress = request.params[0].get_str();
-	}
+	if (request.params.size() > 1)
+		sKey = request.params[1].get_str();
+	if (request.params.size() > 2)
+		sHeader = request.params[2].get_str();
+	std::vector<unsigned char> vHeader = ParseHex(sHeader);
+	std::string sRevKey = ReverseHex(sKey);
+	uint256 uKey = uint256S("0x" + sRevKey);
 	UniValue results(UniValue::VOBJ);
 	CBlock blockX;
 
-	bool fCreated = CreateBlockForStratum(sAddress, sError, blockX);
+	bool fCreated = CreateBlockForStratum(sAddress, uKey, vHeader, sError, blockX);
 	if (!fCreated)
 	{
 		results.push_back(Pair("error1", sError));
@@ -401,9 +414,16 @@ UniValue getblockforstratum(const JSONRPCRequest& request)
 				results.push_back(Pair("warning", "inconclusive-prevblk"));  
 			results.push_back(Pair("prevblocktime", pindexPrev->GetBlockTime()));
 		}
+		results.push_back(Pair("prevblockhash", chainActive.Tip()->GetBlockHash().GetHex()));
 	}
 	results.push_back(Pair("bits", strprintf("%08x", blockX.nBits)));
    	results.push_back(Pair("merkleroot", blockX.hashMerkleRoot.GetHex()));
+	results.push_back(Pair("key", blockX.RandomXKey.GetHex()));
+	
+	std::string rxHeader = ExtractXML(blockX.RandomXData, "<rxheader>", "</rxheader>");
+		
+	results.push_back(Pair("header", rxHeader));
+
 	results.push_back(Pair("error1", sError));
 	return results;
 }
@@ -660,7 +680,10 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, "", "", 0);
+		uint256 uRXKey = uint256S("0x01");
+		std::vector<unsigned char> vchRXHeader = ParseHex("00");
+		
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, "", uRXKey, vchRXHeader);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
@@ -870,6 +893,7 @@ UniValue submitblock(const JSONRPCRequest& request)
             + HelpExampleRpc("submitblock", "\"mydata\"")
         );
     }
+	std::unique_lock<std::mutex> lock(cs_mining);
 
     std::shared_ptr<CBlock> blockptr = std::make_shared<CBlock>();
     CBlock& block = *blockptr;

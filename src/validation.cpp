@@ -1969,6 +1969,14 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
 {
     LOCK(cs_main);
     int32_t nVersion = VERSIONBITS_TOP_BITS;
+	if (pindexPrev->nHeight <= params.RANDOMX_HEIGHT)
+	{
+		nVersion = VERSIONBITS_TOP_BITS_LEGACY;
+	}
+	else if (pindexPrev->nHeight > params.RANDOMX_HEIGHT)
+	{
+		nVersion = VERSIONBITS_TOP_BITS;
+	}
 
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         Consensus::DeploymentPos pos = Consensus::DeploymentPos(i);
@@ -3436,8 +3444,16 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
 {
     // Check proof of work matches claimed amount
 	// R ANDREWS - BiblePay needs these 6 additional fields
+	if (false && nPrevHeight > consensusParams.RANDOMX_HEIGHT-2 && !fProd)
+	{
+		LogPrintf("\nChecking blockheader %f with rxhash %s and rxmsg %s ", nPrevHeight, block.RandomXKey.GetHex(), block.RandomXData);
+	}
+
 	if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus(), nBlockTime, nPrevBlockTime, nPrevHeight, block.nNonce, pindexPrev, false))
-         return state.DoS(5, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
+	{
+		LogPrintf("\nCheckBlockHeader::ERROR-FAILED height %f, nonce %f", nPrevHeight, block.nNonce);
+        return state.DoS(5, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
+	}
 	
 	// BiblePay - Check timestamp (reject if > 15 minutes in future).  This is is important since we lower the difficulty after all online nodes cannot solve block in one hour!  
     if (block.GetBlockTime() > GetAdjustedTime() + (15 * 60))
@@ -3561,6 +3577,16 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     // Check timestamp
     if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
         return state.Invalid(false, REJECT_INVALID, "time-too-new", strprintf("block timestamp too far in the future %d %d", block.GetBlockTime(), nAdjustedTime + 2 * 60 * 60));
+
+	// RandomX
+	if (nHeight > consensusParams.RANDOMX_HEIGHT + 1)
+	{
+		if (block.nVersion < 0x50000000UL || block.nVersion > 0x60000000UL)
+		{
+			return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-randomx-version(0x%08x)", block.nVersion),
+                                 strprintf("rejected nVersion=0x%08x block", block.nVersion));
+		}
+	}
 
     // check for version 2, 3 and 4 upgrades
     if((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||

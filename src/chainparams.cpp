@@ -211,6 +211,7 @@ public:
 		consensus.F12000_CUTOVER_HEIGHT = 35110;
 		consensus.F13000_CUTOVER_HEIGHT = 57700; 
 		consensus.ANTI_GPU_HEIGHT = 170830;
+		consensus.RANDOMX_HEIGHT = 250000;
 		consensus.LAST_TITHE_BLOCK = 21565;
 		consensus.ABNHeight = 127000;
 		consensus.nSubsidyHalvingInterval = BLOCKS_PER_DAY * 365; // We produce approx 74,825 blocks per year (205 per day)
@@ -402,6 +403,7 @@ public:
 		consensus.F12000_CUTOVER_HEIGHT = 100;
 		consensus.F13000_CUTOVER_HEIGHT = 100; 
 		consensus.ANTI_GPU_HEIGHT = 28925;
+		consensus.RANDOMX_HEIGHT = 28010;
 		consensus.ABNHeight = 5000;
 		int BLOCKS_PER_DAY = 205;
 		consensus.F9000_CUTOVER_HEIGHT= 100;

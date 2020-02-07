@@ -1663,11 +1663,14 @@ UniValue getpobhhash(const JSONRPCRequest& request)
 
 UniValue hexblocktocoinbase(const JSONRPCRequest& request)
 {
-	if (request.fHelp || request.params.size() != 1)
+	if (request.fHelp || (request.params.size() != 1  &&  request.params.size() != 2 ))
 		throw std::runtime_error("hexblocktocoinbase: returns block information used by the pool(s) for a given serialized hexblock.");
 
 	// This call is used by pools (pool.biblepay.org and purepool) to verify a serialized solution
 	std::string sBlockHex = request.params[0].get_str();
+	double dDetails = 0;
+	if (request.params.size() > 1)
+		dDetails = cdbl(request.params[1].get_str(), 0);
 	CBlock block;
     if (!DecodeHexBlk(block, sBlockHex))
            throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
@@ -1684,7 +1687,6 @@ UniValue hexblocktocoinbase(const JSONRPCRequest& request)
 	GetMiningParams(pindexPrev->nHeight, f7000, f8000, f9000, fTitheBlocksActive);
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	uint256 hash = BibleHashClassic(block.GetHash(), block.GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, NULL, false, f7000, f8000, f9000, fTitheBlocksActive, block.nNonce, consensusParams);
-	results.push_back(Pair("biblehash", hash.GetHex()));
 	results.push_back(Pair("blockhash", block.GetHash().GetHex()));
 	results.push_back(Pair("nonce", (uint64_t)block.nNonce));
 	results.push_back(Pair("version", block.nVersion));
@@ -1703,6 +1705,12 @@ UniValue hexblocktocoinbase(const JSONRPCRequest& request)
 	results.push_back(Pair("target", hashTarget.GetHex()));
 	results.push_back(Pair("bits", strprintf("%08x", block.nBits)));
 	results.push_back(Pair("merkleroot", block.hashMerkleRoot.GetHex()));
+	// RandomX
+	if (dDetails == 1)
+	{
+		results.push_back(Pair("rxheader", ExtractXML(block.RandomXData, "<rxheader>", "</rxheader>")));
+		results.push_back(Pair("rxkey", block.RandomXKey.GetHex()));
+	} 
 	return results;
 }
 

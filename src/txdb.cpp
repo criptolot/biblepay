@@ -383,7 +383,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
-				pindexNew->hashBibleHash  = diskindex.hashBibleHash;
+				pindexNew->RandomXKey     = diskindex.RandomXKey;
+				pindexNew->RandomXData    = diskindex.RandomXData;
+
 				if (diskindex.nHeight > nCheckpointHeight || diskindex.nHeight % 10 == 0)
 				{
 					if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, Params().GetConsensus(), 

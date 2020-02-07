@@ -341,6 +341,19 @@ inline uint256 HashBiblepayIsolated(const T1 pbegin, const T1 pend)
     return hash[0].trim256();
 }
 
+/* ------------- Blake Hash -------------------- */
+template<typename T1>
+inline uint256 HashBlake(const T1 pbegin, const T1 pend)
+{
+    sph_blake256_context     ctx_blake;
+    static unsigned char pblank[1];
+    uint256 hash[1];
+    sph_blake256_init(&ctx_blake);
+    sph_blake256 (&ctx_blake, (pbegin == pend ? pblank : static_cast<const void*>(&pbegin[0])), (pend - pbegin) * sizeof(pbegin[0]));
+    sph_blake256_close(&ctx_blake, static_cast<void*>(&hash[0]));
+	return hash[0];
+}
+
 /* ----------- X11 Hash ------------------------------------------------ */
 template<typename T1>
 inline uint256 HashX11(const T1 pbegin, const T1 pend)

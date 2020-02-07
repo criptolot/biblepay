@@ -212,8 +212,8 @@ public:
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
-	uint256 hashBibleHash;
-	std::string sBlockMessage;
+	uint256 RandomXKey;
+	std::string RandomXData;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -223,27 +223,26 @@ public:
 
     void SetNull()
     {
-        phashBlock = NULL;
-        pprev = NULL;
-        pskip = NULL;
-        nHeight = 0;
-        nFile = 0;
-        nDataPos = 0;
-        nUndoPos = 0;
-        nChainWork = arith_uint256();
-        nTx = 0;
-        nChainTx = 0;
-        nStatus = 0;
-        nSequenceId = 0;
-        nTimeMax = 0;
-
+        phashBlock     = NULL;
+        pprev          = NULL;
+        pskip          = NULL;
+        nHeight        = 0;
+        nFile          = 0;
+        nDataPos       = 0;
+        nUndoPos       = 0;
+        nChainWork     = arith_uint256();
+        nTx            = 0;
+        nChainTx       = 0;
+        nStatus        = 0;
+        nSequenceId    = 0;
+        nTimeMax       = 0;
+		RandomXKey     = uint256();
         nVersion       = 0;
         hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
-		sBlockMessage   = "";
-
+		RandomXData    = std::string();
     }
 
     CBlockIndex()
@@ -260,8 +259,8 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
-	    sBlockMessage  = block.sBlockMessage;
-
+		RandomXKey     = block.RandomXKey;
+	    RandomXData    = block.RandomXData;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -292,7 +291,8 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
-		block.sBlockMessage  = sBlockMessage;
+		block.RandomXKey     = RandomXKey;
+		block.RandomXData    = RandomXData;
 
         return block;
     }
@@ -415,8 +415,8 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
-		READWRITE(hashBibleHash);
-		READWRITE(LIMITED_STRING(sBlockMessage,2000));
+		READWRITE(RandomXKey);
+		READWRITE(LIMITED_STRING(RandomXData, 2000));
     }
 
     uint256 GetBlockHash() const

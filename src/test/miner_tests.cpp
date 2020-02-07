@@ -123,7 +123,10 @@ void TestPackageSelection(const CChainParams& chainparams, CScript scriptPubKey,
     uint256 hashHighFeeTx = tx.GetHash();
     mempool.addUnchecked(hashHighFeeTx, entry.Fee(50000).Time(GetTime()).SpendsCoinbase(false).FromTx(tx));
 	
-    std::unique_ptr<CBlockTemplate> pblocktemplate = AssemblerForTest(chainparams).CreateNewBlock(scriptPubKey, "", "", 0);
+	uint256 uRXKey = uint256S("0x01");
+	std::vector<unsigned char> vchRXHeader = ParseHex("00");
+	
+    std::unique_ptr<CBlockTemplate> pblocktemplate = AssemblerForTest(chainparams).CreateNewBlock(scriptPubKey, "", uRXKey, vchRXHeader);
 
     BOOST_CHECK(pblocktemplate->block.vtx[1]->GetHash() == hashParentTx);
     BOOST_CHECK(pblocktemplate->block.vtx[2]->GetHash() == hashHighFeeTx);

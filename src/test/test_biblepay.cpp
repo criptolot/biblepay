@@ -149,7 +149,10 @@ CBlock TestChainSetup::CreateAndProcessBlock(const std::vector<CMutableTransacti
 CBlock TestChainSetup::CreateBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
 {
     const CChainParams& chainparams = Params();
-    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, "", "", 0);
+	uint256 uRXKey = uint256S("0x01");
+	std::vector<unsigned char> vchRXHeader = ParseHex("00");
+	
+    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, "", uRXKey, vchRXHeader);
     CBlock& block = pblocktemplate->block;
 
     std::vector<CTransactionRef> llmqCommitments;

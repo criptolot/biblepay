@@ -35,8 +35,8 @@
 #include "smartcontract-server.h"
 #include "masternode-sync.h"
 #include <stdint.h>
-
 #include <univalue.h>
+#include "randomx_bbp.h"
 
 #include <boost/thread/thread.hpp> // boost::thread::interrupt
 #include <boost/algorithm/string.hpp> // boost::trim
@@ -112,7 +112,19 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("bits", strprintf("%08x", blockindex->nBits)));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
-
+	result.push_back(Pair("randomx_key", blockindex->RandomXKey.GetHex()));
+	result.push_back(Pair("randomx_header", ExtractXML(blockindex->RandomXData, "<rxheader>", "</rxheader>")));
+	if (true)
+	{
+		std::vector<unsigned char> vch(160);
+		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
+		std::string randomXBlockHeader = ExtractXML(blockindex->RandomXData, "<rxheader>", "</rxheader>");
+		std::vector<unsigned char> data0 = ParseHex(randomXBlockHeader);
+		uint256 uRXMined = RandomX_BBPHash(data0, blockindex->RandomXKey, 100);
+		ss << blockindex->pprev->GetBlockHash() << uRXMined;
+		uint256 h = HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
+		result.push_back(Pair("RandomX_Hash", h.GetHex()));
+	}
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     CBlockIndex *pnext = chainActive.Next(blockindex);
@@ -164,7 +176,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
 	result.push_back(Pair("subsidy", block.vtx[0]->vout[0].nValue/COIN));
-	result.push_back(Pair("anti-botnet-weight", GetABNWeight(block, false)));
 	std::string sCPK;
 	CheckABNSignature(block, sCPK);
 	if (!sCPK.empty())
@@ -181,7 +192,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
 		const Consensus::Params& consensusParams = Params().GetConsensus();
 		std::string sVerses = GetBibleHashVerses(block.GetHash(), block.GetBlockTime(), blockindex->pprev->nTime, blockindex->pprev->nHeight, blockindex->pprev);
-		if (bShowPrayers) result.push_back(Pair("verses", sVerses));
+		if (bShowPrayers) 
+			result.push_back(Pair("verses", sVerses));
         // Check work against BibleHash
 		bool f7000;
 		bool f8000;
@@ -191,19 +203,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 		arith_uint256 hashTarget = arith_uint256().SetCompact(blockindex->nBits);
 		uint256 hashWork = blockindex->GetBlockHash();
 		uint256 bibleHash = BibleHashClassic(hashWork, block.GetBlockTime(), blockindex->pprev->nTime, false, blockindex->pprev->nHeight, blockindex->pprev, false, f7000, f8000, f9000, fTitheBlocksActive, blockindex->nNonce, consensusParams);
-		bool bSatisfiesBibleHash = (UintToArith256(bibleHash) <= hashTarget);
-		if (fDebugSpam)
-			result.push_back(Pair("satisfiesbiblehash", bSatisfiesBibleHash ? "true" : "false"));
-		result.push_back(Pair("biblehash", bibleHash.GetHex()));
 		result.push_back(Pair("chaindata", block.vtx[0]->vout[0].sTxOutMessage));
-		bool fEnabled = sporkManager.IsSporkActive(SPORK_30_QUANTITATIVE_TIGHTENING_ENABLED);
-		if (fEnabled)
-		{
-			double dPriorPrice = 0;
-			double dPriorPhase = 0;
-			double dQTPct = GetQTPhase(false, -1, blockindex->nHeight, dPriorPrice, dPriorPhase) / 100;
-			result.push_back(Pair("qt_pct", dQTPct));
-		}
 	}
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
@@ -1819,15 +1819,6 @@ UniValue exec(const JSONRPCRequest& request)
 		unsigned int nNonce = cdbl(sNonce,0);
 		if (!sBlockHash.empty() && nBlockTime > 0 && nPrevBlockTime > 0 && nHeight >= 0)
 		{
-			bool f7000;
-			bool f8000;
-			bool f9000;
-			bool fTitheBlocksActive;
-			const Consensus::Params& consensusParams = Params().GetConsensus();
-
-			GetMiningParams(nHeight, f7000, f8000, f9000, fTitheBlocksActive);
-			uint256 hash = BibleHashClassic(blockHash, nBlockTime, nPrevBlockTime, true, nHeight, NULL, false, f7000, f8000, f9000, fTitheBlocksActive, nNonce, consensusParams);
-			results.push_back(Pair("BibleHash",hash.GetHex()));
 			uint256 hash2 = BibleHashV2(blockHash, nBlockTime, nPrevBlockTime, true, nHeight);
 			results.push_back(Pair("BibleHashV2", hash2.GetHex()));
 		}
@@ -3043,6 +3034,38 @@ UniValue exec(const JSONRPCRequest& request)
 		BBPResult b = GetDecentralizedURL();
 		results.push_back(Pair("data", b.Response));
 		results.push_back(Pair("error(s)", b.ErrorCode));
+	}
+	else if (sItem == "randomx_pool")
+	{
+        std::unique_lock<std::mutex> lock(cs_blockchange);
+		{
+			std::string sHeader = request.params[1].get_str();
+			std::string sKey = request.params[2].get_str();
+			std::vector<unsigned char> v = ParseHex(sHeader);
+			std::vector<unsigned char> vKey = ParseHex(sKey);
+			std::string sRevKey = ReverseHex(sKey);
+			uint256 uKey = uint256S("0x" + sRevKey);
+			uint256 uRXMined = RandomX_BBPHash(v, uKey, 90);
+			std::vector<unsigned char> vch(160);
+			CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
+			ss << chainActive.Tip()->GetBlockHash() << uRXMined;
+			uint256 h = HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
+			results.push_back(Pair("RX", h.GetHex()));
+			results.push_back(Pair("RX_root", uRXMined.GetHex()));
+		}
+	}
+	else if (sItem == "randomx")
+	{
+		std::string sHeader = request.params[1].get_str();
+		std::string sKey = request.params[2].get_str();
+		std::string sRevKey = ReverseHex(sKey);
+		uint256 uKey = uint256S("0x" + sRevKey);
+		std::vector<unsigned char> v = ParseHex(sHeader);
+		uint256 uRX3 = RandomX_BBPHash(v, uKey, 99);
+		results.push_back(Pair("hash2", uRX3.GetHex()));
+		uint256 uRX4 = HashBlake(v.begin(), v.end());
+		results.push_back(Pair("hashBlakeInSz", (int)v.size()));
+		results.push_back(Pair("hashBlake", uRX4.GetHex()));
 	}
 	else if (sItem == "analyze")
 	{

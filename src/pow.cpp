@@ -12,7 +12,6 @@
 #include "chainparams.h"
 #include "primitives/block.h"
 #include "uint256.h"
-
 #include <math.h>
 
 unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const Consensus::Params& params) {
@@ -291,22 +290,39 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
 		uint256 uBibleHashClassic = BibleHashClassic(hash, nBlockTime, nPrevBlockTime, true, nPrevHeight, NULL, false, f_7000, f_8000, f_9000, fTitheBlocksActive, nNonce, params);
 		if (UintToArith256(uBibleHashClassic) > bnTarget && nPrevBlockTime > 0) 
 		{
+			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[0] height %f, nonce %f", nPrevHeight, nNonce);
+  
 			return false;
 		}
 	}
-	else
+	else if (nPrevHeight >= params.EVOLUTION_CUTOVER_HEIGHT && nPrevHeight < params.RANDOMX_HEIGHT)
 	{
 		// Anti-GPU check:
 		bool fNonce = CheckNonce(true, nNonce, nPrevHeight, nPrevBlockTime, nBlockTime, params);
 		if (!fNonce)
 		{
+				LogPrintf("\nCheckBlockHeader::ERROR-FAILED[3] height %f, nonce %f", nPrevHeight, nNonce);
+  
 			return error("CheckProofOfWork: ERROR: High Nonce, PrevTime %f, Time %f, Nonce %f ", (double)nPrevBlockTime, (double)nBlockTime, (double)nNonce);
 		}
-
+		
 		uint256 uBibleHash = BibleHashV2(hash, nBlockTime, nPrevBlockTime, true, nPrevHeight);
 		if (UintToArith256(uBibleHash) > bnTarget && nPrevBlockTime > 0) 
 		{
+			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[1] height %f, nonce %f", nPrevHeight, nNonce);
+  
 			return false;
+		}
+	}
+	else if (nPrevHeight >= params.RANDOMX_HEIGHT)
+	{
+		// RandomX Era:
+		if (UintToArith256(ComputeRandomXTarget(hash, nPrevBlockTime, nBlockTime)) > bnTarget) 
+		{
+			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[2] height %f, nonce %f", nPrevHeight, nNonce);
+  
+			return error("CheckProofOfWork Failed:ERROR: RandomX high-hash, Height %f, PrevTime %f, Time %f, Nonce %f ", (double)nPrevHeight, 
+				(double)nPrevBlockTime, (double)nBlockTime, (double)nNonce);
 		}
 	}
 	

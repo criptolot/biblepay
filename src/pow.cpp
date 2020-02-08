@@ -279,6 +279,10 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
     // Check range
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
         return false;
+	// RandomX performance:
+	int64_t nElapsed = GetAdjustedTime() - nPrevBlockTime;
+	if (nElapsed > (60 * 60 * 8) && bLoadingBlockIndex)
+		return true;
 
 	if (nPrevHeight < params.EVOLUTION_CUTOVER_HEIGHT)
 	{

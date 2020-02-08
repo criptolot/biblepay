@@ -13,6 +13,9 @@
 #include "randomx_bbp.h"
 #include <pthread.h>
 
+//#include <mutex>
+//#include <thread>
+
 std::string ExtractXML2(std::string XMLdata, std::string key, std::string key_end)
 {
 	std::string extraction = "";
@@ -28,7 +31,7 @@ std::string ExtractXML2(std::string XMLdata, std::string key, std::string key_en
 	return extraction;
 }
 
-
+//static std::mutex cs_rxhasher;
 uint256 CBlockHeader::GetHash(int iThreadID) const
 {
 	if (this->nVersion >= 0x50000000UL && this->nVersion < 0x60000000UL)
@@ -38,6 +41,7 @@ uint256 CBlockHeader::GetHash(int iThreadID) const
 		// This is so our miners may earn a dual revenue stream (RandomX coins + BBP Coins).
 		// The equation is:  BlakeHash(Previous_BBP_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_BBP_Block_Difficulty
 		// **********************************************************************************************************************************************************************************
+		// std::unique_lock<std::mutex> lock(cs_rxhasher);
 		std::vector<unsigned char> vch(160);
 		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 		std::string randomXBlockHeader = ExtractXML2(RandomXData, "<rxheader>", "</rxheader>");

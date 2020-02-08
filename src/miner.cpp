@@ -647,13 +647,15 @@ recover:
 		
         while (true) 
 		{
-            if (chainparams.MiningRequiresPeers() || fReindex)
+			bool fChainEmpty = (chainActive.Tip() == NULL || chainActive.Tip()->nHeight < 100);
+
+            if (chainparams.MiningRequiresPeers() || fReindex || fChainEmpty)
 			{
                 // Busy-wait for the network to come online so we don't waste time mining
                 // on an obsolete chain. In regtest mode we expect to fly solo.
                 while(true)
 				{
-		            if (PeersExist() && !IsInitialBlockDownload() && masternodeSync.IsSynced() && !fReindex)
+		            if (PeersExist() && !IsInitialBlockDownload() && masternodeSync.IsSynced() && !fReindex && !fChainEmpty)
 						break;
 					if (dJackrabbitStart == 1) 
 						break;
@@ -661,6 +663,7 @@ recover:
                     MilliSleep(1000);
                 } 
             }
+			
 
             //
             // Create new block

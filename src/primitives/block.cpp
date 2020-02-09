@@ -34,7 +34,7 @@ std::string ExtractXML2(std::string XMLdata, std::string key, std::string key_en
 */
 
 //static std::mutex cs_rxhasher;
-uint256 CBlockHeader::GetHash(int iThreadID) const
+uint256 CBlockHeader::GetHash() const
 {
 	/*
 	if (this->nVersion >= 0x50000000UL && this->nVersion < 0x60000000UL)

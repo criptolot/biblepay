@@ -70,7 +70,7 @@ public:
         return (nBits == 0);
     }
 
-    uint256 GetHash(int iThreadID = 0) const;
+    uint256 GetHash() const;
 	
 	uint256 GetHashBible() const;
 

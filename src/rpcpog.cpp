@@ -4000,6 +4000,7 @@ std::string ReverseHex(std::string const & src)
     return result;
 }
 
+static std::mutex cs_rxhasher;
 uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID)
 {
 		// *****************************************                      RandomX - BiblePay                         ************************************************************************
@@ -4007,7 +4008,7 @@ uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBloc
 		// This is so our miners may earn a dual revenue stream (RandomX coins + BBP Coins).
 		// The equation is:  BlakeHash(Previous_BBP_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_BBP_Block_Difficulty
 		// **********************************************************************************************************************************************************************************
-		// std::unique_lock<std::mutex> lock(cs_rxhasher);
+		std::unique_lock<std::mutex> lock(cs_rxhasher);
 		std::vector<unsigned char> vch(160);
 		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 		std::string randomXBlockHeader = ExtractXML(sHeaderHex, "<rxheader>", "</rxheader>");

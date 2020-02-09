@@ -3350,7 +3350,7 @@ UniValue exec(const JSONRPCRequest& request)
 		if (request.params.size() == 5)
 		{
 			sReturnAddress = request.params[4].get_str();
-			CBitcoinAddress address(sReturnAddress);
+			returnAddress = CBitcoinAddress(sReturnAddress);
 		}
 		if (!returnAddress.IsValid())
 			throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Biblepay return address: ") + sReturnAddress);
@@ -3466,7 +3466,8 @@ UniValue exec(const JSONRPCRequest& request)
 					int nRewardHeight = GetWhaleStakeSuperblockHeight(ws.MaturityHeight);
 					std::string sRow = "Burned: " + RoundToString(ws.Amount, 2) + ", Reward: " + RoundToString(ws.TotalOwed, 2) + ", DWU: " 
 						+ RoundToString(ws.ActualDWU*100, 4) + ", Duration: " + RoundToString(ws.Duration, 0) + ", BurnHeight: " + RoundToString(ws.BurnHeight, 0) 
-						+ ", RewardHeight: " + RoundToString(nRewardHeight, 0) + " [" + RoundToString(ws.MaturityHeight, 0) + "], MaturityDate: " + TimestampToHRDate(ws.MaturityTime);
+						+ ", RewardHeight: " + RoundToString(nRewardHeight, 0) + " [" + RoundToString(ws.MaturityHeight, 0) + "], MaturityDate: " + TimestampToHRDate(ws.MaturityTime) + ", ReturnAddress: " + ws.ReturnAddress;
+
 					std::string sKey = ws.CPK + " " + RoundToString(i+1, 0);
 					// ToDo: Add parameter to show the return_to_address if user desires it
 					results.push_back(Pair(sKey, sRow));

@@ -1684,9 +1684,8 @@ UniValue hexblocktocoinbase(const JSONRPCRequest& request)
 	bool f8000;
 	bool f9000;
 	bool fTitheBlocksActive;
-	GetMiningParams(pindexPrev->nHeight, f7000, f8000, f9000, fTitheBlocksActive);
-	const Consensus::Params& consensusParams = Params().GetConsensus();
-	uint256 hash = BibleHashClassic(block.GetHash(), block.GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, NULL, false, f7000, f8000, f9000, fTitheBlocksActive, block.nNonce, consensusParams);
+	//GetMiningParams(pindexPrev->nHeight, f7000, f8000, f9000, fTitheBlocksActive);
+	//const Consensus::Params& consensusParams = Params().GetConsensus();
 	results.push_back(Pair("blockhash", block.GetHash().GetHex()));
 	results.push_back(Pair("nonce", (uint64_t)block.nNonce));
 	results.push_back(Pair("version", block.nVersion));

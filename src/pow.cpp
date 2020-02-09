@@ -270,7 +270,8 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params, 
-	int64_t nBlockTime, int64_t nPrevBlockTime, int nPrevHeight, unsigned int nNonce, const CBlockIndex* pindexPrev, bool bLoadingBlockIndex)
+	int64_t nBlockTime, int64_t nPrevBlockTime, int nPrevHeight, unsigned int nNonce, const CBlockIndex* pindexPrev, std::string sHeaderHex,
+	uint256 uRXKey, int iThreadID, bool bLoadingBlockIndex)
 {
     bool fNegative;
     bool fOverflow;
@@ -310,7 +311,8 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
 			return error("CheckProofOfWork: ERROR: High Nonce, PrevTime %f, Time %f, Nonce %f ", (double)nPrevBlockTime, (double)nBlockTime, (double)nNonce);
 		}
 		
-		uint256 uBibleHash = BibleHashV2(hash, nBlockTime, nPrevBlockTime, true, nPrevHeight);
+		
+		uint256 uBibleHash = BibleHashV2(hash, nBlockTime, nPrevBlockTime, true, nPrevHeight, sHeaderHex, uRXKey, pindexPrev->GetBlockHash(), iThreadID);
 		if (UintToArith256(uBibleHash) > bnTarget && nPrevBlockTime > 0) 
 		{
 			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[1] height %f, nonce %f", nPrevHeight, nNonce);
@@ -321,7 +323,8 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
 	else if (nPrevHeight >= params.RANDOMX_HEIGHT)
 	{
 		// RandomX Era:
-		if (UintToArith256(ComputeRandomXTarget(hash, nPrevBlockTime, nBlockTime)) > bnTarget) 
+		uint256 rxhash = GetRandomXHash(sHeaderHex, uRXKey, pindexPrev->GetBlockHash(), iThreadID);
+		if (UintToArith256(ComputeRandomXTarget(rxhash, nPrevBlockTime, nBlockTime)) > bnTarget) 
 		{
 			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[2] height %f, nonce %f", nPrevHeight, nNonce);
   

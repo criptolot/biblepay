@@ -116,14 +116,8 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 	result.push_back(Pair("randomx_header", ExtractXML(blockindex->RandomXData, "<rxheader>", "</rxheader>")));
 	if (true)
 	{
-		std::vector<unsigned char> vch(160);
-		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
-		std::string randomXBlockHeader = ExtractXML(blockindex->RandomXData, "<rxheader>", "</rxheader>");
-		std::vector<unsigned char> data0 = ParseHex(randomXBlockHeader);
-		uint256 uRXMined = RandomX_BBPHash(data0, blockindex->RandomXKey, 100);
-		ss << blockindex->pprev->GetBlockHash() << uRXMined;
-		uint256 h = HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
-		result.push_back(Pair("RandomX_Hash", h.GetHex()));
+		uint256 uRX = GetRandomXHash(blockindex->RandomXData, blockindex->RandomXKey, blockindex->pprev->GetBlockHash(), 0);
+		result.push_back(Pair("RandomX_Hash", uRX.GetHex()));
 	}
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
@@ -186,7 +180,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 		result.push_back(Pair("sanctuary_reward", block.vtx[0]->vout[1].nValue/COIN));
 	// BiblePay
 	bool bShowPrayers = true;
-
     if (blockindex->pprev)
 	{
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
@@ -194,15 +187,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 		std::string sVerses = GetBibleHashVerses(block.GetHash(), block.GetBlockTime(), blockindex->pprev->nTime, blockindex->pprev->nHeight, blockindex->pprev);
 		if (bShowPrayers) 
 			result.push_back(Pair("verses", sVerses));
-        // Check work against BibleHash
-		bool f7000;
-		bool f8000;
-		bool f9000;
-		bool fTitheBlocksActive;
-		GetMiningParams(blockindex->pprev->nHeight, f7000, f8000, f9000, fTitheBlocksActive);
-		arith_uint256 hashTarget = arith_uint256().SetCompact(blockindex->nBits);
-		uint256 hashWork = blockindex->GetBlockHash();
-		uint256 bibleHash = BibleHashClassic(hashWork, block.GetBlockTime(), blockindex->pprev->nTime, false, blockindex->pprev->nHeight, blockindex->pprev, false, f7000, f8000, f9000, fTitheBlocksActive, blockindex->nNonce, consensusParams);
 		result.push_back(Pair("chaindata", block.vtx[0]->vout[0].sTxOutMessage));
 	}
     CBlockIndex *pnext = chainActive.Next(blockindex);
@@ -1803,27 +1787,7 @@ UniValue exec(const JSONRPCRequest& request)
 
     UniValue results(UniValue::VOBJ);
 	results.push_back(Pair("Command",sItem));
-	if (sItem == "biblehash")
-	{
-		if (request.params.size() != 6)
-			throw std::runtime_error("You must specify blockhash, blocktime, prevblocktime, prevheight, and nonce IE: run biblehash blockhash 12345 12234 100 256.");
-		std::string sBlockHash = request.params[1].get_str();
-		std::string sBlockTime = request.params[2].get_str();
-		std::string sPrevBlockTime = request.params[3].get_str();
-		std::string sPrevHeight = request.params[4].get_str();
-		std::string sNonce = request.params[5].get_str();
-		int64_t nHeight = cdbl(sPrevHeight,0);
-		uint256 blockHash = uint256S("0x" + sBlockHash);
-		int64_t nBlockTime = (int64_t)cdbl(sBlockTime,0);
-		int64_t nPrevBlockTime = (int64_t)cdbl(sPrevBlockTime,0);
-		unsigned int nNonce = cdbl(sNonce,0);
-		if (!sBlockHash.empty() && nBlockTime > 0 && nPrevBlockTime > 0 && nHeight >= 0)
-		{
-			uint256 hash2 = BibleHashV2(blockHash, nBlockTime, nPrevBlockTime, true, nHeight);
-			results.push_back(Pair("BibleHashV2", hash2.GetHex()));
-		}
-	}
-	else if (sItem == "subsidy")
+	if (sItem == "subsidy")
 	{
 		// Used by the Pools
 		if (request.params.size() != 2) 
@@ -3045,11 +3009,13 @@ UniValue exec(const JSONRPCRequest& request)
 			std::vector<unsigned char> vKey = ParseHex(sKey);
 			std::string sRevKey = ReverseHex(sKey);
 			uint256 uKey = uint256S("0x" + sRevKey);
+
 			uint256 uRXMined = RandomX_BBPHash(v, uKey, 90);
 			std::vector<unsigned char> vch(160);
 			CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 			ss << chainActive.Tip()->GetBlockHash() << uRXMined;
 			uint256 h = HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
+
 			results.push_back(Pair("RX", h.GetHex()));
 			results.push_back(Pair("RX_root", uRXMined.GetHex()));
 		}
@@ -3591,84 +3557,6 @@ UniValue exec(const JSONRPCRequest& request)
 		double dNonce = cdbl(request.params[1].get_str(), 0);
 		bool fNonce =  CheckNonce(true, (int)dNonce, nHeight, 1, 301, consensusParams);
 		results.push_back(Pair("result", fNonce));
-	}
-	else if (sItem == "XBBP")
-	{
-		std::string smd1 = "BiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePayBiblePay";
-		uint256 hMax = uint256S("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-		arith_uint256 aMax = UintToArith256(hMax);
-		arith_uint256 aMax420 = aMax * 420;
-		uint256 hMaxResult = ArithToUint256(aMax420);
-		results.push_back(Pair("hMax", hMax.GetHex()));
-		results.push_back(Pair("hMaxResult", hMaxResult.GetHex()));
-		arith_uint256 bnDiff = aMax - aMax420;
-		uint256 hDiff = ArithToUint256(bnDiff);
-		results.push_back(Pair("bnDiff", hDiff.GetHex()));
-		arith_uint256 aDiv = aMax420 / 1260;
-		uint256 hDivResult = ArithToUint256(aDiv);
-		results.push_back(Pair("bnDivision", hDivResult.GetHex()));
-		std::vector<unsigned char> vch1 = std::vector<unsigned char>(smd1.begin(), smd1.end());
-	    std::string smd2="biblepay";
-		std::vector<unsigned char> vch2 = std::vector<unsigned char>(smd2.begin(), smd2.end());
-		uint256 hSMD10 = Sha256001(1,170001,smd2);
-	    uint256 h1 = SerializeHash(vch1);
-		uint256 hSMD2 = SerializeHash(vch2);
-		uint256 h2 = HashBiblePay(vch1.begin(),vch1.end());
-		uint256 h3 = HashBiblePay(h2.begin(),h2.end());
-		uint256 h4 = HashBiblePay(h3.begin(),h3.end());
-		uint256 h5 = HashBiblePay(h4.begin(),h4.end());
-		uint256 h00 = HashX11(vch1.begin(), vch1.end());
-		uint256 hGroestl = HashGroestl(vch1.begin(), vch1.end());
-		uint256 hBiblepayIsolated = HashBiblepayIsolated(vch1.begin(), vch1.end());
-		uint256 hBiblePayTest = HashBiblePay(vch1.begin(), vch1.end());
-		bool f7000 = false;
-		bool f8000 = false;
-		bool f9000 = false;
-		bool fTitheBlocksActive = false;
-		int nHeight = 1;
-		GetMiningParams(nHeight, f7000, f8000, f9000, fTitheBlocksActive);
-		f7000 = false;
-		f8000 = false;
-		f9000 = false;
-		fTitheBlocksActive = false;
-		int64_t nTime = 3;
-		int64_t nPrevTime = 2;
-		int64_t nPrevHeight = 1;
-		int64_t nNonce = 10;
-		uint256 inHash = uint256S("0x1234");
-		bool bMining = true;
-		const Consensus::Params& consensusParams = Params().GetConsensus();
-
-		uint256 uBibleHash = BibleHashClassic(inHash, nTime, nPrevTime, bMining, nPrevHeight, NULL, false, f7000, f8000, f9000, fTitheBlocksActive, nNonce, consensusParams);
-		std::vector<unsigned char> vchPlaintext = std::vector<unsigned char>(inHash.begin(), inHash.end());
-		std::vector<unsigned char> vchCiphertext;
-		BibleEncryptE(vchPlaintext, vchCiphertext);
-		/* Try to discover AES256 empty encryption value */
-		uint256 hBlank = uint256S("0x0");
-		std::vector<unsigned char> vchBlank = std::vector<unsigned char>(hBlank.begin(), hBlank.end());
-		std::vector<unsigned char> vchBlankEncrypted;
-		BibleEncryptE(vchBlank, vchBlankEncrypted);
-		std::string sBlankBase64 = EncodeBase64(VectToString(vchBlankEncrypted));
-		results.push_back(Pair("Blank_Base64", sBlankBase64));
-		std::string sCipher64 = EncodeBase64(VectToString(vchCiphertext));
-		std::string sBibleMD5 = BibleMD5(sCipher64);
-		std::string sBibleMD51234 = BibleMD5("1234");
-		results.push_back(Pair("h_sha256", hSMD10.GetHex()));
-		results.push_back(Pair("AES_Cipher64", sCipher64));
-		results.push_back(Pair("AES_BibleMD5", sBibleMD5));
-		results.push_back(Pair("Plain_BibleMD5_1234", sBibleMD51234));
-		results.push_back(Pair("biblehash", uBibleHash.GetHex()));
-		results.push_back(Pair("h00_biblepay", h00.GetHex()));
-		results.push_back(Pair("h_Groestl", hGroestl.GetHex()));
-		results.push_back(Pair("h_BiblePayIsolated", hBiblepayIsolated.GetHex()));
-		results.push_back(Pair("h_BiblePayTest", hBiblePayTest.GetHex()));
-		results.push_back(Pair("h1",h1.GetHex()));
-		results.push_back(Pair("h2",h2.GetHex()));
-		results.push_back(Pair("hSMD2", hSMD2.GetHex()));
-		results.push_back(Pair("h3",h3.GetHex()));
-		results.push_back(Pair("h4",h4.GetHex()));
-		results.push_back(Pair("h5",h5.GetHex()));
-		uint256 startHash = uint256S("0x010203040506070809101112");
 	}
 	else
 	{

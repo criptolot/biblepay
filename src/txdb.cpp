@@ -392,7 +392,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
 						pindexNew->nTime,
 						(pindexNew->pprev) ? pindexNew->pprev->nTime : 0,
 						(pindexNew->pprev) ? pindexNew->pprev->nHeight : 0, pindexNew->nNonce, 
-						pindexNew->pprev, true))
+						pindexNew->pprev, pindexNew->RandomXData, pindexNew->RandomXKey, 0, true))
 						return error("LoadBlockIndex(): CheckProofOfWork failed: %s", pindexNew->ToString());
 				}
                 pcursor->Next();

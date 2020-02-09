@@ -1212,7 +1212,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
 	CBlockIndex* pindexPrev = mapBlockIndex[block.hashPrevBlock];
 	if (pindexPrev)
 	{
-		if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams, block.GetBlockTime(), pindexPrev->nTime, pindexPrev->nHeight, block.nNonce, pindexPrev, true))
+		if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams, block.GetBlockTime(), pindexPrev->nTime, pindexPrev->nHeight, block.nNonce, pindexPrev, block.RandomXData, block.RandomXKey, 0, true))
 		    return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 	}
 
@@ -1969,14 +1969,6 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
 {
     LOCK(cs_main);
     int32_t nVersion = VERSIONBITS_TOP_BITS;
-	if (pindexPrev->nHeight <= params.RANDOMX_HEIGHT)
-	{
-		nVersion = VERSIONBITS_TOP_BITS_LEGACY;
-	}
-	else if (pindexPrev->nHeight > params.RANDOMX_HEIGHT)
-	{
-		nVersion = VERSIONBITS_TOP_BITS;
-	}
 
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         Consensus::DeploymentPos pos = Consensus::DeploymentPos(i);
@@ -3448,8 +3440,8 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
 	{
 		LogPrintf("\nChecking blockheader %f with rxhash %s and rxmsg %s ", nPrevHeight, block.RandomXKey.GetHex(), block.RandomXData);
 	}
-
-	if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus(), nBlockTime, nPrevBlockTime, nPrevHeight, block.nNonce, pindexPrev, false))
+	
+	if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus(), nBlockTime, nPrevBlockTime, nPrevHeight, block.nNonce, pindexPrev, block.RandomXData, block.RandomXKey, 0, false))
 	{
 		LogPrintf("\nCheckBlockHeader::ERROR-FAILED height %f, nonce %f", nPrevHeight, block.nNonce);
         return state.DoS(5, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
@@ -3577,16 +3569,6 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     // Check timestamp
     if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
         return state.Invalid(false, REJECT_INVALID, "time-too-new", strprintf("block timestamp too far in the future %d %d", block.GetBlockTime(), nAdjustedTime + 2 * 60 * 60));
-
-	// RandomX
-	if (nHeight > consensusParams.RANDOMX_HEIGHT + 1)
-	{
-		if (block.nVersion < 0x50000000UL || block.nVersion > 0x60000000UL)
-		{
-			return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-randomx-version(0x%08x)", block.nVersion),
-                                 strprintf("rejected nVersion=0x%08x block", block.nVersion));
-		}
-	}
 
     // check for version 2, 3 and 4 upgrades
     if((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||
@@ -3718,8 +3700,9 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 	{
 		bool bGSCSuperblock = CSuperblock::IsSmartContract(nHeight);
 		CAmount nPayments = block.vtx[0]->GetValueOut();
+		int nTimeConstraint = fProd ? 60 * 8 : 30 * 1;
 		if (nHeight > consensusParams.PODC2_CUTOVER_HEIGHT && nHeight > consensusParams.EVOLUTION_CUTOVER_HEIGHT 
-			&& bGSCSuperblock && nPayments < ((MAX_BLOCK_SUBSIDY + 1) * COIN) && !LateBlock(block, pindexPrev, 60 * 8))
+			&& bGSCSuperblock && nPayments < ((MAX_BLOCK_SUBSIDY + 1) * COIN) && !LateBlock(block, pindexPrev, nTimeConstraint))
 		{
 			LogPrintf("\nContextualCheckBlock::CheckGSCSuperblock, Block Height %f, This superblock has no recipients!", (double)nHeight);
 			return false; 

@@ -13,6 +13,7 @@
 #include "randomx_bbp.h"
 #include <pthread.h>
 
+/*
 //#include <mutex>
 //#include <thread>
 
@@ -30,10 +31,12 @@ std::string ExtractXML2(std::string XMLdata, std::string key, std::string key_en
 	}
 	return extraction;
 }
+*/
 
 //static std::mutex cs_rxhasher;
 uint256 CBlockHeader::GetHash(int iThreadID) const
 {
+	/*
 	if (this->nVersion >= 0x50000000UL && this->nVersion < 0x60000000UL)
 	{
 		// *****************************************                      RandomX - BiblePay                         ************************************************************************
@@ -52,12 +55,13 @@ uint256 CBlockHeader::GetHash(int iThreadID) const
 	}
 	else
 	{
+	*/
 		// Legacy BBP Hashes (Before consensusParams.RANDOMX_HEIGHT):
 		std::vector<unsigned char> vch(80);
 		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 		ss << nVersion << hashPrevBlock << hashMerkleRoot << nTime << nBits << nNonce;
 		return HashX11((const char *)vch.data(), (const char *)vch.data() + vch.size());
-	}
+	//}
 }
 
 uint256 CBlockHeader::GetHashBible() const

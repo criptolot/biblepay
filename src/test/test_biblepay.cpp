@@ -148,54 +148,8 @@ CBlock TestChainSetup::CreateAndProcessBlock(const std::vector<CMutableTransacti
 
 CBlock TestChainSetup::CreateBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
 {
-    const CChainParams& chainparams = Params();
-	uint256 uRXKey = uint256S("0x01");
-	std::vector<unsigned char> vchRXHeader = ParseHex("00");
-	
-    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, "", uRXKey, vchRXHeader);
-    CBlock& block = pblocktemplate->block;
-
-    std::vector<CTransactionRef> llmqCommitments;
-    for (const auto& tx : block.vtx) {
-        if (tx->nVersion == 3 && tx->nType == TRANSACTION_QUORUM_COMMITMENT) {
-            llmqCommitments.emplace_back(tx);
-        }
-    }
-
-    // Replace mempool-selected txns with just coinbase plus passed-in txns:
-    block.vtx.resize(1);
-    // Re-add quorum commitments
-    block.vtx.insert(block.vtx.end(), llmqCommitments.begin(), llmqCommitments.end());
-    BOOST_FOREACH(const CMutableTransaction& tx, txns)
-        block.vtx.push_back(MakeTransactionRef(tx));
-
-    // Manually update CbTx as we modified the block here
-    if (block.vtx[0]->nType == TRANSACTION_COINBASE) {
-        LOCK(cs_main);
-        CCbTx cbTx;
-        if (!GetTxPayload(*block.vtx[0], cbTx)) {
-            BOOST_ASSERT(false);
-        }
-        CValidationState state;
-        if (!CalcCbTxMerkleRootMNList(block, chainActive.Tip(), cbTx.merkleRootMNList, state)) {
-            BOOST_ASSERT(false);
-        }
-        if (!CalcCbTxMerkleRootQuorums(block, chainActive.Tip(), cbTx.merkleRootQuorums, state)) {
-            BOOST_ASSERT(false);
-        }
-        CMutableTransaction tmpTx = *block.vtx[0];
-        SetTxPayload(tmpTx, cbTx);
-        block.vtx[0] = MakeTransactionRef(tmpTx);
-    }
-
-    // IncrementExtraNonce creates a valid coinbase and merkleRoot
-    unsigned int extraNonce = 0;
-    IncrementExtraNonce(&block, chainActive.Tip(), extraNonce);
-
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus(), 0, 0, 0, 0, NULL, false)) ++block.nNonce;
-
-    CBlock result = block;
-    return result;
+    CBlock r;
+    return r;
 }
 
 CBlock TestChainSetup::CreateBlock(const std::vector<CMutableTransaction>& txns, const CKey& scriptKey)

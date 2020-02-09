@@ -21,33 +21,6 @@ BOOST_FIXTURE_TEST_SUITE(blockencodings_tests, RegtestingSetup)
 
 static CBlock BuildBlockTestCase() {
     CBlock block;
-    CMutableTransaction tx;
-    tx.vin.resize(1);
-    tx.vin[0].scriptSig.resize(10);
-    tx.vout.resize(1);
-    tx.vout[0].nValue = 42;
-
-    block.vtx.resize(3);
-    block.vtx[0] = MakeTransactionRef(tx);
-    block.nVersion = 42;
-    block.hashPrevBlock = GetRandHash();
-    block.nBits = 0x207fffff;
-
-    tx.vin[0].prevout.hash = GetRandHash();
-    tx.vin[0].prevout.n = 0;
-    block.vtx[1] = MakeTransactionRef(tx);
-
-    tx.vin.resize(10);
-    for (size_t i = 0; i < tx.vin.size(); i++) {
-        tx.vin[i].prevout.hash = GetRandHash();
-        tx.vin[i].prevout.n = 0;
-    }
-    block.vtx[2] = MakeTransactionRef(tx);
-
-    bool mutated;
-    block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
-    assert(!mutated);
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus(), 0, 0, 0, 0, NULL, false)) ++block.nNonce;
     return block;
 }
 
@@ -289,8 +262,7 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus(), 0, 0, 0, 0, NULL, false)) ++block.nNonce;
-
+    
     // Test simple header round-trip with only coinbase
     {
         CBlockHeaderAndShortTxIDs shortIDs(block);

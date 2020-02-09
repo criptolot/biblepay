@@ -668,10 +668,10 @@ recover:
             //
             // Create new block
             //
-
             unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
             CBlockIndex* pindexPrev = chainActive.Tip();
             if(!pindexPrev) break;
+			bool fRandomX = (pindexPrev->nHeight >= chainparams.GetConsensus().RANDOMX_HEIGHT);
 
 			if (!fProd && mempool.size() == 0 && GetSporkDouble("SLEEP_DURING_EMPTY_BLOCKS", 0) == 1)
                 MilliSleep(1000 * 60 * 7);
@@ -715,13 +715,10 @@ recover:
 			{
 				while (true)
 				{
-					// BiblePay: Proof of BibleHash requires the blockHash to not only be less than the Hash Target, but also,
-					// the BibleHash of the blockhash must be less than the target.
-					// The BibleHash is generated from chained bible verses, AES encryption, MD5, X11, and the custom biblepay.c hash
+					// BiblePay uses RandomX after the RandomX cutover height:
 					uint256 x11_hash = pblock->GetHash(iThreadID + 1);
+					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, pblock->RandomXData, pblock->RandomXKey, pindexPrev->GetBlockHash(), iThreadID);
 					
-					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight);
-
 					nHashesDone += 1;
 
 					if (UintToArith256(ComputeRandomXTarget(hash, pindexPrev->nTime, pblock->GetBlockTime())) <= hashTarget)
@@ -747,8 +744,8 @@ recover:
 					}
 						
 					pblock->nNonce += 1;
-					// If RandomX
-					if (pblock->nVersion >= 0x50000000UL && pblock->nVersion < 0x60000000UL)
+					// If RandomX 
+					if (fRandomX)
 					{
 						uint256 rxHeader = uint256S("0x" + RoundToString(GetAdjustedTime(), 0) + RoundToString(iThreadID, 0) + RoundToString(pblock->nNonce, 0));
 						pblock->RandomXData = "<rxheader>" + msSessionID + rxHeader.GetHex() + "</rxheader>";

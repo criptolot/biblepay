@@ -386,12 +386,12 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
 				pindexNew->RandomXKey     = diskindex.RandomXKey;
 				pindexNew->RandomXData    = diskindex.RandomXData;
 
-				if (diskindex.nHeight > nCheckpointHeight || diskindex.nHeight % 10 == 0)
+				if (pindexNew->pprev && (diskindex.nHeight > nCheckpointHeight || diskindex.nHeight % 10 == 0))
 				{
 					if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, Params().GetConsensus(), 
 						pindexNew->nTime,
-						(pindexNew->pprev) ? pindexNew->pprev->nTime : 0,
-						(pindexNew->pprev) ? pindexNew->pprev->nHeight : 0, pindexNew->nNonce, 
+						pindexNew->pprev->nTime,
+						pindexNew->pprev->nHeight, pindexNew->nNonce, 
 						pindexNew->pprev, pindexNew->RandomXData, pindexNew->RandomXKey, 0, true))
 						return error("LoadBlockIndex(): CheckProofOfWork failed: %s", pindexNew->ToString());
 				}

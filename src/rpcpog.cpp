@@ -3973,22 +3973,44 @@ std::string SearchChain(int nBlocks, std::string sDest)
 uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t nBlockTime)
 {
 	static int MAX_AGE = 60 * 30;
+	static int MAX_AGE2 = 60 * 45;
+	static int MAX_AGE3 = 60 * 15;
+	static int64_t nDivisor = 8400;
 	int64_t nElapsed = nBlockTime - nPrevBlockTime;
 	if (nElapsed > MAX_AGE)
 	{
 		arith_uint256 bnHash = UintToArith256(bbp_hash);
-		static int64_t nDivisor = 8400;
 		bnHash *= 700;
 		bnHash /= nDivisor;
 		uint256 nBH = ArithToUint256(bnHash);
 		return nBH;
 	}
+
+	if (nElapsed > MAX_AGE2)
+	{
+		arith_uint256 bnHash = UintToArith256(bbp_hash);
+		bnHash *= 200;
+		bnHash /= nDivisor;
+		uint256 nBH = ArithToUint256(bnHash);
+		return nBH;
+	}
+	
+	if (nElapsed > MAX_AGE3 && !fProd)
+	{
+		arith_uint256 bnHash = UintToArith256(bbp_hash);
+		bnHash *= 10;
+		bnHash /= nDivisor;
+		uint256 nBH = ArithToUint256(bnHash);
+		return nBH;
+	}
+
 	return bbp_hash;
 }
 
 std::string ReverseHex(std::string const & src)
 {
-    assert(src.size() % 2 == 0);
+    if (src.size() % 2 != 0)
+		return std::string();
     std::string result;
     result.reserve(src.size());
 
@@ -4008,12 +4030,13 @@ uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBloc
 		// This is so our miners may earn a dual revenue stream (RandomX coins + BBP Coins).
 		// The equation is:  BlakeHash(Previous_BBP_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_BBP_Block_Difficulty
 		// **********************************************************************************************************************************************************************************
+	if (iThreadID == 0)
 		std::unique_lock<std::mutex> lock(cs_rxhasher);
-		std::vector<unsigned char> vch(160);
-		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
-		std::string randomXBlockHeader = ExtractXML(sHeaderHex, "<rxheader>", "</rxheader>");
-		std::vector<unsigned char> data0 = ParseHex(randomXBlockHeader);
-		uint256 uRXMined = RandomX_BBPHash(data0, key, iThreadID);
-		ss << hashPrevBlock << uRXMined;
-		return HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
+	std::vector<unsigned char> vch(160);
+	CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
+	std::string randomXBlockHeader = ExtractXML(sHeaderHex, "<rxheader>", "</rxheader>");
+	std::vector<unsigned char> data0 = ParseHex(randomXBlockHeader);
+	uint256 uRXMined = RandomX_BBPHash(data0, key, iThreadID);
+	ss << hashPrevBlock << uRXMined;
+	return HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
 }

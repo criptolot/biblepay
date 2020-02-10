@@ -402,8 +402,8 @@ public:
 		consensus.F7000_CUTOVER_HEIGHT = 100;
 		consensus.F12000_CUTOVER_HEIGHT = 100;
 		consensus.F13000_CUTOVER_HEIGHT = 100; 
-		consensus.ANTI_GPU_HEIGHT = 75000;
-		consensus.RANDOMX_HEIGHT = 28005;
+		consensus.ANTI_GPU_HEIGHT = 28010;
+		consensus.RANDOMX_HEIGHT = 28003;
 		consensus.ABNHeight = 5000;
 		int BLOCKS_PER_DAY = 205;
 		consensus.F9000_CUTOVER_HEIGHT= 100;

@@ -717,7 +717,7 @@ recover:
 				{
 					// BiblePay uses RandomX after the RandomX cutover height:
 					uint256 x11_hash = pblock->GetHash();
-					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, pblock->RandomXData, pblock->RandomXKey, pindexPrev->GetBlockHash(), iThreadID);
+					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, pblock->RandomXData, pblock->RandomXKey, pindexPrev->GetBlockHash(), iThreadID + 1);
 					
 					nHashesDone += 1;
 

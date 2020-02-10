@@ -1970,6 +1970,15 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
     LOCK(cs_main);
     int32_t nVersion = VERSIONBITS_TOP_BITS;
 
+	if (pindexPrev->nHeight < params.RANDOMX_HEIGHT)
+    {
+        nVersion = VERSIONBITS_TOP_BITS_LEGACY;
+    }
+    else if (pindexPrev->nHeight >= params.RANDOMX_HEIGHT)
+    {
+        nVersion = VERSIONBITS_TOP_BITS;
+    }
+
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         Consensus::DeploymentPos pos = Consensus::DeploymentPos(i);
         ThresholdState state = VersionBitsState(pindexPrev, params, pos, versionbitscache);
@@ -3569,6 +3578,16 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     // Check timestamp
     if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
         return state.Invalid(false, REJECT_INVALID, "time-too-new", strprintf("block timestamp too far in the future %d %d", block.GetBlockTime(), nAdjustedTime + 2 * 60 * 60));
+
+    // RandomX
+    if (nHeight > consensusParams.RANDOMX_HEIGHT + 1)
+    {
+        if (block.nVersion < 0x50000000UL || block.nVersion > 0x60000000UL)
+        {
+            return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-randomx-version(0x%08x)", block.nVersion),
+                                 strprintf("rejected nVersion=0x%08x block", block.nVersion));
+        }
+    }
 
     // check for version 2, 3 and 4 upgrades
     if((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||

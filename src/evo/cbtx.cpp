@@ -9,6 +9,7 @@
 #include "llmq/quorums_commitment.h"
 #include "simplifiedmns.h"
 #include "specialtx.h"
+#include "spork.h"
 
 #include "chainparams.h"
 #include "consensus/merkle.h"
@@ -55,8 +56,9 @@ bool CheckCbTxMerkleRoots(const CBlock& block, const CBlockIndex* pindex, CValid
         return true;
     }
 
+	bool fChainLocksActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
 	bool fLLMQActive = pindex->nHeight >= Params().GetConsensus().LLMQHeight;
-	if (!fLLMQActive) 
+	if (!fLLMQActive || !fChainLocksActive) 
 		return true;
 
     static int64_t nTimePayload = 0;

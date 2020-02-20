@@ -1190,7 +1190,7 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams, bool fCheckPOW)
 {
     block.SetNull();
 
@@ -1209,19 +1209,24 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
 
     // Check the header
 	// R ANDREWS - Biblepay needs to find the previous block before checking the POW
-	CBlockIndex* pindexPrev = mapBlockIndex[block.hashPrevBlock];
-	if (pindexPrev)
+	// Due to the slow nature of randomX we must deterministically check the proof of work (during cold boots, and during new blocks, but not when memorizing prayers or assessing the GSC contract).  
+	// NOTE:  POW is always checked when we receive blockheaders and during ConnectBlock anyway, so this below procedure is more for verifying the integrity of the data on the disk.
+	if (fCheckPOW)
 	{
-		if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams, block.GetBlockTime(), pindexPrev->nTime, pindexPrev->nHeight, block.nNonce, pindexPrev, block.RandomXData, block.RandomXKey, 0, true))
-		    return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+		CBlockIndex* pindexPrev = mapBlockIndex[block.hashPrevBlock];
+		if (pindexPrev)
+		{
+			if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams, block.GetBlockTime(), pindexPrev->nTime, pindexPrev->nHeight, block.nNonce, pindexPrev, block.RandomXData, block.RandomXKey, 0, true))
+				return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+		}
 	}
 
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams, bool fPOW)
 {
-    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
+    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams, fPOW))
         return false;
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
@@ -2774,7 +2779,7 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     if (!pblock) {
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         connectTrace.blocksConnected.emplace_back(pindexNew, pblockNew);
-        if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus()))
+        if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus(), true))
             return AbortNode(state, "Failed to read block");
     } else {
         connectTrace.blocksConnected.emplace_back(pindexNew, pblock);
@@ -4443,7 +4448,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
         }
         CBlock block;
         // check level 0: read from disk
-        if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus()))
+        if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus(), true))
             return error("VerifyDB(): *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
         // check level 1: verify block validity
         if (nCheckLevel >= 1 && !CheckBlock(block, state, chainparams.GetConsensus()))

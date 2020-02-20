@@ -35,31 +35,8 @@ void destroy(int iThreadID)
 
 void BusyWaitGuard(int iThreadID)
 {
-	static int MAX_MS = 5000;
-	if (!fBusy[iThreadID])
-		return;
-	// Note 1: When we add the std::unique_lock<std::mutex> in front of the rx vm, we throw all kinds of errors, I believe because each cmake randomx dependency needs re-built with pthreads, boost, and std::mutex.
-	// Note 2: When we don't use a unique_lock, the vm throws an illegal instruction if accessed by more than one thread.
-	// Note 3: If we create and destroy the vm sequentially, we spend a massive amount of time initializing and de-initializing (IE we receive 1 hashpersec).
-	// Note 4: If we create multiple vms, we use a lot of ram, which is not really desirable on a sanctuary, as they may want to run multiple instances.
-	// For now, we have an interim solution that seems to be working.  We create multiple threads for miners, and normally, these never interfere with each other due to the threadid.
-	// If the thread enters the below busy guard, it just joins and exits and this appears to prevent crashing and this allows 50hps per thread (roughly), which is the actual performance of rx-slowhash.
-	// Note, to prevent the core from crashing, I added a std::unique_lock in the rpc everywhere we ask for a hash (since multiple rpc threads ask for hashes).
-	// The core block syncer runs on one single thread so it is not guarded.
-	// ToDo:  Let's try to compile the randomx submodule with boost and see if we can add a standard mutex in this class as well - and remove this busy wait guard.
-	if (fBusy[iThreadID])
-	{
-		for (int i = 0; i < MAX_MS; i++)
-		{
-			for (int z = 1; z < 65535; z++)
-			{
-				// boost::this_thread::sleep(boost::posix_time::millisec(1));
-			}
-			if (!fBusy[iThreadID]) 
-				return;
-		}
-	}
-	fBusy[iThreadID] = false;
+	// Todo: Remove in next version - problem solved with mutex in rpcpog.cpp
+	return;
 }
 
 uint256 RandomX_BBPHash(uint256 hash, uint256 uKey, int iThreadID)
@@ -125,4 +102,20 @@ uint256 RandomX_BBPHash(std::vector<unsigned char> data0, std::vector<unsigned c
 }
 
 
+uint256 RandomX_SlowHash(std::vector<unsigned char> data0, uint256 uKey)
+{
+	randomx_cache* rxc;
+	randomx_vm* vm1;
+	std::vector<unsigned char> hashKey = std::vector<unsigned char>(uKey.begin(), uKey.end());
+	randomx_flags flags = randomx_get_flags();
+	rxc = randomx_alloc_cache(flags);
+	randomx_init_cache(rxc, hashKey.data(), hashKey.size());
+	vm1 = randomx_create_vm(flags, rxc, NULL);
+	char *hashOut0 = (char*)malloc(RANDOMX_HASH_SIZE + 1);
+	randomx_calculate_hash(vm1, data0.data(), data0.size(), hashOut0);
+	std::vector<unsigned char> data1(hashOut0, hashOut0 + RANDOMX_HASH_SIZE);
+	randomx_destroy_vm(vm1);
+	randomx_release_cache(rxc);
+	return uint256(data1);
+}
 

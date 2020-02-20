@@ -282,7 +282,7 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
         return false;
 	// RandomX performance:
 	int64_t nElapsed = GetAdjustedTime() - nPrevBlockTime;
-	if (nElapsed > (60 * 60 * 8) && bLoadingBlockIndex)
+	if ((nElapsed > (60 * 60 * 8) && bLoadingBlockIndex) || (nElapsed > (60 * 60 * 24)))
 		return true;
 
 	if (nPrevHeight < params.EVOLUTION_CUTOVER_HEIGHT)

@@ -3176,33 +3176,14 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("TXID", sResult));
 		results.push_back(Pair("Error", sError));
 	}
-	else if (sItem == "getgovlimit")
+	else if (sItem == "getdwsreport")
 	{
-		const Consensus::Params& consensusParams = Params().GetConsensus();
-		int nBits = 486585255;
-		int nHeight = cdbl(request.params[1].get_str(), 0);
-		CAmount nLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
-		CAmount nReward = GetBlockSubsidy(nBits, nHeight, consensusParams, false);
-		CAmount nRewardGov = GetBlockSubsidy(nBits, nHeight, consensusParams, true);
-		CAmount nSanc = GetMasternodePayment(nHeight, nReward);
-        results.push_back(Pair("Limit", (double)nLimit/COIN));
-		results.push_back(Pair("Subsidy", (double)nReward/COIN));
-		results.push_back(Pair("Sanc", (double)nSanc/COIN));
-		// Evo Audit: 14700 gross, @98400=13518421, @129150=13225309/Daily = @129170=1013205
-		results.push_back(Pair("GovernanceSubsidy", (double)nRewardGov/COIN));
-		// Dynamic Whale Staking
-		double dTotalWhalePayments = 0;
-		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
-		results.push_back(Pair("DWS payables owed", dTotalWhalePayments));
-		results.push_back(Pair("DWS quantity", (int)dws.size()));
-		// GovLimit total
-		int nLastSuperblock = 0;
-		int nNextSuperblock = 0;
-		GetGovSuperblockHeights(nNextSuperblock, nLastSuperblock);
-		nLastSuperblock += 20;
-		CBlockIndex* pindex = FindBlockByHeight(nLastSuperblock);
+
 		CBlock block;
-		// Todo: Move this report to a dedicated area
+		int iNextSuperblock = 0;
+		int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
+		const Consensus::Params& consensusParams = Params().GetConsensus();
+		/*
 		if (false)
 		{
 			results.push_back(Pair("GetGovLimit", "Report v1.1"));
@@ -3229,6 +3210,74 @@ UniValue exec(const JSONRPCRequest& request)
 				}
 			}
 		}
+		*/
+		for (int nHeight = iLastSuperblock; nHeight > 0; nHeight -= BLOCKS_PER_DAY)
+		{
+			CBlockIndex* pindex = FindBlockByHeight(nHeight);
+			CAmount nLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
+
+			if (pindex) 
+			{
+				CAmount nTotal = 0;
+				CAmount nWhaleTotal = 0;
+				if (ReadBlockFromDisk(block, pindex, consensusParams)) 
+				{
+						for (unsigned int i = 0; i < block.vtx[0]->vout.size(); i++)
+    					{
+							nTotal += block.vtx[0]->vout[i].nValue;
+						}
+						for (unsigned int i = 0; i < block.vtx[0]->vout.size(); i++)
+    					{
+							double nAmt = (double)block.vtx[0]->vout[i].nValue/COIN;
+							double n0 =cdbl(RoundToString(nAmt, 0) + ".1527", 4);
+
+							if (n0 == nAmt)
+								nWhaleTotal += block.vtx[0]->vout[i].nValue;
+						}
+						if (nTotal > nLimit && nLimit > 1)
+						{
+							double nDWSStakes = 0;
+							// This superblock has whale stakes
+							double dTotalWhalePayments = 0;
+							std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight - 205, dTotalWhalePayments);
+							for (int i = 0; i < dws.size(); i++)
+							{
+								WhaleStake ws = dws[i];
+								nDWSStakes += ws.TotalOwed;
+							}
+							results.push_back(Pair("Sb height", nHeight));
+							results.push_back(Pair("Limit", nLimit/COIN));
+							double nLWD = (nLimit / COIN) + nDWSStakes;
+							results.push_back(Pair("Limit with DWS ", nLWD));
+							results.push_back(Pair("Whale stakes in block ", nWhaleTotal/COIN));
+							results.push_back(Pair("Whale stakes projected in block ", nDWSStakes));
+							double nGrandTotal = (nLimit/COIN) + nDWSStakes;
+							bool fOverlimit = ((nTotal/COIN) - 2) > nGrandTotal;
+							results.push_back(Pair("Overlimit", fOverlimit));
+						}
+				}
+			}
+		}
+	}
+	else if (sItem == "getgovlimit")
+	{
+		const Consensus::Params& consensusParams = Params().GetConsensus();
+		int nBits = 486585255;
+		int nHeight = cdbl(request.params[1].get_str(), 0);
+		CAmount nLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
+		CAmount nReward = GetBlockSubsidy(nBits, nHeight, consensusParams, false);
+		CAmount nRewardGov = GetBlockSubsidy(nBits, nHeight, consensusParams, true);
+		CAmount nSanc = GetMasternodePayment(nHeight, nReward);
+        results.push_back(Pair("Limit", (double)nLimit/COIN));
+		results.push_back(Pair("Subsidy", (double)nReward/COIN));
+		results.push_back(Pair("Sanc", (double)nSanc/COIN));
+		// Evo Audit: 14700 gross, @98400=13518421, @129150=13225309/Daily = @129170=1013205
+		results.push_back(Pair("GovernanceSubsidy", (double)nRewardGov/COIN));
+		// Dynamic Whale Staking
+		double dTotalWhalePayments = 0;
+		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
+		results.push_back(Pair("DWS payables owed", dTotalWhalePayments));
+		results.push_back(Pair("DWS quantity", (int)dws.size()));
 	}
 	else if (sItem == "hexblocktojson")
 	{

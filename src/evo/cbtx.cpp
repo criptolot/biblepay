@@ -58,7 +58,9 @@ bool CheckCbTxMerkleRoots(const CBlock& block, const CBlockIndex* pindex, CValid
 
 	bool fChainLocksActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
 	bool fLLMQActive = pindex->nHeight >= Params().GetConsensus().LLMQHeight;
-	if (!fLLMQActive || !fChainLocksActive) 
+	bool fDMEnabled = pindex->nHeight >= sporkManager.GetSporkValue(SPORK_15_DETERMINISTIC_MNS_ENABLED);
+
+	if (!fLLMQActive || !fChainLocksActive || !fDMEnabled) 
 		return true;
 
     static int64_t nTimePayload = 0;

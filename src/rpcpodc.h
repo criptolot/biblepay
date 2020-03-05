@@ -48,10 +48,9 @@ bool SubmitDistributedComputingTrigger(std::string sHex, std::string& gobjecthas
 bool SignCPID(std::string sCPID, std::string& sError, std::string& out_FullSig);
 std::string GetBoincHostsByUser(int iRosettaID, std::string sProjectId);
 std::vector<std::string> GetListOfDCCS(std::string sSearch, bool fRequireSig);
-double GetTeamPercentage(double dUserTeam, double dProjectTeam, std::string sTeamBlacklist, double dNonBiblepayTeamPercentage);
+double GetTeamPercentage(double dUserTeam, double dProjectTeam, std::string sTeamBlacklist, double dNonTeamPercentage);
 double VerifyTasks(std::string sCPID, std::string sTasks);
 std::string SerializeSanctuaryQuorumTrigger(int iContractAssessmentHeight, int nEventBlockHeight, std::string sContract);
-double GetQTPhase(bool fInFuture, double dPrice, int nEventHeight, double& out_PriorPrice, double& out_PriorPhase);
 bool VerifySigner(std::string sXML);
 double GetPBase(double& out_BTC);
 std::string VerifyManyWorkUnits(std::string sProjectId, std::string sTaskIds);

@@ -21,8 +21,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef BIBLEPAY_BIP39_H
-#define BIBLEPAY_BIP39_H
+#ifndef DAC_BIP39_H
+#define DAC_BIP39_H
 
 #include "support/allocators/secure.h"
 

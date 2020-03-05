@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_QUORUMS_DUMMYDKG_H
-#define BIBLEPAY_QUORUMS_DUMMYDKG_H
+#ifndef COIN_QUORUMS_DUMMYDKG_H
+#define COIN_QUORUMS_DUMMYDKG_H
 
 #include "llmq/quorums_commitment.h"
 
@@ -154,4 +154,4 @@ extern CDummyDKG* quorumDummyDKG;
 
 }
 
-#endif//BIBLEPAY_QUORUMS_DUMMYDKG_H
+#endif//COIN_QUORUMS_DUMMYDKG_H

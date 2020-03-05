@@ -1,12 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "util.h"
@@ -20,6 +20,7 @@
 #include "sync.h"
 #include "utilstrencodings.h"
 #include "utiltime.h"
+#include "validation.h"
 
 #include <stdarg.h>
 
@@ -111,7 +112,7 @@ namespace boost {
 
 
 
-//Biblepay only features
+// DAC only features
 bool fMasternodeMode = false;
 bool fLiteMode = false;
 /**
@@ -123,8 +124,7 @@ bool fLiteMode = false;
 */
 int nWalletBackups = 10;
 
-const char * const BITCOIN_CONF_FILENAME = "biblepay.conf";
-const char * const BITCOIN_PID_FILENAME = "biblepayd.pid";
+const char * const BITCOIN_PID_FILENAME = "dac.pid";
 
 CCriticalSection cs_args;
 std::unordered_map<std::string, std::string> mapArgs;
@@ -233,6 +233,28 @@ static void DebugPrintInit()
     vMsgsBeforeOpenLog = new std::list<std::string>;
 }
 
+std::string GetLcaseTicker()
+{
+	std::string sTicker = CURRENCY_TICKER;
+	boost::to_lower(sTicker);
+	return sTicker;
+}
+
+std::string GetLcaseCoinName()
+{
+	std::string sConf = CURRENCY_NAME;
+	boost::to_lower(sConf);
+	return sConf;
+}
+
+std::string GetConfFileName()
+{
+	std::string sConf = CURRENCY_NAME;
+	boost::to_lower(sConf);
+	sConf += ".conf";
+	return sConf;
+}
+
 void OpenDebugLog()
 {
     boost::call_once(&DebugPrintInit, debugPrintInitFlag);
@@ -287,9 +309,9 @@ bool LogAcceptCategory(const char* category)
                 const std::vector<std::string>& categories = mapMultiArgs.at("-debug");
                 ptrCategory.reset(new std::set<std::string>(categories.begin(), categories.end()));
                 // thread_specific_ptr automatically deletes the set when the thread ends.
-                // "biblepay" is a composite category enabling all Biblepay-related debug output
+                // "dac" is a composite category enabling all dac-related debug output
                 // Devs: run with -debug=1 to debug everything
-                if(ptrCategory->count(std::string("biblepay"))) {
+                if(ptrCategory->count(std::string("dac"))) {
                     ptrCategory->insert(std::string("chainlocks"));
                     ptrCategory->insert(std::string("gobject"));
                     ptrCategory->insert(std::string("instantsend"));
@@ -573,10 +595,10 @@ void PrintExceptionContinue(const std::exception_ptr pex, const char* pszThread)
 boost::filesystem::path GetDefaultDataDir()
 {
     namespace fs = boost::filesystem;
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\BiblepayEvolution
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\BiblepayEvolution
-    // Mac: ~/Library/Application Support/BiblepayEvolution
-    // Unix: ~/.biblepaycore
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\CoinName
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\CoinName
+    // Mac: ~/Library/Application Support/CoinName
+    // Unix: ~/.coinname
 #ifdef WIN32
     // Windows
     return GetSpecialFolderPath(CSIDL_APPDATA) / "BiblepayEvolution";
@@ -678,7 +700,7 @@ void ReadConfigFile(const std::string& confPath)
 {
     boost::filesystem::ifstream streamConfig(GetConfigFile(confPath));
     if (!streamConfig.good()){
-        // Create empty biblepay.conf if it does not excist
+        // Create empty .conf if it does not excist
         FILE* configFile = fopen(GetConfigFile(confPath).string().c_str(), "a");
         if (configFile != NULL)
             fclose(configFile);
@@ -692,7 +714,7 @@ void ReadConfigFile(const std::string& confPath)
 
         for (boost::program_options::detail::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
         {
-            // Don't overwrite existing settings so command line settings override biblepay.conf
+            // Don't overwrite existing settings so command line settings override .conf
             std::string strKey = std::string("-") + it->string_key;
             std::string strValue = it->value[0];
             InterpretNegativeSetting(strKey, strValue);

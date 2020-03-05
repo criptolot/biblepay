@@ -1,5 +1,4 @@
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,7 +7,7 @@
 #include "key.h"
 #include "util.h"
 #include "utilstrencodings.h"
-#include "test/test_biblepay.h"
+#include "test/test_coin.h"
 #include "bip39.h"
 
 #include <boost/test/unit_test.hpp>

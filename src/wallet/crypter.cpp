@@ -23,9 +23,9 @@
 #include <boost/filesystem/fstream.hpp>
 
 
-bool fKeySetBiblePay;
-unsigned char chKeyBiblePay[256];
-unsigned char chIVBiblePay[256];
+bool fKeySetDAC;
+unsigned char chKeyDAC[256];
+unsigned char chIVDAC[256];
 
 // RSA
 const unsigned int RSA_KEYLEN = 2048;
@@ -208,13 +208,13 @@ bool LoadBibleKey(std::string biblekey, std::string salt)
 {
 	const char* chBibleKey = biblekey.c_str();
 	const char* chSalt = salt.c_str();
-	OPENSSL_cleanse(chKeyBiblePay, sizeof(chKeyBiblePay));
-    OPENSSL_cleanse(chIVBiblePay, sizeof(chIVBiblePay));
+	OPENSSL_cleanse(chKeyDAC, sizeof(chKeyDAC));
+    OPENSSL_cleanse(chIVDAC, sizeof(chIVDAC));
     EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha512(),(unsigned char *)chSalt,
 		(unsigned char *)chBibleKey, 
 		strlen(chBibleKey), 1,
-		chKeyBiblePay, chIVBiblePay);
-    fKeySetBiblePay = true;
+		chKeyDAC, chIVDAC);
+    fKeySetDAC = true;
     return true;
 }
 
@@ -233,14 +233,15 @@ std::string VectorToString(std::vector<unsigned char> v)
 
 bool BibleEncrypt(std::vector<unsigned char> vchPlaintext, std::vector<unsigned char> &vchCiphertext)
 {
-	if (!fKeySetBiblePay) LoadBibleKey("biblepay","eb5a781ea9da2ef36");
+	std::string s1 = "bible";
+	if (!fKeySetDAC) LoadBibleKey(s1 + "pay", "eb5a781ea9da2ef36");
     int nLen = vchPlaintext.size();
     int nCLen = nLen + AES_BLOCK_SIZE, nFLen = 0;
     vchCiphertext = std::vector<unsigned char> (nCLen);
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     bool fOk = true;
     EVP_CIPHER_CTX_init(ctx);
-	if (fOk) fOk = EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, chKeyBiblePay, chIVBiblePay);
+	if (fOk) fOk = EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, chKeyDAC, chIVDAC);
     if (fOk) fOk = EVP_EncryptUpdate(ctx, &vchCiphertext[0], &nCLen, &vchPlaintext[0], nLen);
     if (fOk) fOk = EVP_EncryptFinal_ex(ctx, (&vchCiphertext[0])+nCLen, &nFLen);
     EVP_CIPHER_CTX_free(ctx);
@@ -251,14 +252,15 @@ bool BibleEncrypt(std::vector<unsigned char> vchPlaintext, std::vector<unsigned 
 
 bool BibleDecrypt(const std::vector<unsigned char>& vchCiphertext,std::vector<unsigned char>& vchPlaintext)
 {
-	LoadBibleKey("biblepay","eb5a781ea9da2ef36");
+	std::string s1 = "bible";
+	LoadBibleKey(s1 + "pay", "eb5a781ea9da2ef36");
 	int nLen = vchCiphertext.size();
     int nPLen = nLen, nFLen = 0;
     //EVP_CIPHER_CTX ctx;
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     bool fOk = true;
     EVP_CIPHER_CTX_init(ctx);
-    if (fOk) fOk = EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, chKeyBiblePay, chIVBiblePay);
+    if (fOk) fOk = EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, chKeyDAC, chIVDAC);
     if (fOk) fOk = EVP_DecryptUpdate(ctx, &vchPlaintext[0], &nPLen, &vchCiphertext[0], nLen);
     if (fOk) fOk = EVP_DecryptFinal_ex(ctx, (&vchPlaintext[0])+nPLen, &nFLen);
     EVP_CIPHER_CTX_free(ctx);
@@ -313,7 +315,7 @@ static bool DecryptKey(const CKeyingMaterial& vMasterKey, const std::vector<unsi
     return key.VerifyPubKey(vchPubKey);
 }
 
-/* R ANDREWS - BIBLEPAY - 9/13/2018 - ADD SUPPORT FOR RSA */
+/* ADD SUPPORT FOR RSA */
 
 
 int RSA_WRITE_KEY_TO_FILE(FILE *file, int key, EVP_PKEY *rKey)
@@ -456,7 +458,7 @@ std::vector<char> ReadAllBytes(char const* filename)
 
 std::string GetSANDirectory3()
 {
-	 boost::filesystem::path pathConfigFile(GetArg("-conf", "biblepay.conf"));
+	 boost::filesystem::path pathConfigFile(GetArg("-conf", GetConfFileName()));
      if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir(false) / pathConfigFile;
 	 boost::filesystem::path dir = pathConfigFile.parent_path();
 	 std::string sDir = dir.string() + "/SAN/";
@@ -658,7 +660,7 @@ std::string RSA_Decrypt_String(std::string sPrivKeyPath, std::string sData, std:
 }
 
 
-/* END OF RSA SUPPORT - BIBLEPAY */
+/* END OF RSA SUPPORT */
 
 
 bool CCryptoKeyStore::SetCrypted()

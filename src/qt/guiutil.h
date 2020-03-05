@@ -33,7 +33,7 @@ class QUrl;
 class QWidget;
 QT_END_NAMESPACE
 
-/** Utility functions used by the Biblepay Qt UI.
+/** Utility functions used by the DAC Qt UI.
  */
 namespace GUIUtil
 {
@@ -51,7 +51,7 @@ namespace GUIUtil
     void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent);
     void setupAmountWidget(QLineEdit *widget, QWidget *parent);
 
-    // Parse "biblepay:" URI into recipient object, return true on successful parsing
+    // Parse "dac:" URI into recipient object, return true on successful parsing
     bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out);
     bool parseBitcoinURI(QString uri, SendCoinsRecipient *out);
     QString formatBitcoinURI(const SendCoinsRecipient &info);
@@ -120,7 +120,7 @@ namespace GUIUtil
     // Open debug.log
     void openDebugLogfile();
 	
-    // Open biblepay.conf
+    // Open .conf
     void openConfigfile();	
 
     // Browse backup folder

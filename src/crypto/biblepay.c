@@ -1,10 +1,10 @@
-/* $Id: biblepay.c 260 2011-07-21 01:02:38Z tp $ */
+/* $Id: Legacy.c 260 2011-07-21 01:02:38Z tp $ */
 /*
- * Biblepay implementation.
+ * Legacy implementation.
  *
  * ==========================(LICENSE BEGIN)============================
  *
- * Copyright (c) 2007-2018  Projet Biblepay
+ * Copyright (c) 2007-2018  Projet Legacy
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -33,30 +33,30 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "sph_biblepay.h"
+#include "sph_legacy.h"
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-#if SPH_SMALL_FOOTPRINT && !defined SPH_SMALL_FOOTPRINT_BIBLEPAY
-#define SPH_SMALL_FOOTPRINT_BIBLEPAY   1
+#if SPH_SMALL_FOOTPRINT && !defined SPH_SMALL_FOOTPRINT_LEGACY
+#define SPH_SMALL_FOOTPRINT_LEGACY   1
 #endif
 
 /*
  * Apparently, the 32-bit-only version is not faster than the 64-bit
  * version unless using the "small footprint" code on a 32-bit machine.
  */
-#if !defined SPH_BIBLEPAY_64
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY && !SPH_64_TRUE
-#define SPH_BIBLEPAY_64   0
+#if !defined SPH_LEGACY_64
+#if SPH_SMALL_FOOTPRINT_LEGACY && !SPH_64_TRUE
+#define SPH_LEGACY_64   0
 #else
-#define SPH_BIBLEPAY_64   1
+#define SPH_LEGACY_64   1
 #endif
 #endif
 
 #if !SPH_64
-#undef SPH_BIBLEPAY_64
+#undef SPH_LEGACY_64
 #endif
 
 #ifdef _MSC_VER
@@ -70,9 +70,9 @@ extern "C"{
  */
 
 #undef USE_LE
-#if SPH_BIBLEPAY_LITTLE_ENDIAN
+#if SPH_LEGACY_LITTLE_ENDIAN
 #define USE_LE   1
-#elif SPH_BIBLEPAY_BIG_ENDIAN
+#elif SPH_LEGACY_BIG_ENDIAN
 #define USE_LE   0
 #elif SPH_LITTLE_ENDIAN
 #define USE_LE   1
@@ -160,7 +160,7 @@ extern "C"{
 
 #endif
 
-#if SPH_BIBLEPAY_64
+#if SPH_LEGACY_64
 
 static const sph_u64 T0[] = {
 	C64e(0xc632f4a5f497a5c6), C64e(0xf86f978497eb84f8),
@@ -293,7 +293,7 @@ static const sph_u64 T0[] = {
 	C64e(0x6d0c61d661dad66d), C64e(0x2c624e3a4e583a2c)
 };
 
-#if !SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if !SPH_SMALL_FOOTPRINT_LEGACY
 
 static const sph_u64 T1[] = {
 	C64e(0xc6c632f4a5f497a5), C64e(0xf8f86f978497eb84),
@@ -821,7 +821,7 @@ static const sph_u64 T4[] = {
 	C64e(0x61dad66d6d0c61d6), C64e(0x4e583a2c2c624e3a)
 };
 
-#if !SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if !SPH_SMALL_FOOTPRINT_LEGACY
 
 static const sph_u64 T5[] = {
 	C64e(0xa5f497a5c6c632f4), C64e(0x8497eb84f8f86f97),
@@ -1229,7 +1229,7 @@ static const sph_u64 T7[] = {
 		memcpy((sc)->state.wide, H, sizeof H); \
 	} while (0)
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define RSTT(d, a, b0, b1, b2, b3, b4, b5, b6, b7)   do { \
 		t[d] = T0[B64_0(a[b0])] \
@@ -1313,7 +1313,7 @@ static const sph_u64 T7[] = {
 		a[7] = t[7]; \
 	} while (0)
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define PERM_SMALL_P(a)   do { \
 		int r; \
@@ -1384,7 +1384,7 @@ static const sph_u64 T7[] = {
 		memcpy((sc)->state.wide, H, sizeof H); \
 	} while (0)
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define RBTT(d, a, b0, b1, b2, b3, b4, b5, b6, b7)   do { \
 		t[d] = T0[B64_0(a[b0])] \
@@ -1412,7 +1412,7 @@ static const sph_u64 T7[] = {
 
 #endif
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define ROUND_BIG_P(a, r)   do { \
 		sph_u64 t[16]; \
@@ -1611,7 +1611,7 @@ static const sph_u64 T7[] = {
 	} while (0)
 
 /* obsolete
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define COMPRESS_BIG   do { \
 		sph_u64 g[16], m[16], *ya; \
@@ -2293,7 +2293,7 @@ static const sph_u32 T3dn[] = {
 		memcpy(a, t, sizeof t); \
 	} while (0)
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define PERM_SMALL_P(a)   do { \
 		int r; \
@@ -2360,7 +2360,7 @@ static const sph_u32 T3dn[] = {
 		memcpy((sc)->state.narrow, H, sizeof H); \
 	} while (0)
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define RBTT(d0, d1, a, b0, b1, b2, b3, b4, b5, b6, b7)   do { \
 		sph_u32 fu2 = T0up[B32_2(a[b2])]; \
@@ -2412,7 +2412,7 @@ static const sph_u32 T3dn[] = {
 
 #endif
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define ROUND_BIG_P(a, r)   do { \
 		sph_u32 t[32]; \
@@ -2676,7 +2676,7 @@ static const sph_u32 T3dn[] = {
 
 #endif
 
-#if SPH_SMALL_FOOTPRINT_BIBLEPAY
+#if SPH_SMALL_FOOTPRINT_LEGACY
 
 #define PERM_BIG_P(a)   do { \
 		int r; \
@@ -2735,12 +2735,12 @@ static const sph_u32 T3dn[] = {
 #endif
 
 static void
-biblepay_small_init(sph_biblepay_small_context *sc, unsigned out_size)
+legacy_small_init(sph_legacy_small_context *sc, unsigned out_size)
 {
 	size_t u;
 
 	sc->ptr = 0;
-#if SPH_BIBLEPAY_64
+#if SPH_LEGACY_64
 	for (u = 0; u < 7; u ++)
 		sc->state.wide[u] = 0;
 #if USE_LE
@@ -2768,7 +2768,7 @@ biblepay_small_init(sph_biblepay_small_context *sc, unsigned out_size)
 }
 
 static void
-biblepay_small_core(sph_biblepay_small_context *sc, const void *data, size_t len)
+legacy_small_core(sph_legacy_small_context *sc, const void *data, size_t len)
 {
 	unsigned char *buf;
 	size_t ptr;
@@ -2810,7 +2810,7 @@ biblepay_small_core(sph_biblepay_small_context *sc, const void *data, size_t len
 }
 
 static void
-biblepay_small_close(sph_biblepay_small_context *sc,
+legacy_small_close(sph_legacy_small_context *sc,
 	unsigned ub, unsigned n, void *dst, size_t out_len)
 {
 	unsigned char *buf;
@@ -2856,10 +2856,10 @@ biblepay_small_close(sph_biblepay_small_context *sc,
 	sph_enc64be(pad + pad_len - 8, count_high);
 	sph_enc64be(pad + pad_len - 4, count_low);
 #endif
-	biblepay_small_core(sc, pad, pad_len);
+	legacy_small_core(sc, pad, pad_len);
 	READ_STATE_SMALL(sc);
 	FINAL_SMALL;
-#if SPH_BIBLEPAY_64
+#if SPH_LEGACY_64
 	for (u = 0; u < 4; u ++)
 		enc64e(pad + (u << 3), H[u + 4]);
 #else
@@ -2867,16 +2867,16 @@ biblepay_small_close(sph_biblepay_small_context *sc,
 		enc32e(pad + (u << 2), H[u + 8]);
 #endif
 	memcpy(dst, pad + 32 - out_len, out_len);
-	biblepay_small_init(sc, (unsigned)out_len << 3);
+	legacy_small_init(sc, (unsigned)out_len << 3);
 }
 
 static void
-biblepay_big_init(sph_biblepay_big_context *sc, unsigned out_size)
+legacy_big_init(sph_legacy_big_context *sc, unsigned out_size)
 {
 	size_t u;
 
 	sc->ptr = 0;
-#if SPH_BIBLEPAY_64
+#if SPH_LEGACY_64
 	for (u = 0; u < 15; u ++)
 		sc->state.wide[u] = 0;
 #if USE_LE
@@ -2904,7 +2904,7 @@ biblepay_big_init(sph_biblepay_big_context *sc, unsigned out_size)
 }
 
 static void
-biblepay_big_core(sph_biblepay_big_context *sc, const void *data, size_t len)
+legacy_big_core(sph_legacy_big_context *sc, const void *data, size_t len)
 {
 	unsigned char *buf;
 	size_t ptr;
@@ -2946,7 +2946,7 @@ biblepay_big_core(sph_biblepay_big_context *sc, const void *data, size_t len)
 }
 
 static void
-biblepay_big_close(sph_biblepay_big_context *sc,
+legacy_big_close(sph_legacy_big_context *sc,
 	unsigned ub, unsigned n, void *dst, size_t out_len)
 {
 	unsigned char *buf;
@@ -2992,10 +2992,10 @@ biblepay_big_close(sph_biblepay_big_context *sc,
 	sph_enc64be(pad + pad_len - 8, count_high);
 	sph_enc64be(pad + pad_len - 4, count_low);
 #endif
-	biblepay_big_core(sc, pad, pad_len);
+	legacy_big_core(sc, pad, pad_len);
 	READ_STATE_BIG(sc);
 	FINAL_BIG;
-#if SPH_BIBLEPAY_64
+#if SPH_LEGACY_64
 	for (u = 0; u < 8; u ++)
 		enc64e(pad + (u << 3), H[u + 8]);
 #else
@@ -3003,119 +3003,119 @@ biblepay_big_close(sph_biblepay_big_context *sc,
 		enc32e(pad + (u << 2), H[u + 16]);
 #endif
 	memcpy(dst, pad + 64 - out_len, out_len);
-	biblepay_big_init(sc, (unsigned)out_len << 3);
+	legacy_big_init(sc, (unsigned)out_len << 3);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay224_init(void *cc)
+sph_legacy224_init(void *cc)
 {
-	biblepay_small_init(cc, 224);
+	legacy_small_init(cc, 224);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay224(void *cc, const void *data, size_t len)
+sph_legacy224(void *cc, const void *data, size_t len)
 {
-	biblepay_small_core(cc, data, len);
+	legacy_small_core(cc, data, len);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay224_close(void *cc, void *dst)
+sph_legacy224_close(void *cc, void *dst)
 {
-	biblepay_small_close(cc, 0, 0, dst, 28);
+	legacy_small_close(cc, 0, 0, dst, 28);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay224_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
+sph_legacy224_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
 {
-	biblepay_small_close(cc, ub, n, dst, 28);
+	legacy_small_close(cc, ub, n, dst, 28);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay256_init(void *cc)
+sph_legacy256_init(void *cc)
 {
-	biblepay_small_init(cc, 256);
+	legacy_small_init(cc, 256);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay256(void *cc, const void *data, size_t len)
+sph_legacy256(void *cc, const void *data, size_t len)
 {
-	biblepay_small_core(cc, data, len);
+	legacy_small_core(cc, data, len);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay256_close(void *cc, void *dst)
+sph_legacy256_close(void *cc, void *dst)
 {
-	biblepay_small_close(cc, 0, 0, dst, 32);
+	legacy_small_close(cc, 0, 0, dst, 32);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay256_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
+sph_legacy256_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
 {
-	biblepay_small_close(cc, ub, n, dst, 32);
+	legacy_small_close(cc, ub, n, dst, 32);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay384_init(void *cc)
+sph_legacy384_init(void *cc)
 {
-	biblepay_big_init(cc, 384);
+	legacy_big_init(cc, 384);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay384(void *cc, const void *data, size_t len)
+sph_legacy384(void *cc, const void *data, size_t len)
 {
-	biblepay_big_core(cc, data, len);
+	legacy_big_core(cc, data, len);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay384_close(void *cc, void *dst)
+sph_legacy384_close(void *cc, void *dst)
 {
-	biblepay_big_close(cc, 0, 0, dst, 48);
+	legacy_big_close(cc, 0, 0, dst, 48);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay384_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
+sph_legacy384_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
 {
-	biblepay_big_close(cc, ub, n, dst, 48);
+	legacy_big_close(cc, ub, n, dst, 48);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay512_init(void *cc)
+sph_legacy512_init(void *cc)
 {
-	biblepay_big_init(cc, 512);
+	legacy_big_init(cc, 512);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay512(void *cc, const void *data, size_t len)
+sph_legacy512(void *cc, const void *data, size_t len)
 {
-	biblepay_big_core(cc, data, len);
+	legacy_big_core(cc, data, len);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay512_close(void *cc, void *dst)
+sph_legacy512_close(void *cc, void *dst)
 {
-	biblepay_big_close(cc, 0, 0, dst, 64);
+	legacy_big_close(cc, 0, 0, dst, 64);
 }
 
-/* see sph_biblepay.h */
+/* see sph_legacy.h */
 void
-sph_biblepay512_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
+sph_legacy512_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
 {
-	biblepay_big_close(cc, ub, n, dst, 64);
+	legacy_big_close(cc, ub, n, dst, 64);
 }
 
 #ifdef __cplusplus

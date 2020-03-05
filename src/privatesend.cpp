@@ -1,5 +1,5 @@
-// Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2014-2019 The DAC Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -365,10 +365,10 @@ int CPrivateSend::GetDenominations(const std::vector<CTxOut>& vecTxOut, bool fSi
 bool CPrivateSend::GetDenominationsBits(int nDenom, std::vector<int>& vecBitsRet)
 {
     // ( bit on if present, 4 denominations example )
-    // bit 0 - 100BIBLEPAY+1
-    // bit 1 - 10BIBLEPAY+1
-    // bit 2 - 1BIBLEPAY+1
-    // bit 3 - .1BIBLEPAY+1
+    // bit 0 - 100 +1
+    // bit 1 - 10  +1
+    // bit 2 - 1   +1
+    // bit 3 - .1  +1
 
     int nMaxDenoms = vecStandardDenominations.size();
 

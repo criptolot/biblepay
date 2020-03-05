@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The BiblePay Core developers
+// Copyright (c) 2014-2017 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <univalue.h>
 #include "randomx_bbp.h"
+#include "validation.h"
 
 #include <boost/thread/thread.hpp> // boost::thread::interrupt
 #include <boost/algorithm/string.hpp> // boost::trim
@@ -178,7 +179,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 	result.push_back(Pair("blockversion", GetBlockVersion(block.vtx[0]->vout[0].sTxOutMessage)));
 	if (block.vtx.size() > 1)
 		result.push_back(Pair("sanctuary_reward", block.vtx[0]->vout[1].nValue/COIN));
-	// BiblePay
+	// DAC
 	bool bShowPrayers = true;
     if (blockindex->pprev)
 	{
@@ -393,7 +394,7 @@ UniValue getdifficulty(const JSONRPCRequest& request)
 std::string EntryDescriptionString()
 {
     return "    \"size\" : n,                 (numeric) transaction size in bytes\n"
-           "    \"fee\" : n,                  (numeric) transaction fee in " + CURRENCY_UNIT + "\n"
+           "    \"fee\" : n,                  (numeric) transaction fee in " + CURRENCY_NAME + "\n"
            "    \"modifiedfee\" : n,          (numeric) transaction fee with fee deltas used for mining priority\n"
            "    \"time\" : n,                 (numeric) local time transaction entered pool in seconds since 1 Jan 1970 GMT\n"
            "    \"height\" : n,               (numeric) block height when transaction entered pool\n"
@@ -1136,14 +1137,14 @@ UniValue gettxout(const JSONRPCRequest& request)
             "{\n"
             "  \"bestblock\" : \"hash\",    (string) the block hash\n"
             "  \"confirmations\" : n,       (numeric) The number of confirmations\n"
-            "  \"value\" : x.xxx,           (numeric) The transaction value in " + CURRENCY_UNIT + "\n"
+            "  \"value\" : x.xxx,           (numeric) The transaction value in " + CURRENCY_NAME + "\n"
             "  \"scriptPubKey\" : {         (json object)\n"
             "     \"asm\" : \"code\",       (string) \n"
             "     \"hex\" : \"hex\",        (string) \n"
             "     \"reqSigs\" : n,          (numeric) Number of required signatures\n"
             "     \"type\" : \"pubkeyhash\", (string) The type, eg pubkeyhash\n"
-            "     \"addresses\" : [          (array of string) array of biblepay addresses\n"
-            "        \"address\"     (string) biblepay address\n"
+            "     \"addresses\" : [          (array of string) array of addresses\n"
+            "        \"address\"     (string) address\n"
             "        ,...\n"
             "     ]\n"
             "  },\n"
@@ -1375,10 +1376,11 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
 	obj.push_back(Pair("chainlocks_active", fChainLocksActive));
 
 	/*
-	DEPLOYMENT_CSV is a blockchain vote to store the <median time past> int64_t unixtime in the block.tx.nLockTime field.  Since the bitcoin behavior is to store the height, and we have pre-existing business logic that calculates height delta from this field, we don't want to switch to THRESHOLD_ACTIVE here.  Additionally, BiblePay enforces the allowable mining window (for block timestamps) to be within a 15 minute range.
+	DEPLOYMENT_CSV is a blockchain vote to store the <median time past> int64_t unixtime in the block.tx.nLockTime field.  Since the bitcoin behavior is to store the height, and we have pre-existing business logic that calculates height delta from this field, we don't want to switch to THRESHOLD_ACTIVE here.  
+	// Additionally, the core wallet enforces the allowable mining window (for block timestamps) to be within a 15 minute range.
 	If we ever want to enable DEPLOYMENT_CSV, we need to change the chainparam deployment window to be the future, and check the POG business logic for height delta calculations.
 	BIP9SoftForkDescPushBack(bip9_softforks, "csv", consensusParams, Consensus::DEPLOYMENT_CSV);
-	DIP0001 is a vote to allow up to 2MB blocks.  BiblePay moved to 2MB blocks before DIP1 and therefore our vote never started, but our code uses the 2MB hardcoded literal (matching dash).  So we want to comment out this DIP1 versionbits response as it does not reflect our environment.
+	DIP0001 is a vote to allow up to 2MB blocks.  We moved to 2MB blocks before DIP1 and therefore our vote never started, but our code uses the 2MB hardcoded literal (matching dash).  So we want to comment out this DIP1 versionbits response as it does not reflect our environment.
     BIP9SoftForkDescPushBack(bip9_softforks, "csv", consensusParams, Consensus::DEPLOYMENT_CSV);
     BIP9SoftForkDescPushBack(bip9_softforks, "dip0001", consensusParams, Consensus::DEPLOYMENT_DIP0001);
 	*/
@@ -1765,11 +1767,11 @@ void BoincHelpfulHint(UniValue& e)
 	e.push_back(Pair("Step 1", "Log into your WCG account at 'worldcommunitygrid.org' with your WCG E-mail address and WCG password."));
 	e.push_back(Pair("Step 2", "Click Settings | My Profile.  Record your 'Username' and 'Verification Code' and your 'CPID' (Cross-Project-ID)."));
 	e.push_back(Pair("Step 3", "Click Settings | Data Sharing.  Ensure the 'Display my Data' radio button is selected.  Click Save. "));
-	e.push_back(Pair("Step 4", "Click My Contribution | My Team.  If you are not part of Team 'BiblePay' click Join Team | Search | BiblePay | Select BiblePay | Click Join Team | Save."));
-	e.push_back(Pair("Step 5", "NOTE: After choosing your team, and starting your research, please give WCG 24 hours for the CPID to propagate into BBP.  In the mean time you can start Boinc research - and ensure the computer is performing WCG tasks. "));
+	e.push_back(Pair("Step 4", "Click My Contribution | My Team.  If you are not part of Team 'BIBLE PAY' click Join Team | Search | Bible Pay | Select Bible Pay | Click Join Team | Save."));
+	e.push_back(Pair("Step 5", "NOTE: After choosing your team, and starting your research, please give WCG 24 hours for the CPID to propagate into " + CURRENCY_TICKER + ".  In the mean time you can start Boinc research - and ensure the computer is performing WCG tasks. "));
 	e.push_back(Pair("Step 6", "From our RPC console, type, exec associate your_username your_verification_code"));
 	e.push_back(Pair("Step 7", "Wait for 5 blocks to pass.  Then type 'exec rac' again, and see if you are linked!  "));
-	e.push_back(Pair("Step 8", "Once you are linked you will receive daily rewards.  Please read about our minimum stake requirements per RAC here: wiki.biblepay.org/PODC"));
+	e.push_back(Pair("Step 8", "Once you are linked you will receive daily rewards.  Please read about our minimum stake requirements per RAC here: wiki." + DOMAIN_NAME + "/PODC"));
 }
 
 UniValue exec(const JSONRPCRequest& request)
@@ -2183,7 +2185,7 @@ UniValue exec(const JSONRPCRequest& request)
 		uint256 hashBlock = uint256();
 		uint256 uTx = ParseHashV(sTxId, "txid");
 		COutPoint out1(uTx, 0);
-		BBPVin b = GetBBPVIN(out1, 0);
+		CoinVin b = GetCoinVIN(out1, 0);
 		double nCoinAge = 0;
 		CAmount nDonation = 0;
 		std::string sCPK;
@@ -2206,10 +2208,10 @@ UniValue exec(const JSONRPCRequest& request)
 		    for (int i = 0; i < (int)b.TxRef->vin.size(); i++)
 			{
 			    const COutPoint &outpoint = b.TxRef->vin[i].prevout;
-				BBPVin bIn = GetBBPVIN(outpoint, nBlockTime);
+				CoinVin bIn = GetCoinVIN(outpoint, nBlockTime);
 				if (bIn.Found)
 				{
-					results.push_back(Pair("Vin # " + RoundToString(i, 0), RoundToString((double)bIn.Amount/COIN, 2) + "bbp - " + bIn.Destination 
+					results.push_back(Pair("Vin # " + RoundToString(i, 0), RoundToString((double)bIn.Amount/COIN, 2) + CURRENCY_NAME + " - " + bIn.Destination 
 						+ " - Coin*Age: " + RoundToString(bIn.CoinAge, 0)));
 				}
 			}
@@ -2218,7 +2220,7 @@ UniValue exec(const JSONRPCRequest& request)
 		    {
 			 	CAmount nOutAmount = b.TxRef->vout[i].nValue;
 				std::string sDest = PubKeyToAddress(b.TxRef->vout[i].scriptPubKey);
-				results.push_back(Pair("VOUT #" + RoundToString(i, 0), RoundToString((double)nOutAmount/COIN, 2) + "bbp - " + sDest));
+				results.push_back(Pair("VOUT #" + RoundToString(i, 0), RoundToString((double)nOutAmount/COIN, 2) + CURRENCY_NAME + " - " + sDest));
 		    }
 		}
 		else
@@ -2295,7 +2297,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "sendmanyxml")
 	{
-		// BiblePay Pools: Allows pools to send a multi-output tx with ease
+		// Pools: Allows pools to send a multi-output tx with ease
 		// Format: exec sendmanyxml from_account xml_payload comment
 		LOCK2(cs_main, pwalletMain->cs_wallet);
 		std::string strAccount = request.params[1].get_str();
@@ -2322,7 +2324,7 @@ UniValue exec(const JSONRPCRequest& request)
 				{
  					  CBitcoinAddress address(sRecipient);
 	   		   	      if (!address.IsValid())
-						  throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Biblepay address: ") + sRecipient);
+						  throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid address: ") + sRecipient);
 					  if (setAddress.count(address))
 						  throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + sRecipient);
 					  setAddress.insert(address);
@@ -2373,7 +2375,7 @@ UniValue exec(const JSONRPCRequest& request)
 	else if (sItem == "register")
 	{
 		if (request.params.size() != 2)
-			throw std::runtime_error("The purpose of this command is to register your nickname with BMS (the decentralized biblepay web).  This feature will not be available until December 2019.  \nYou must specify your nickname.");
+			throw std::runtime_error("The purpose of this command is to register your nickname with BMS (the decentralized web).  This feature will not be available until December 2019.  \nYou must specify your nickname.");
 		std::string sProject = "cpk-bmsuser";
 		std::string sNN;
 		sNN = request.params[1].get_str();
@@ -2383,10 +2385,6 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("Results", fAdv));
 		if (!fAdv)
 			results.push_back(Pair("Error", sError));
-	}
-	else if (sItem == "tuhi")
-	{
-		UpdateHealthInformation(0);
 	}
 	else if (sItem == "funddsql")
 	{
@@ -2459,8 +2457,8 @@ UniValue exec(const JSONRPCRequest& request)
 		if (!r.found && nID > 0)
 		{
 			std::string sErr = "Sorry, we found you as a researcher in WCG, but we were unable to locate you on the team.  "
-				 "You may still participate but the daily escrow requirements are higher for non BiblePay researchers. "
-				 "NOTE:  Your RAC must be > 256 if you are not on team biblepay.  Please navigate to web.biblepay.org, click PODC research, and type in your CPID in the search box.  If your rac < 256 please build up your RAC first, then re-associate.  ";
+				 "You may still participate but the daily escrow requirements are higher for non Bible Pay researchers. "
+				 "NOTE:  Your RAC must be > 256 if you are not on team bible pay.  Please navigate to web." + DOMAIN_NAME + ", click PODC research, and type in your CPID in the search box.  If your rac < 256 please build up your RAC first, then re-associate.  ";
          	throw std::runtime_error(sErr.c_str());
 		}
 		results.push_back(Pair("cpid", r.cpid));
@@ -2473,7 +2471,7 @@ UniValue exec(const JSONRPCRequest& request)
 
 		if (r.cpid.length() != 32)
 		{
-			throw std::runtime_error("Sorry, unable to save your researcher record because your WCG CPID is empty.  Please log into your WCG account and verify you are part of team BiblePay, and that the WCG verification code matches.");
+			throw std::runtime_error("Sorry, unable to save your researcher record because your WCG CPID is empty.  Please log into your WCG account and verify you are part of team Bible Pay, and that the WCG verification code matches.");
 		}
 		std::string sEncVC = EncryptAES256(sVerificationCode, r.cpid);
 
@@ -2500,7 +2498,7 @@ UniValue exec(const JSONRPCRequest& request)
 			// (Dev notes: In step 2, we already joined the cpk to wcg - equivalent to 'exec join wcg' so we do not need to do that here).
 			results.push_back(Pair("Results", fAdv));
 			results.push_back(Pair("Welcome Aboard!", 
-				"You have successfully joined the BiblePay Proof Of Distributed Comuting (PODC) grid, and now you can help cure cancer, AIDS, and make the world a better place!  God Bless You!"));
+				"You have successfully joined the Bible Pay Proof Of Distributed Comuting (PODC) grid, and now you can help cure cancer, AIDS, and make the world a better place!  God Bless You!"));
 		}
 	}
 	else if (sItem == "join")
@@ -2525,8 +2523,8 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("Error", sError));
 		if (fAdv && sProject == "healing")
 		{
-			std::string sURL = "https://wiki.biblepay.org/BiblePay_Healing_Campaign";
-			std::string sNarr = "Please read this guide: " + sURL + " with critical instructions before attempting Spiritual Warfare or Street Healing.  Thank you for joining the BiblePay Healing campaign. ";
+			std::string sURL = "https://wiki." + DOMAIN_NAME + "/Bible" + "" + "Pay_Healing_Campaign";
+			std::string sNarr = "Please read this guide: " + sURL + " with critical instructions before attempting Spiritual Warfare or Street Healing.  Thank you for joining the Bible Pay Healing campaign. ";
 			results.push_back(Pair("Warning!", sNarr));
 		}
 	}
@@ -2549,7 +2547,7 @@ UniValue exec(const JSONRPCRequest& request)
 	else if (sItem == "bankroll")
 	{
 		if (request.params.size() != 3)
-			throw std::runtime_error("You must specify type: IE 'exec bankroll quantity denomination'.  IE exec bankroll 10 100 (creates ten 100 BBP bills).");
+			throw std::runtime_error("You must specify type: IE 'exec bankroll quantity denomination'.  IE exec bankroll 10 100 (creates ten bills of value 100 each).");
 		double nQty = cdbl(request.params[1].get_str(), 0);
 		CAmount denomination = cdbl(request.params[2].get_str(), 4) * COIN;
 		std::string sError = "";
@@ -2693,16 +2691,16 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "price")
 	{
-		double dBBP = GetCryptoPrice("bbp");
+		double dDacPrice = GetCryptoPrice(GetLcaseTicker());
 		double dBTC = GetCryptoPrice("btc");
 		double dDASH = GetCryptoPrice("dash");
-		results.push_back(Pair("BBP/BTC", RoundToString(dBBP, 12)));
+		results.push_back(Pair(CURRENCY_TICKER + "/BTC", RoundToString(dDacPrice, 12)));
 		results.push_back(Pair("DASH/BTC", RoundToString(dDASH, 12)));
 		results.push_back(Pair("BTC/USD", dBTC));
-		double nPrice = GetBBPPrice();
+		double nPrice = GetCoinPrice();
 		double nDashPriceUSD = dBTC * dDASH;
 		results.push_back(Pair("DASH/USD", nDashPriceUSD));
-		results.push_back(Pair("BBP/USD", nPrice));
+		results.push_back(Pair(CURRENCY_TICKER + "/USD", nPrice));
 	}
 	else if (sItem == "sentgsc")
 	{
@@ -2722,7 +2720,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "revivesanc")
 	{
-		// Sanctuary Revival - BiblePay
+		// Sanctuary Revival
 		// The purpose of this command is to make it easy to Revive a POSE-banned deterministic sanctuary.  (In contrast to knowing how to create and send the protx update_service command).
 		std::string sExtraHelp = "NOTE:  If you do not have a deterministic.conf file, you can still revive your sanctuary this way: protx update_service proreg_txID sanctuaryIP:Port sanctuary_blsPrivateKey\n\n NOTE: You can right click on the sanctuary in the Sanctuaries Tab in QT and obtain the proreg_txID, and, you can write the IP down from the list.  You still need to find your sanctuaryBLSPrivKey.\n";
 
@@ -2817,14 +2815,14 @@ UniValue exec(const JSONRPCRequest& request)
 	    CWalletTx wtx;
 		bool fSubtractFee = false;
 		bool fInstantSend = false;
-		// 1b. We must send 1BBP to ourself first here, as the deterministic sanctuaries future fund receiving address must be prefunded with enough funds to cover the non-financial transaction transmission below
+		// 1b. We must send 1 COIN to ourself first here, as the deterministic sanctuaries future fund receiving address must be prefunded with enough funds to cover the non-financial transaction transmission below
 		bool fSent = RPCSendMoney(sError, baPayAddress.Get(), 1 * COIN, fSubtractFee, wtx, fInstantSend, sData);
 
 		if (!sError.empty() || !fSent)
 			throw std::runtime_error("Unable to fund protx_register fee: " + sError);
 
 		results.push_back(Pair("Summary", sSummary));
-		// Generate BLS keypair (This is the keypair for the sanctuary - the BLS public key goes in the chain, the private key goes into the Sanctuaries biblepay.conf file like this: masternodeblsprivkey=nnnnn
+		// Generate BLS keypair (This is the keypair for the sanctuary - the BLS public key goes in the chain, the private key goes into the Sanctuaries .conf file like this: masternodeblsprivkey=nnnnn
 		JSONRPCRequest myBLS;
 		myBLS.params.setArray();
 		myBLS.params.push_back("generate");
@@ -2891,9 +2889,9 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "rac")
 	{
-		// Query the WCG RAC from the last known quorum - this lets the users see that their CPID is producing RAC on team biblepay
+		// Query the WCG RAC from the last known quorum - this lets the users see that their CPID is producing RAC on team bible pay
 		// This command should also confirm the CPID link status
-		// So:  Display WCG Rac in team BBP, Link Status, and external-purse weight need to be shown.
+		// So:  Display WCG Rac in team Bible Pay, Link Status, and external-purse weight need to be shown.
 		// This command can knock out most troubleshooting issues all in one swoop.
 		
 		if (request.params.size() > 2)
@@ -2942,7 +2940,7 @@ UniValue exec(const JSONRPCRequest& request)
 		else if (!r.found && sCPID.length() == 32)
 		{
 			results.push_back(Pair("temporary_cpid", sCPID));
-			results.push_back(Pair("Error", "Your CPID is linked to your CPK, but we are unable to find your research records in WCG; most likely because you are not in team BiblePay yet."));
+			results.push_back(Pair("Error", "Your CPID is linked to your CPK, but we are unable to find your research records in WCG; most likely because you are not in team Bible Pay yet."));
 			BoincHelpfulHint(results);
 			return results;
 		}
@@ -2960,7 +2958,7 @@ UniValue exec(const JSONRPCRequest& request)
 			{
 				bool fWhitelisted = sTeamName == "Unknown" ? false : true;
 				if (!fWhitelisted)
-					results.push_back(Pair("Warning!", "** You must join team BiblePay or a whitelisted team to be compensated for Research Activity in PODC. **"));
+					results.push_back(Pair("Warning!", "** You must join team Bible Pay or a whitelisted team to be compensated for Research Activity in PODC. **"));
 			}
 			if (!sTeamName.empty())
 				results.push_back(Pair("team_name", sTeamName));
@@ -2986,7 +2984,7 @@ UniValue exec(const JSONRPCRequest& request)
 			
 			if (nTotalCoinAge < nCoinAgeReq || nTotalCoinAge == 0)
 			{
-				results.push_back(Pair("WARNING!", "BiblePay requires staking collateral to be stored in your Christian-Public-Key (External Purse) to be available for GSC transmissions.  You currently do not have enough coin age in your external purse.  This means your PODC reward will be reduced to a commensurate amount of RAC.  Please read our PODC 2.0 guide about sending bankroll notes to yourself.  "));
+				results.push_back(Pair("WARNING!", "The core wallet requires staking collateral to be stored in your Christian-Public-Key (External Purse) to be available for GSC transmissions.  You currently do not have enough coin age in your external purse.  This means your PODC reward will be reduced to a commensurate amount of RAC.  Please read our PODC 2.0 guide about sending bankroll notes to yourself.  "));
 			}
 			results.push_back(Pair("coin_age_required", nCoinAgeReq));
 			results.push_back(Pair("wcg_id", r.id));
@@ -2995,7 +2993,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "navdsql")
 	{
-		BBPResult b = GetDecentralizedURL();
+		DACResult b = GetDecentralizedURL();
 		results.push_back(Pair("data", b.Response));
 		results.push_back(Pair("error(s)", b.ErrorCode));
 	}
@@ -3010,7 +3008,7 @@ UniValue exec(const JSONRPCRequest& request)
 			std::string sRevKey = ReverseHex(sKey);
 			uint256 uKey = uint256S("0x" + sRevKey);
 
-			uint256 uRXMined = RandomX_BBPHash(v, uKey, 90);
+			uint256 uRXMined = RandomX_Hash(v, uKey, 90);
 			std::vector<unsigned char> vch(160);
 			CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 			ss << chainActive.Tip()->GetBlockHash() << uRXMined;
@@ -3027,7 +3025,7 @@ UniValue exec(const JSONRPCRequest& request)
 		std::string sRevKey = ReverseHex(sKey);
 		uint256 uKey = uint256S("0x" + sRevKey);
 		std::vector<unsigned char> v = ParseHex(sHeader);
-		uint256 uRX3 = RandomX_BBPHash(v, uKey, 99);
+		uint256 uRX3 = RandomX_Hash(v, uKey, 99);
 		results.push_back(Pair("hash2", uRX3.GetHex()));
 		uint256 uRX4 = HashBlake(v.begin(), v.end());
 		results.push_back(Pair("hashBlakeInSz", (int)v.size()));
@@ -3084,10 +3082,6 @@ UniValue exec(const JSONRPCRequest& request)
 		bool f10 = (nABNHeight > 0 && nHeight > consensusParams.ABNHeight && nHeight > nABNHeight && nMinRequiredABNWeight > 0);
 		results.push_back(Pair("f10_abnheight", f10));
 		results.push_back(Pair("LateBlock", LateBlock(block, pblockindex, 60)));
-		bool fLBI = LateBlockIndex(pblockindex, 60);
-		results.push_back(Pair("LBI", fLBI));
-		results.push_back(Pair("abnreqweight", nMinRequiredABNWeight));
-		results.push_back(Pair("abnheight", nABNHeight));
 	}
 	else if (sItem == "dailysponsorshipcap")	
 	{	
@@ -3157,7 +3151,7 @@ UniValue exec(const JSONRPCRequest& request)
 	{
 		std::string sURL = "https://" + GetSporkValue("bms");
 		std::string sRestfulURL = "BMS/LAST_MANDATORY_VERSION";
-		std::string sResponse = BiblepayHTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 25, 10000, 1);
+		std::string sResponse = HTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 25, 10000, 1);
 		results.push_back(Pair(sRestfulURL, sResponse));
 	}
 	else if (sItem == "sendmessage")
@@ -3353,14 +3347,6 @@ UniValue exec(const JSONRPCRequest& request)
 		}
 
 	}
-	else if (sItem == "testdp")
-	{
-		BBPResult b = DSQL_ReadOnlyQuery("BMS/BBP_PRICE_QUOTE");
-		results.push_back(Pair("PQ", b.Response));
-		b = DSQL_ReadOnlyQuery("BMS/SANCTUARY_HEALTH_REQUEST");
-		results.push_back(Pair("HR", b.Response));
-		UpdateHealthInformation(1);
-	}
 	else if (sItem == "getwcgmemberid")
 	{
 		if (request.params.size() < 3) 
@@ -3378,11 +3364,11 @@ UniValue exec(const JSONRPCRequest& request)
 		const Consensus::Params& consensusParams = Params().GetConsensus();
 
 		std::string sHowey = "By typing I_AGREE in uppercase, you agree to the following conditions:"
-			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THIS BIBLEPAY, AND DO NOT EXPECT AN INCREASE IN VALUE."
-			"\n2.  I HAVE NOT BEEN PROMISED A PROFIT, AND BIBLEPAY IS NOT PROMISING ME ANY HOPES OF PROFIT IN ANY WAY."
-			"\n3.  BIBLEPAY IS NOT ACTING AS A COMMON ENTERPRISE OR THIRD PARTY IN THIS ENDEAVOR."
-			"\n4.  I HOLD BIBLEPAY AS A HARMLESS UTILITY."
-			"\n5.  I REALIZE I AM RISKING 100% OF MY CRYPTO-HOLDINGS BY BURNING IT, AND BIBLEPAY IS NOT OBLIGATED TO REFUND MY CRYPTO-HOLDINGS OR GIVE ME ANY REWARD.";
+			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THESE COINS, AND DO NOT EXPECT AN INCREASE IN VALUE."
+			"\n2.  I HAVE NOT BEEN PROMISED A PROFIT, AND THIS ACTION IS NOT PROMISING ME ANY HOPES OF PROFIT IN ANY WAY NOR IS THE COMMUNITY OR ORGANIZATION."
+			"\n3.  " + CURRENCY_NAME + " IS NOT ACTING AS A COMMON ENTERPRISE OR THIRD PARTY IN THIS ENDEAVOR."
+			"\n4.  I HOLD " + CURRENCY_NAME + " AS A HARMLESS UTILITY."
+			"\n5.  I REALIZE I AM RISKING 100% OF MY CRYPTO-HOLDINGS BY BURNING IT, AND " + CURRENCY_NAME + " IS NOT OBLIGATED TO REFUND MY CRYPTO-HOLDINGS OR GIVE ME ANY REWARD.";
 			
 		std::string sHelp = "You must specify exec dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + sHowey;
 		
@@ -3402,10 +3388,10 @@ UniValue exec(const JSONRPCRequest& request)
 			returnAddress = CBitcoinAddress(sReturnAddress);
 		}
 		if (!returnAddress.IsValid())
-			throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Biblepay return address: ") + sReturnAddress);
+			throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid return address: ") + sReturnAddress);
 
 		if (nAmt < 100 || nAmt > 1000000)
-			throw std::runtime_error("Sorry, amount must be between 100 BBP and 1,000,000 BBP.");
+			throw std::runtime_error("Sorry, amount must be between 100 and 1,000,000 " + CURRENCY_NAME + ".");
 
 		if (nDuration < 7 || nDuration > 365)
 			throw std::runtime_error("Sorry, duration must be between 7 days and 365 days.");
@@ -3415,7 +3401,7 @@ UniValue exec(const JSONRPCRequest& request)
 
 		double nTotalStakes = GetWhaleStakesInMemoryPool(sCPK);
 		if (nTotalStakes > 256000)
-			throw std::runtime_error("Sorry, you currently have " + RoundToString(nTotalStakes, 2) + "BBP in whale stakes pending at height " 
+			throw std::runtime_error("Sorry, you currently have " + RoundToString(nTotalStakes, 2) + CURRENCY_NAME + " in whale stakes pending at height " 
 			+ RoundToString(chainActive.Tip()->nHeight, 0) + ".  Please wait until the current block passes before issuing a new DWS. ");
 
 		results.push_back(Pair("Staking Amount", nAmt));
@@ -3476,7 +3462,7 @@ UniValue exec(const JSONRPCRequest& request)
 					throw JSONRPCError(RPC_WALLET_ERROR, "Whale-Stake-Commit failed.");
 				}
 				
-				results.push_back(Pair("Results", "Burn was successful.  You will receive your original BBP back on the Reclaim Date, plus the stake reward.  Please give the wallet an extra 48 hours after the reclaim date to process the return stake.  "));
+				results.push_back(Pair("Results", "Burn was successful.  You will receive your original " + CURRENCY_NAME + " back on the Reclaim Date, plus the stake reward.  Please give the wallet an extra 48 hours after the reclaim date to process the return stake.  "));
 				results.push_back(Pair("TXID", wtx.GetHash().GetHex()));
 			}
 		}

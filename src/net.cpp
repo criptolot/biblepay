@@ -1,12 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "net.h"
@@ -688,7 +688,7 @@ void CNode::copyStats(CNodeStats &stats)
         nPingUsecWait = GetTimeMicros() - nPingUsecStart;
     }
 
-    // Raw ping time is in microseconds, but show it to user as whole seconds (Biblepay users should be well used to small numbers with many decimal places by now :)
+    // Raw ping time is in microseconds, but show it to user as whole seconds (users should be well used to small numbers with many decimal places by now :)
     stats.dPingTime = (((double)nPingUsecTime) / 1e6);
     stats.dMinPing  = (((double)nMinPingUsecTime) / 1e6);
     stats.dPingWait = (((double)nPingUsecWait) / 1e6);
@@ -1600,7 +1600,7 @@ void ThreadMapPort()
             }
         }
 
-        std::string strDesc = "BiblePay Core " + FormatFullVersion();
+        std::string strDesc = "DAC Core " + FormatFullVersion();
 
         try {
             while (true) {
@@ -2037,18 +2037,17 @@ void CConnman::ThreadOpenAddedConnections()
         LOCK(cs_vAddedNodes);
 
 		// Extra Seed Nodes
-		AddNode("node.biblepay.org"); // Volunteers welcome to run external nodes and we will add during future releases
-		AddNode("dns1.biblepay.org");  // Rob
-		AddNode("dns2.biblepay.org");  // Rob
-		AddNode("dns3.biblepay.org");  // Rob
-		AddNode("dns4.biblepay.org");  // Rob
-		AddNode("dns5.biblepay.org");  // Rob
+		AddNode("node." + DOMAIN_NAME); // Volunteers welcome to run external nodes and we will add during future releases
+		AddNode("dns1." + DOMAIN_NAME);  // Rob
+		AddNode("dns2." + DOMAIN_NAME);  // Rob
+		AddNode("dns3." + DOMAIN_NAME);  // Rob
+		AddNode("dns4." + DOMAIN_NAME);  // Rob
+		AddNode("dns5." + DOMAIN_NAME);  // Rob
 		if (!fProd) 
 		{
-			AddNode("testnet.biblepay.org");
-			AddNode("testnet1.biblepay.org");
+			AddNode("testnet." + DOMAIN_NAME);
+			AddNode("testnet1." + DOMAIN_NAME);
 		}
-		if (!fProd) AddNode("test.dnsseed.biblepay-explorer.org"); // Alex 
 
         if (mapMultiArgs.count("-addnode"))
             vAddedNodes = mapMultiArgs.at("-addnode");

@@ -1,7 +1,7 @@
 Description
 ------------
 
-This directory contains data-driven tests for various aspects of Biblepay.
+This directory contains data-driven tests for various aspects of the core wallet.
 
 License
 --------

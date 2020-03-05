@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The BiblePay Core developers
+// Copyright (c) 2014-2017 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -64,7 +64,7 @@
 #include <boost/thread.hpp>
 
 #if defined(NDEBUG)
-# error "BiblePay Core cannot be compiled without assertions."
+# error "DAC Core cannot be compiled without assertions."
 #endif
 
 /**
@@ -114,7 +114,7 @@ CTxMemPool mempool;
 
 std::map<uint256, int64_t> mapRejectedBlocks GUARDED_BY(cs_main);
 
-// BIBLEPAY
+// DAC
 std::map<std::pair<std::string, std::string>, std::pair<std::string, int64_t>> mvApplicationCache;
 std::map<std::string, POSEScore> mvPOSEScore;
 std::map<std::string, Researcher> mvResearchers;
@@ -154,7 +154,7 @@ std::string msGlobalStatus3;
 std::string msURL;
 SecureString msEncryptedString = "";
 
-// END OF BIBLEPAY
+// END OF DAC
 
 static void CheckBlockIndex(const Consensus::Params& consensusParams);
 
@@ -778,7 +778,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
                                         hash.ToString(), ptxConflicting->GetHash().ToString()),
                                 REJECT_INVALID, "txlockreq-tx-mempool-conflict");
             }
-            // Transaction conflicts with mempool and RBF doesn't exist in Biblepay
+            // Transaction conflicts with mempool and RBF doesn't exist in DAC
             return state.Invalid(false, REJECT_CONFLICT, "txn-mempool-conflict");
         }
     }
@@ -913,10 +913,10 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             return state.DoS(0, false, REJECT_DUPLICATE, "protx-dup");
         }
 
-		// BiblePay
+		// DAC
 		if (chainActive.Tip() != NULL)
 		{
-			// BiblePay - If this is a PODC association, user must prove ownership of the CPID, otherwise reject the transaction
+			// If this is a PODC association, user must prove ownership of the CPID, otherwise reject the transaction
 			if (!VerifyMemoryPoolCPID(tx))
 			{
 				LogPrintf("AcceptToMemoryPool::PODC association rejected %s \n", 
@@ -931,6 +931,8 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 				LogPrintf("AcceptToMemoryPool::Dynamic Whale Burn rejected %s [%s]\n", tx.GetHash().GetHex(), sError2);
 				return false;
 			}
+		}
+			/*
 
 			std::string sRecipient = PubKeyToAddress(tx.vout[0].scriptPubKey);
 			CAmount nTitheAmount = GetTitheTotal(tx);
@@ -968,7 +970,9 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 			}
 		}
 
-        // If we aren't going to actually accept it but just were verifying it, we are fine already
+		*/
+		
+        // If we aren't going to actually accept it but just we're verifying it, we are fine already
         if(fDryRun) return true;
 
         // Check against previous transactions
@@ -1208,7 +1212,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     }
 
     // Check the header
-	// R ANDREWS - Biblepay needs to find the previous block before checking the POW
+	// We need to find the previous block before checking the POW
 	// Due to the slow nature of randomX we must deterministically check the proof of work (during cold boots, and during new blocks, but not when memorizing prayers or assessing the GSC contract).  
 	// NOTE:  POW is always checked when we receive blockheaders and during ConnectBlock anyway, so this below procedure is more for verifying the integrity of the data on the disk.
 	if (fCheckPOW)
@@ -1274,7 +1278,7 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 
 		// This setting included in f7000 regulates the extent in which the block subsidy is lowered by increasing diff; once we remove the x11 component from the biblehash, it was necessary to recalculate the reduction to match the prior regulation level.
 		// Dark Gravity Wave Subsidy Decrease (a Higher difficulty equals a Lower total block reward):
-		/*		BiblePay Difficulty Level Chart:
+		/*		DAC Difficulty Level Chart:
 		 1            19998.2933653649 
 		51            19863.6590388237 
 		101           19730.3798134583 
@@ -1293,7 +1297,7 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 
     CAmount nSubsidy = nSubsidyBase * COIN;
     // Yearly decline of production by ~19.5% per year, projected ~5.2 Billion coins max by year 2050+.
-	// http://wiki.biblepay.org/Emission_Schedule
+	// http://wiki.bible[pay].org/Emission_Schedule
 
 	int iSubsidyDecreaseInterval = BLOCKS_PER_DAY * 365; // Yearly Initially
 	double iDeflationRate = .10; // 10% deflation from July 2017 to Dec 2017 (until sanctuaries go live) - This bootstraps the coin
@@ -1305,14 +1309,14 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     for (int i = iSubsidyDecreaseInterval; i <= nPrevHeight; i += iSubsidyDecreaseInterval) 
 	{
         nSubsidy -= (nSubsidy * iDeflationRate);
-		// Starting at height 166000, we increased our deflation rate to 20.04% (from 19.5%) to free extra BBP to pay for DWS Rewards (Dynamic-Whale-Staking):
+		// Starting at height 166000, we increased our deflation rate to 20.04% (from 19.5%) to free extra Coins to pay for DWS Rewards (Dynamic-Whale-Staking):
 		if (i > consensusParams.PODC2_CUTOVER_HEIGHT && i < consensusParams.ANTI_GPU_HEIGHT)
 		{
 			iDeflationRate = .0167; // 1.67% per month, 20.04% annual
 		}
 		else if (i >= consensusParams.ANTI_GPU_HEIGHT)
 		{
-			// As of Jan 18th, 2020, we have emitted 187 million too many coins for the current date, so we need to pull the horns in - with a target of meeting 2,334,900,554 emitted coins as of 12-9-2020 (see our schedule here: http://wiki.biblepay.org/Emission_Schedule)
+			// As of Jan 18th, 2020, we have emitted 187 million too many coins for the current date, so we need to pull the horns in - with a target of meeting 2,334,900,554 emitted coins as of 12-9-2020 (see our schedule here: http://wiki.bible[pay].org/Emission_Schedule)
 			iDeflationRate = .0216; // 25.92% annually
 		}
     }
@@ -1320,9 +1324,9 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     // Monthly Budget: 
 	// 10% to Charity budget, 5% for the IT budget, 2.5% PR, 2.5% P2P (this is 20% for Governance).  An additional 28.5% is held back for the generic superblock contract.  This equals 48.5% being escrowed.
 	// The remaining 50% is split between the miner and the sanctuary.
-	// https://wiki.biblepay.org/Economics
+	// https://wiki.bible[pay].org/Economics
 
-	// In Phase 2: https://forum.biblepay.org/index.php?topic=435.0 : GSC budget is reduced to 25% from 30%
+	// In Phase 2: https://forum.bible[pay].org/index.php?topic=435.0 : GSC budget is reduced to 25% from 30%
 
 	double dGovernancePercent = 0;
 	if (nPrevHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight)
@@ -1341,11 +1345,11 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 
 CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 {
-	// https://wiki.biblepay.org/Economics
-	// http://forum.biblepay.org/index.php?topic=33.0
+	// https://wiki.bible[pay].org/Economics
+	// http://forum.bible[pay].org/index.php?topic=33.0
 	// Sanctuaries receive half of the POW-POBH reward in Phase 1 (July 2017 through December 2019)
 
-	// In phase 2: https://forum.biblepay.org/index.php?topic=435.0 : Sanctuaries receive 64% of the net block value (35% of the gross block reward)
+	// In phase 2: https://forum.bible[pay].org/index.php?topic=435.0 : Sanctuaries receive 64% of the net block value (35% of the gross block reward)
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	CAmount ret = 0;
 	if (nHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight) 
@@ -1963,7 +1967,7 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 static CCheckQueue<CScriptCheck> scriptcheckqueue(128);
 
 void ThreadScriptCheck() {
-    RenameThread("biblepay-scriptch");
+    RenameThread("dac-scriptch");
     scriptcheckqueue.Thread();
 }
 
@@ -2163,7 +2167,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
         }
     }
 
-    /// BIBLEPAY: Check superblock start
+    /// DAC: Check superblock start
 
     // make sure old budget is the real one
     if (pindex->nHeight == chainparams.GetConsensus().nSuperblockStartBlock &&
@@ -2172,7 +2176,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
             return state.DoS(100, error("ConnectBlock(): invalid superblock start"),
                              REJECT_INVALID, "bad-sb-start");
 
-    /// END BIBLEPAY
+    /// END DAC
 
     // BIP16 didn't become active until Apr 1 2012
     int64_t nBIP16SwitchTime = 1333238400;
@@ -2366,7 +2370,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     if (fDebugSpam)
 		LogPrint("bench", "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs]\n", nInputs - 1, 0.001 * (nTime4 - nTime2), nInputs <= 1 ? 0 : 0.001 * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * 0.000001);
 
-    // BIBLEPAY : MODIFIED TO CHECK MASTERNODE PAYMENTS AND SUPERBLOCKS
+    // DAC : MODIFIED TO CHECK MASTERNODE PAYMENTS AND SUPERBLOCKS
 
     // It's possible that we simply don't have enough data and this could fail
     // (i.e. block itself could be a correct one and we need to store it),
@@ -2374,7 +2378,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     // the peer who sent us this block is missing some data and wasn't able
     // to recognize that block is actually invalid.
 
-	// BIBLEPAY : CHECK TRANSACTIONS FOR INSTANTSEND	
+	// DAC : CHECK TRANSACTIONS FOR INSTANTSEND	
 
      if (sporkManager.IsSporkActive(SPORK_3_INSTANTSEND_BLOCK_FILTERING) && sporkManager.IsSporkActive(SPORK_16_INSTANTSEND_AUTOLOCKS)) 
 	 {	
@@ -2390,7 +2394,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
                     // TODO: relay instantsend data/proof.	
                     LOCK(cs_main);	
                     mapRejectedBlocks.insert(std::make_pair(block.GetHash(), GetTime()));	
-			        return state.DoS(10, error("ConnectBlock(BIBLEPAY): transaction %s conflicts with transaction lock %s", tx->GetHash().ToString(), hashLocked.ToString()),	
+			        return state.DoS(10, error("ConnectBlock::ERROR Transaction %s conflicts with transaction lock %s", tx->GetHash().ToString(), hashLocked.ToString()),	
                                      REJECT_INVALID, "conflict-tx-lock");	
                 }	
             }	
@@ -2411,17 +2415,17 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
             }	
         }	
     } else {	
-        LogPrintf("ConnectBlock(BIBLEPAY): spork is off, skipping transaction locking checks\n");	
+        LogPrintf("ConnectBlock::ERROR::Spork is off, skipping transaction locking checks\n");	
     }	
 
-    // BIBLEPAY : MODIFIED TO CHECK MASTERNODE PAYMENTS AND SUPERBLOCKS	
+    // DAC : MODIFIED TO CHECK MASTERNODE PAYMENTS AND SUPERBLOCKS	
 
     // TODO: resync data (both ways?) and try to reprocess this block later.
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->pprev->nBits, pindex->pprev->nHeight, chainparams.GetConsensus(), false);
     std::string strError;
 	
     if (!IsBlockValueValid(block, pindex->nHeight, blockReward, strError)) {
-        return state.DoS(0, error("ConnectBlock(BIBLEPAY): %s", strError), REJECT_INVALID, "bad-cb-amount");
+        return state.DoS(0, error("ConnectBlock::ERROR::BLOCKVALUEVALID:: %s", strError), REJECT_INVALID, "bad-cb-amount");
     }
 	
 	// Since we still live in the hybrid scenario (.13 + .14):
@@ -2429,7 +2433,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
 	{
 		if (!IsBlockPayeeValid(*block.vtx[0], pindex->nHeight, blockReward)) {
 			mapRejectedBlocks.insert(std::make_pair(block.GetHash(), GetTime()));
-			return state.DoS(0, error("ConnectBlock(BIBLEPAY): couldn't find masternode or superblock payments"),
+			return state.DoS(0, error("ConnectBlock::ERROR::Couldn't find masternode or superblock payments"),
 									REJECT_INVALID, "bad-cb-payee");
 		}
 	}
@@ -2439,7 +2443,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
                      pindex->GetBlockHash().ToString(), FormatStateMessage(state));	
     }
 
-    // END BIBLEPAY
+    // END DAC
 
     if (fJustCheck)
         return true;
@@ -2494,7 +2498,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     hashPrevBestCoinBase = block.vtx[0]->GetHash();
 
     evoDb->WriteBestBlock(pindex->GetBlockHash());
-	// BIBLEPAY
+	// DAC
 	if (!fLoadingIndex) 
 	{
 		MemorizeBlockChainPrayers(true, false, false, false);
@@ -2502,7 +2506,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
 		if (fDebugSpam)
 			LogPrintf("EGSCQP %f %s", (double)pindex->nHeight, sStatus);
 	}
-	// END BIBLEPAY
+	// END DAC
 
     return true;
 }
@@ -2851,7 +2855,7 @@ void ReprocessBlocks(int nBlocks)
 {
 	if (nBlocks % 3 == 0)
 	{
-		// If BiblePay devs execute the spork hinting for blocks ending in modulus 3, only reassess the non-main-chains then exit.  
+		// If DAC devs execute the spork hinting for blocks ending in modulus 3, only reassess the non-main-chains then exit.  
 		// This will clear up any issues where we had a bad block that broke softfork-checkblock rules but later became a good block, but is still marked invalid by the node internally (in the rejected blocks map).
 		ReassessAllChains();
 		return;
@@ -2860,7 +2864,6 @@ void ReprocessBlocks(int nBlocks)
     LOCK(cs_main);
 
     std::map<uint256, int64_t>::iterator it = mapRejectedBlocks.begin();
-	// R Andrews - BiblePay - Beef this up a little
     while (it != mapRejectedBlocks.end())
 	{
 		BlockMap::iterator mi = mapBlockIndex.find((*it).first);
@@ -3449,7 +3452,7 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, int64_t nBlockTime, int64_t nPrevBlockTime, int nPrevHeight, const CBlockIndex* pindexPrev)
 {
     // Check proof of work matches claimed amount
-	// R ANDREWS - BiblePay needs these 6 additional fields
+	// R ANDREWS - DAC needs these 6 additional fields
 	if (false && nPrevHeight > consensusParams.RANDOMX_HEIGHT-2 && !fProd)
 	{
 		LogPrintf("\nChecking blockheader %f with rxhash %s and rxmsg %s ", nPrevHeight, block.RandomXKey.GetHex(), block.RandomXData);
@@ -3461,9 +3464,9 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
         return state.DoS(5, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
 	}
 	
-	// BiblePay - Check timestamp (reject if > 15 minutes in future).  This is is important since we lower the difficulty after all online nodes cannot solve block in one hour!  
+	// DAC - Check timestamp (reject if > 15 minutes in future).  This is is important since we lower the difficulty after all online nodes cannot solve block in one hour!  
     if (block.GetBlockTime() > GetAdjustedTime() + (15 * 60))
-        return state.Invalid(error("CheckBlockHeader(): BiblePay: Block timestamp way too far in the future"),
+        return state.Invalid(error("CheckBlockHeader()::ERROR::Block timestamp way too far in the future"),
                              REJECT_INVALID, "time-too-new");
     
 	// Check DevNet
@@ -3612,12 +3615,6 @@ bool LateBlock(const CBlock& block, const CBlockIndex* pindexPrev, int iMinutes)
 	return (nAgeTip > (60 * iMinutes)) ? true : false;
 }
 
-int64_t LateBlockIndex(const CBlockIndex* pindexPrev, int iMinutes)
-{
-	int64_t nAge = GetAdjustedTime() - pindexPrev->nTime;
-	return (nAge > (60 * iMinutes)) ? true : false;
-}
-
 bool AntiGPU(const CBlock& block, const CBlockIndex* pindexPrev)
 {
 	if (!pindexPrev) return false;
@@ -3716,12 +3713,37 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-type", false, "coinbase is not a CbTx");
         }
     }
-	//////////////////////////////////////////////////////////  BIBLEPAY //////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////  DAC //// //////////////////////////////////////////////////////////////////////////
 	//                               Additional Checks for GSC (Generic-Smart-Contracts) and for ABN (Anti-Bot-Net) rules                        //
 	//                                                                                                                                           //
 
 	if (pindexPrev)
 	{
+		// RandomX Pools:
+		// If diff > MIN_RX_DIFF, Prod, and Block is not late, enforce Pool Spork List
+		int64_t nBlockAge = GetAdjustedTime() - block.GetBlockTime();
+		if (nBlockAge < 86400)
+		{
+			double nDiff = GetDifficulty(pindexPrev);
+			double nMinRXDiff = GetSporkDouble("MIN_RX_DIFF", 50);
+			if (nHeight > consensusParams.RANDOMX_HEIGHT && nDiff > nMinRXDiff && nMinRXDiff > 0 && fProd && !LateBlock(block, pindexPrev, (60 * 30)))
+			{
+				// Must be solved by a pool (this prevents miners from circumventing the 10% tithe to orphan-charity)
+				std::string sPoolList = GetSporkValue("RX_POOLS");
+				if (!sPoolList.empty())
+				{
+					std::string sRecip = PubKeyToAddress(block.vtx[0]->vout[0].scriptPubKey);
+					bool fFound = Contains(sPoolList, sRecip);
+					if (!fFound)
+					{
+						LogPrintf("\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
+							nHeight, nDiff, nMinRXDiff, sRecip, sPoolList);
+						return false; 
+					}
+				}
+			}
+		}
+
 		bool bGSCSuperblock = CSuperblock::IsSmartContract(nHeight);
 		CAmount nPayments = block.vtx[0]->GetValueOut();
 		int nTimeConstraint = fProd ? 60 * 8 : 30 * 1;
@@ -3735,7 +3757,6 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 		// Extra Safety Layer for Dynamic Whale Staking (This routine is designed to remove the danger of any hacker slipping a whale payment in via createBlock, then brute force mining it with > 51% hashpower, and it being non-approved by a Sanctuary in our GSC (meaning that blocks > the base governance limit should be as safe as any other block, as we are specifically checking the DWS burn(ed) amounts and recipients here):
 		if (bGSCSuperblock)
 		{
-			int64_t nBlockAge = GetAdjustedTime() - block.GetBlockTime();
 			CAmount nPaymentsLimitBase = CSuperblock::GetPaymentsLimit(nHeight, false);
 			CAmount nPaymentsLimitDWS = CSuperblock::GetPaymentsLimit(nHeight, true);
 			// If the block is within one day old, or newer:
@@ -3781,7 +3802,7 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 	}
 
 	//                                                                                                                                           //
-	////////////////////////////////////////////////////// END OF BIBLEPAY ////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////// END OF DAC /////////////////////////////////////////////////////////////////////////////
     return true;
 }
 
@@ -3808,7 +3829,7 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
 			}
             return true;
         }
-		// R ANDREWS - Biblepay needs to find the previous block before checking the block header
+		// DAC needs to find the previous block before checking the block header
 		CBlockIndex* pindexPrev = NULL;
         BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
         if (mi == mapBlockIndex.end())
@@ -3915,7 +3936,7 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
         if (fTooFarAhead) return true;      // Block height is too high
     }
     if (fNewBlock) *fNewBlock = true;
-	// R ANDREWS: BiblePay needs to pass in these 4 additional fields into CheckBlock:
+	// DAC needs to pass in these 4 additional fields into CheckBlock:
     if  (!CheckBlock(block, state, chainparams.GetConsensus(), true, true, block.GetBlockTime(), pindex->pprev ? pindex->pprev->nTime : 0, pindex->pprev ? pindex->pprev->nHeight : 0, pindex->pprev) || 
 		 !ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev, false)) {
 		if (state.IsInvalid() && !state.CorruptionPossible()) {
@@ -5052,28 +5073,17 @@ void DumpMempool(void)
         LogPrintf("Failed to dump mempool: %s. Continuing anyway.\n", e.what());
     }
 }
-// BIBLEPAY
+// DAC
 void SetOverviewStatus()
 {
 	try
 	{
 		double dDiff = GetDifficulty(chainActive.Tip());
-		// QuantitativeTightening - QT - R ANDREWS - BIBLEPAY
-		double dPriorPrice = 0;
-		double dPriorPhase = 0;
-		std::string sQT;
-		if (sporkManager.IsSporkActive(SPORK_30_QUANTITATIVE_TIGHTENING_ENABLED) && false) 
-		{
-			GetQTPhase(false, -1, chainActive.Tip()->nHeight, dPriorPrice, dPriorPhase);
-			std::string sQTColor = (dPriorPhase == 0) ? "" : "<font color=green>";
-			sQT = "Price: " + RoundToString(dPriorPrice, 8) + "; QT: " + sQTColor + RoundToString(dPriorPhase, 0) + "%" + "</font>";
-		}
 		std::string sPrayer = "N/A";
 		GetDataList("PRAYER", 30, miGlobalPrayerIndex, "", sPrayer);
 		msGlobalStatus = "Blocks: " + RoundToString((double)chainActive.Tip()->nHeight, 0);
 		msGlobalStatus += "<br>Difficulty: " + RoundToString(GetDifficulty(chainActive.Tip()), 2);
-		msGlobalStatus += "<br>" + sQT;
-    
+		msGlobalStatus += "<br>";
 		std::string sVersionAlert = GetVersionAlert();
 		if (!sVersionAlert.empty()) msGlobalStatus += " <font color=purple>" + sVersionAlert + "</font> ;";
 		std::string sPrayers = FormatHTML(sPrayer, 20, "<br>");
@@ -5147,9 +5157,7 @@ void ConnectNonFinancialTransactions(const CBlock& block, const CBlockIndex* pin
 	}
 }
 
-
-
-// END OF BIBLEPAY
+// END OF DAC
 
 //! Guess how far we are in the verification process at the given block index
 double GuessVerificationProgress(const ChainTxData& data, CBlockIndex *pindex) {

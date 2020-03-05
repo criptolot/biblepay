@@ -7,7 +7,7 @@
 #include "random.h"
 #include "util.h"
 
-#include "biblepay-config.h"
+#include "coin-config.h"
 
 #include <mutex>
 #include <map>

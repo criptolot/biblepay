@@ -8,9 +8,9 @@
 #include "crypto/RandomX/src/randomx.h"
 #include "uint256.h"
 
-uint256 RandomX_BBPHash(uint256 hash, uint256 uKey, int iThreadID);
-uint256 RandomX_BBPHash(std::vector<unsigned char> data0, uint256 uKey, int iThreadID);
-uint256 RandomX_BBPHash(std::vector<unsigned char> data0, std::vector<unsigned char> datakey);
+uint256 RandomX_Hash(uint256 hash, uint256 uKey, int iThreadID);
+uint256 RandomX_Hash(std::vector<unsigned char> data0, uint256 uKey, int iThreadID);
+uint256 RandomX_Hash(std::vector<unsigned char> data0, std::vector<unsigned char> datakey);
 uint256 RandomX_SlowHash(std::vector<unsigned char> data0, uint256 uKey);
 
 #endif

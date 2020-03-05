@@ -39,24 +39,24 @@ uint256 CBlockHeader::GetHash() const
 	/*
 	if (this->nVersion >= 0x50000000UL && this->nVersion < 0x60000000UL)
 	{
-		// *****************************************                      RandomX - BiblePay                         ************************************************************************
+		// *****************************************                      RandomX - DAC                              ************************************************************************
 		// Starting at RANDOMX_HEIGHT, we now solve for an equation, rather than simply the difficulty and target.
-		// This is so our miners may earn a dual revenue stream (RandomX coins + BBP Coins).
-		// The equation is:  BlakeHash(Previous_BBP_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_BBP_Block_Difficulty
+		// This is so our miners may earn a dual revenue stream (RandomX coins + DAC Coins).
+		// The equation is:  BlakeHash(Previous_DAC_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_DAC_Block_Difficulty
 		// **********************************************************************************************************************************************************************************
 		// std::unique_lock<std::mutex> lock(cs_rxhasher);
 		std::vector<unsigned char> vch(160);
 		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 		std::string randomXBlockHeader = ExtractXML2(RandomXData, "<rxheader>", "</rxheader>");
 		std::vector<unsigned char> data0 = ParseHex(randomXBlockHeader);
-		uint256 uRXMined = RandomX_BBPHash(data0, RandomXKey, iThreadID);
+		uint256 uRXMined = RandomX_Hash(data0, RandomXKey, iThreadID);
 		ss << hashPrevBlock << uRXMined;
 		return HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
 	}
 	else
 	{
 	*/
-		// Legacy BBP Hashes (Before consensusParams.RANDOMX_HEIGHT):
+		// Legacy Hashes (Before consensusParams.RANDOMX_HEIGHT):
 		std::vector<unsigned char> vch(80);
 		CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 		ss << nVersion << hashPrevBlock << hashMerkleRoot << nTime << nBits << nNonce;
@@ -64,10 +64,13 @@ uint256 CBlockHeader::GetHash() const
 	//}
 }
 
+/*
 uint256 CBlockHeader::GetHashBible() const
 {
-	return HashBiblePay(BEGIN(nVersion),END(nNonce));
+	return HashLegacy(BEGIN(nVersion),END(nNonce));
 }
+*/
+
 
 
 std::string CBlock::ToString() const

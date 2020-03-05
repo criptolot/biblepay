@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The BiblePay Core developers
+// Copyright (c) 2014-2017 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -50,7 +50,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// BiblepayMiner
+// Solo Miner (POBH)
 //
 
 //
@@ -215,7 +215,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout.resize(1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
 
-	// BiblePay - Add Pool Support
+	// RandomX Pool Support
 	if (!sPoolMiningPublicKey.empty())
 	{
 		CBitcoinAddress cbaPoolAddress(sPoolMiningPublicKey);
@@ -258,7 +258,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         SetTxPayload(coinbaseTx, cbTx);
     }
 
-	// Add BiblePay version to the subsidy tx message
+	// Add core version to the subsidy tx message
 	std::string sVersion = FormatFullVersion();
 	coinbaseTx.vout[0].sTxOutMessage += "<VER>" + sVersion + "</VER>" + sABNLocator;
 	
@@ -564,7 +564,7 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
 //////////////////////////////////////////////////////////////////////////////
 //                                                                          //
-//  BiblePay Proof-of-Bible-Hash (POBH) Internal miner - March 12th, 2019   //
+//  Proof-of-Bible-Hash (POBH) Internal miner - March 12th, 2019            //
 //                                                                          //
 //                                                                          //
 //////////////////////////////////////////////////////////////////////////////
@@ -628,7 +628,7 @@ void static BibleMiner(const CChainParams& chainparams, int iThreadID, int iFeat
 	double dMinerSleep = cdbl(GetArg("-minersleep", "325"), 0);
 	// The jackrabbit start option forces the miner to start regardless of rules (like not having peers, not being synced etc).
 	double dJackrabbitStart = cdbl(GetArg("-jackrabbitstart", "0"), 0);
-    RenameThread("biblepay-miner");
+    RenameThread("dac-miner");
 				
     boost::shared_ptr<CReserveScript> coinbaseScript;
     GetMainSignals().ScriptForMining(coinbaseScript);
@@ -697,7 +697,7 @@ recover:
 			nHashesDone++;
 			UpdateHashesPerSec(nHashesDone);
 			if (fDebugSpam)
-				LogPrint("miner", "BiblepayMiner -- Running miner with %u transactions in block (%u bytes)\n", 
+				LogPrint("miner", "SoloMiner -- Running miner with %u transactions in block (%u bytes)\n", 
 				     pblock->vtx.size(), ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 		    //
             // Search
@@ -715,7 +715,7 @@ recover:
 			{
 				while (true)
 				{
-					// BiblePay uses RandomX after the RandomX cutover height:
+					// Use RandomX after the RandomX cutover height:
 					uint256 x11_hash = pblock->GetHash();
 					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, pblock->RandomXData, pblock->RandomXKey, pindexPrev->GetBlockHash(), iThreadID + 1);
 					
@@ -812,13 +812,13 @@ recover:
     }
     catch (const boost::thread_interrupted&)
     {
-        LogPrint("miner", "\r\nBiblepayMiner -- terminated\n %f", iThreadID);
+        LogPrint("miner", "\r\nSoloMiner -- terminated\n %f", iThreadID);
 		dHashesPerSec = 0;
         throw;
     }
     catch (const std::runtime_error &e)
     {
-        LogPrint("miner", "\r\nBiblepayMiner -- runtime error: %s\n", e.what());
+        LogPrint("miner", "\r\nSoloMiner -- runtime error: %s\n", e.what());
 		dHashesPerSec = 0;
 		// This happens occasionally when TestBlockValidity fails; I suppose the best thing to do for now is start the thread over.
 		nThreadStart = GetTimeMillis();
@@ -828,7 +828,7 @@ recover:
     }
 }
 
-void GenerateBBP(bool fGenerate, int nThreads, const CChainParams& chainparams)
+void GenerateCoins(bool fGenerate, int nThreads, const CChainParams& chainparams)
 {
     static boost::thread_group* minerThreads = NULL;
 

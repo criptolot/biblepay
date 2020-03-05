@@ -7,7 +7,7 @@
 #include "chainparams.h"
 #include "random.h"
 
-#include "test/test_biblepay.h"
+#include "test/test_coin.h"
 
 #include <boost/test/unit_test.hpp>
 

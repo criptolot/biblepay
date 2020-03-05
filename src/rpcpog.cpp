@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core Developers, The BiblePay Developers
+// Copyright (c) 2014-2019 The Dash Core Developers, The DAC Core Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -442,7 +442,7 @@ std::string DefaultRecAddress(std::string sType)
 
 std::string CreateBankrollDenominations(double nQuantity, CAmount denominationAmount, std::string& sError)
 {
-	// First mark the denominations with the 1milliBBP TitheMarker
+	// First mark the denominations with the 1milli TitheMarker
 	denominationAmount += ((.001) * COIN);
 	CAmount nBankrollMask = .001 * COIN;
 
@@ -552,44 +552,6 @@ void GetTxTimeAndAmountAndHeight(uint256 hashInput, int hashInputOrdinal, int64_
 }
 */
 
-/*
-bool IsTitheLegal(CTransaction ctx, CBlockIndex* pindex, CAmount tithe_amount)
-{
-	// R ANDREWS - BIBLEPAY - 12/19/2018 
-	// We quote the difficulty params to the user as of the best block hash, so when we check a tithe to be legal, we must check it as of the prior block's difficulty params
-	if (pindex==NULL || pindex->pprev==NULL || pindex->nHeight < 2) return false;
-
-	uint256 hashInput = ctx.vin[0].prevout.hash;
-	int hashInputOrdinal = ctx.vin[0].prevout.n;
-	int64_t nTxTime = 0;
-	CAmount caAmount = 0;
-	int iHeight = 0;
-	GetTxTimeAndAmountAndHeight(hashInput, hashInputOrdinal, nTxTime, caAmount, iHeight);
-	
-	double nTitheAge = (double)((pindex->GetBlockTime() - nTxTime) / 86400);
-	if (nTitheAge >= pindex->pprev->nMinCoinAge && caAmount >= pindex->pprev->nMinCoinAmount && tithe_amount <= pindex->pprev->nMaxTitheAmount)
-	{
-		return true;
-	}
-	
-	return false;
-}
-*/
-
-/*
-double GetTitheAgeAndSpentAmount(CTransaction ctx, CBlockIndex* pindex, CAmount& spentAmount)
-{
-	// R ANDREWS - BIBLEPAY - 1/4/2018 
-	if (pindex==NULL || pindex->pprev==NULL || pindex->nHeight < 2) return false;
-	uint256 hashInput = ctx.vin[0].prevout.hash;
-	int hashInputOrdinal = ctx.vin[0].prevout.n;
-	int64_t nTxTime = 0;
-	int iHeight = 0;
-	GetTxTimeAndAmountAndHeight(hashInput, hashInputOrdinal, nTxTime, spentAmount, iHeight);
-	double nTitheAge = R2X((double)(pindex->GetBlockTime() - nTxTime) / 86400);
-	return nTitheAge;
-}
-*/
 
 CAmount GetRPCBalance()
 {
@@ -608,7 +570,7 @@ bool CreateExternalPurse(std::string& sError)
 	CBitcoinAddress address;
 	if (!address.SetString(sBoinc))
 	{
-	     sError = "Invalid Biblepay address";
+	     sError = "Invalid address";
 		 return false;
 	}
 	CKeyID keyID;
@@ -624,9 +586,9 @@ bool CreateExternalPurse(std::string& sError)
 		return false;
     }
 	std::string ssecret = CBitcoinSecret(vchSecret).ToString();
-	// Encrypt the secret, so hackers cannot easily gain access to the privkey - even if they get physical access to the biblepay.conf file
+	// Encrypt the secret, so hackers cannot easily gain access to the privkey - even if they get physical access to the .conf file
 	std::string sEncSecret = EncryptAES256(ssecret, sBoinc);
-	// Store the pubkey unencrypted and the privkey encrypted in the biblepay.conf file:		
+	// Store the pubkey unencrypted and the privkey encrypted in the .conf file:		
 	WriteKey("externalpurse", sBoinc);
 	ForceSetArg("externalpurse", sBoinc);
 	WriteKey("externalprivkey" + sBoinc.substr(0,8), sEncSecret);
@@ -644,7 +606,7 @@ bool FundWithExternalPurse(std::string& sError, const CTxDestination &address, C
 
 	// ** Note **:  We only allow external purse funded transactions to fund our own destination purse address through GSCs and through coin-age only. 
 	// We do not allow purse tx's to fund other addresses or to spend UTXOs for non-coinage based tx's.
-	// This is to make it hard to hack an external purse (it would require hacking the encrypted key, then running a fraudulent version of BBP to send the transaction to another recipient.
+	// This is to make it hard to hack an external purse (it would require hacking the encrypted key, then running a fraudulent version of DAC to send the transaction to another recipient.
 	// It would also require the hacker to understand how to modify our wallet class to break the safeguards to select the external UTXO's (which is not allowed currently - because our wallet won't sign them for a non-coin-age tx).
 
     CAmount curBalance = pwalletMain->GetBalance();
@@ -661,7 +623,7 @@ bool FundWithExternalPurse(std::string& sError, const CTxDestination &address, C
 		sError = "Insufficient funds";
 		return false;
 	}
-    // Parse Biblepay address
+    // Parse address
     CScript scriptPubKey = GetScriptForDestination(address);
 
     CReserveKey reservekey(pwalletMain);
@@ -722,7 +684,7 @@ bool RPCSendMoney(std::string& sError, const CTxDestination &address, CAmount nV
 		sError = "Insufficient funds";
 		return false;
 	}
-    // Parse Biblepay address
+    // Parse address
     CScript scriptPubKey = GetScriptForDestination(address);
 
     // Create and send the transaction
@@ -845,12 +807,12 @@ std::string GetActiveProposals()
 		sURL = obj["url"].getValStr();
 		sCharityType = obj["expensetype"].getValStr();
 		if (sCharityType.empty()) sCharityType = "N/A";
-		BiblePayProposal bbpProposal = GetProposalByHash(pGovObj->GetHash(), nLastSuperblock);
+		DACProposal dProposal = GetProposalByHash(pGovObj->GetHash(), nLastSuperblock);
 		std::string sHash = pGovObj->GetHash().GetHex();
 		int nEpochHeight = GetHeightByEpochTime(nStartEpoch);
 		// First ensure the proposals gov height has not passed yet
 		bool bIsPaid = nEpochHeight < nLastSuperblock;
-		std::string sReport = DescribeProposal(bbpProposal);
+		std::string sReport = DescribeProposal(dProposal);
 		if (fDebugSpam && fDebug)
 			LogPrintf("\nGetActiveProposals::Proposal %s , epochHeight %f, nLastSuperblock %f, IsPaid %f ", 
 					sReport, nEpochHeight, nLastSuperblock, (double)bIsPaid);
@@ -1273,7 +1235,7 @@ std::string SubmitToIPFS(std::string sPath, std::string& sError)
 	std::vector<char> v = ReadBytesAll(sPath.c_str());
 	std::vector<unsigned char> uData(v.begin(), v.end());
 	std::string s64 = EncodeBase64(&uData[0], uData.size());
-	std::string sData; // BiblepayIPFSPost(sFN, s64);
+	std::string sData; // IPFSPost(sFN, s64);
 	std::string sHash = ExtractXML(sData,"<HASH>","</HASH>");
 	std::string sLink = ExtractXML(sData,"<LINK>","</LINK>");
 	sError = ExtractXML(sData,"<ERROR>","</ERROR>");
@@ -2021,7 +1983,7 @@ std::string PrepareHTTPPost(bool bPost, std::string sPage, std::string sHostHead
 }
 	
 static double HTTP_PROTO_VERSION = 2.0;
-std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
+std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
 	std::string sSolution, int iTimeoutSecs, int iMaxSize, int iBOE)
 {
 	std::string sData;
@@ -2032,7 +1994,7 @@ std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName
 		iChunkSize = 65536;
 	}
 	
-	// The OpenSSL version of BiblepayHTTPSPost *only* works with SSL websites, hence the need for BiblePayHTTPPost(2) (using BOOST).  The dev team is working on cleaning this up before the end of 2019 to have one standard version with cleaner code and less internal parts. //
+	// The OpenSSL version of Post *only* works with SSL websites, hence the need for HTTPPost(2) (using BOOST).  The dev team is working on cleaning this up before the end of 2019 to have one standard version with cleaner code and less internal parts. //
 	try
 	{
 		double dDebugLevel = cdbl(GetArg("-devdebuglevel", "0"), 0);
@@ -2042,7 +2004,7 @@ std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName
 		mapRequestHeaders["Action"] = sPayload;
 		mapRequestHeaders["Solution"] = sSolution;
 		mapRequestHeaders["Agent"] = FormatFullVersion();
-		// BiblePay supported pool Network Chain modes: main, test, regtest
+		// Supported pool Network Chain modes: main, test, regtest
 		const CChainParams& chainparams = Params();
 		mapRequestHeaders["NetworkID"] = chainparams.NetworkIDString();
 		mapRequestHeaders["ThreadID"] = RoundToString(iThreadID, 0);
@@ -2145,29 +2107,29 @@ std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName
 	}
 }
 
-static std::string DECENTRALIZED_SERVER_FARM = "web.biblepay.org";
+static std::string DECENTRALIZED_SERVER_FARM_PREFIX = "web.";
 static std::string SSL_PROTOCOL_WEB = "https://";
 static int SSL_PORT = 443;
 static int SSL_TIMEOUT = 15;
 static int SSL_CONN_TIMEOUT = 10000;
-BBPResult DSQL(UniValue uObject, std::string sXML)
+DACResult DSQL(UniValue uObject, std::string sXML)
 {
-	std::string sEndpoint = SSL_PROTOCOL_WEB + DECENTRALIZED_SERVER_FARM;
+	std::string sEndpoint = SSL_PROTOCOL_WEB + DECENTRALIZED_SERVER_FARM_PREFIX + DOMAIN_NAME;
 	std::string sMVC = "BMS/SubmitChristianObject";
 	std::string sJson = uObject.write().c_str();
 	std::string sPayload = "<jsondata>" + sJson + "</jsondata>" + sXML;
-	BBPResult b;
-	b.Response = BiblepayHTTPSPost(true, 0, "POST", "", sPayload, sEndpoint, sMVC, SSL_PORT, "", SSL_TIMEOUT, SSL_CONN_TIMEOUT, 1);
+	DACResult b;
+	b.Response = HTTPSPost(true, 0, "POST", "", sPayload, sEndpoint, sMVC, SSL_PORT, "", SSL_TIMEOUT, SSL_CONN_TIMEOUT, 1);
 	b.ErrorCode = ExtractXML(b.Response, "<ERRORS>", "<ERRORS>");
 	return b;
 }
 
-std::string BiblePayHTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName)
+std::string HTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName)
 {
 	std::ostringstream ssOut;
 	try
 	{
-		// This version of BiblePayHTTPSPost has the advantage of working with both HTTP & HTTPS, and works from both QT and the daemon (++).  Our dev team is in the process of testing this across all use cases to ensure it is safe to replace V1.
+		// This version of Post has the advantage of working with both HTTP & HTTPS, and works from both QT and the daemon (++).  Our dev team is in the process of testing this across all use cases to ensure it is safe to replace V1.
 		std::map<std::string, std::string> mapRequestHeaders;
 		mapRequestHeaders["Agent"] = FormatFullVersion();
 		std::vector<char> v;
@@ -2280,8 +2242,8 @@ bool WriteKey(std::string sKey, std::string sValue)
 {
 	std::string sDelimiter = sOS == "WIN" ? "\r\n" : "\n";
 
-    // Allows BiblePay to store the key value in the config file.
-    boost::filesystem::path pathConfigFile(GetArg("-conf", "biblepay.conf"));
+    // Allows DAC to store the key value in the config file.
+    boost::filesystem::path pathConfigFile(GetArg("-conf", GetConfFileName()));
     if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir(false) / pathConfigFile;
     if (!boost::filesystem::exists(pathConfigFile))  
 	{
@@ -2289,7 +2251,7 @@ bool WriteKey(std::string sKey, std::string sValue)
 		FILE *outFileNew = fopen(pathConfigFile.string().c_str(), "w");
 		fputs("", outFileNew);
 		fclose(outFileNew);
-		LogPrintf("** Created brand new biblepay.conf file **\n");
+		LogPrintf("** Created brand new .conf file **\n");
 	}
 
 	// Allow camel-case keys (required by our external purse feature)
@@ -2307,7 +2269,7 @@ bool WriteKey(std::string sKey, std::string sValue)
             {
                 std::string sSourceKey = vEntry[0];
                 std::string sSourceValue = vEntry[1];
-                // Don't force lowercase anymore in the biblepay.conf file for mechanically added values
+                // Don't force lowercase anymore in the .conf file for mechanically added values
                 if (sSourceKey == sKey) 
                 {
                     sSourceValue = sValue;
@@ -2340,11 +2302,9 @@ bool WriteKey(std::string sKey, std::string sValue)
 
 bool InstantiateOneClickMiningEntries()
 {
-	WriteKey("addnode","node.biblepay.org");
-	WriteKey("addnode","explorer.biblepay.org");
+	WriteKey("addnode", "node." + DOMAIN_NAME);
+	WriteKey("addnode", "explorer." + DOMAIN_NAME);
 	WriteKey("genproclimit", "1");
-	// WriteKey("poolport","80");
-	// WriteKey("workerid","");
 	WriteKey("gen","1");
 	return true;
 }
@@ -2418,7 +2378,7 @@ bool AdvertiseChristianPublicKeypair(std::string sProjectId, std::string sNickNa
     
     if (nBalance < nFee)
     {
-        sError = "Balance too low to advertise CPK, 1 BBP minimum is required.";
+        sError = "Balance too low to advertise CPK, 1 coin minimum is required.";
         return false;
     }
 	
@@ -2646,8 +2606,8 @@ CWalletTx CreateAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReser
 		fCreated = pwalletMain->CreateTransaction(vecSend, wtx, reservekey, nFeeRequired, nChangePosRet, strError, NULL, true, ALL_COINS, false, 0, sXML, nMinCoinAge, nAllocated, .01, sPubPurseKey);
 
 		double nTest = GetAntiBotNetWeight(chainActive.Tip()->GetBlockTime(), wtx.tx, true, "");
-		sDebugInfo = "TargetWeight=" + RoundToString(nTargetABNWeight, 0) + ", UsingBBP=" + RoundToString((double)nUsed/COIN, 2) 
-				+ ", SpendingBBP=" + RoundToString((double)nAllocated/COIN, 2) + ", NeededWeight=" + RoundToString(nMinCoinAge, 0) + ", GotWeight=" + RoundToString(nTest, 2);
+		sDebugInfo = "TargetWeight=" + RoundToString(nTargetABNWeight, 0) + ", UsingCoins=" + RoundToString((double)nUsed/COIN, 2) 
+				+ ", SpendingCoins=" + RoundToString((double)nAllocated/COIN, 2) + ", NeededWeight=" + RoundToString(nMinCoinAge, 0) + ", GotWeight=" + RoundToString(nTest, 2);
 		sMiningInfo = "[" + RoundToString(nMinCoinAge, 0) + " ABN OK] Amount=" + RoundToString(nUsed/COIN, 2) + ", Weight=" + RoundToString(nTest, 2);
 		if (fDebug)
 		{
@@ -2988,13 +2948,13 @@ std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath)
 	{
 		std::string sXML = "<attachmentdata>" + sAttachment + "</attachmentdata>";
 		sXML += "<webpath>" + sWebPath + "</webpath>";
-		std::string sURL = "https://web.biblepay.org";
+		std::string sURL = "https://web." + DOMAIN_NAME;
 		std::string sRestfulURL = "BMS/SubmitChristianObject";
 		std::string sJson = u.write().c_str();
 		std::string sPayload = "<jsondata>" + sJson + "</jsondata>" + sXML;
 		int iTimeout = 25;
 
-		std::string sResponse = BiblepayHTTPSPost(false, 0, "", "", sPayload, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
+		std::string sResponse = HTTPSPost(false, 0, "", "", sPayload, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
 		std::string sObjHash = ExtractXML(sResponse, "<hash>", "</hash>");
 		// Sign
 		std::string sError;
@@ -3004,7 +2964,7 @@ std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath)
 			return "<ERRORS>" + sError + "</ERRORS>";
 		}
 		sPayload += "<signature>" + sSignature + "</signature>";
-		sResponse = BiblepayHTTPSPost(false, 0, "", "", sPayload, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
+		sResponse = HTTPSPost(false, 0, "", "", sPayload, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
 		return sResponse;
 	}
 	else
@@ -3015,30 +2975,30 @@ std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath)
 
 std::string DSQL_Ansi92Query(std::string sSQL)
 {
-	std::string sURL = "https://web.biblepay.org";
+	std::string sURL = "https://web." + DOMAIN_NAME;
 	std::string sRestfulURL = "BMS/JsonSqlQuery";
 	int iTimeout = 30;
-	std::string sResponse = BiblepayHTTPSPost(false, 0, "", "", sSQL, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
+	std::string sResponse = HTTPSPost(false, 0, "", "", sSQL, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
 	return sResponse;
 }
 
-BBPResult DSQL_ReadOnlyQuery(std::string sXMLSource)
+DACResult DSQL_ReadOnlyQuery(std::string sXMLSource)
 {
-	std::string sDomain = "https://web.biblepay.org";
+	std::string sDomain = "https://web." + DOMAIN_NAME;
 	int iTimeout = 30000;
 	int iSize = 24000000;
-	BBPResult b;
-	b.Response = BiblepayHTTPSPost(true, 0, "", "", "", sDomain, sXMLSource, 443, "", iTimeout, iSize, 4);
+	DACResult b;
+	b.Response = HTTPSPost(true, 0, "", "", "", sDomain, sXMLSource, 443, "", iTimeout, iSize, 4);
 	return b;
 }
 
-BBPResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML)
+DACResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML)
 {
-	std::string sDomain = "https://web.biblepay.org";
+	std::string sDomain = "https://web." + DOMAIN_NAME;
 	int iTimeout = 30;
 	int iSize = 24000000;
-	BBPResult b;
-	b.Response = BiblepayHTTPSPost(true, 0, "", "", sXML, sDomain, sEndpoint, 443, "", iTimeout, iSize, 4);
+	DACResult b;
+	b.Response = HTTPSPost(true, 0, "", "", sXML, sDomain, sEndpoint, 443, "", iTimeout, iSize, 4);
 	return b;
 }
 
@@ -3053,9 +3013,10 @@ std::string Path_Combine(std::string sPath, std::string sFileName)
 	return sFullPath;
 }
 
+/*
 void UpdateHealthInformation(int iType)
 {
-	// This is an optional BiblePay feature where we will display your sanctuaries health information in the pool.
+	// This is an optional feature where we will display your sanctuaries health information in the pool.
 	// This allows you to see your sancs health even if you host with one of our turnkey providers (such as Apollon).
 	// Health information currently includes:  Best BlockHash, Best Chain Height, Sanctuary Vote - Popular Contract - Vote Level, Sanctuary Public IP
 	// The primary benefit to doing this is this allows a user to know a sanc needs resynced, and to ensure our blockhashes as a community.
@@ -3096,31 +3057,32 @@ void UpdateHealthInformation(int iType)
 	int TRANSMISSION_TIMEOUT = 30000;
 	int CONNECTION_TIMEOUT = 15;
 	std::string sResponse;
-	std::string sHost = "https://web.biblepay.org";
+	std::string sHost = "https://web.bible pay.org";
 	std::string sHealthPage = "BMS/SANCTUARY_HEALTH_REQUEST?solution=" + sXML;
-	sResponse = BiblepayHTTPSPost(true, 0, "POST", "", "", sHost, sHealthPage, SSL_PORT, sXML, CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, 0);
+	sResponse = HTTPSPost(true, 0, "POST", "", "", sHost, sHealthPage, SSL_PORT, sXML, CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, 0);
 	std::string sError = ExtractXML(sResponse,"<ERROR>","</ERROR>");
 	std::string sResponseInner = ExtractXML(sResponse,"<RESPONSE>","</RESPONSE>");
 	if (fDebugSpam)
 		LogPrintf("UpdateHealthInformation %s %s", sError, sResponseInner);
 }
+*/
 
-BBPResult GetDecentralizedURL()
+DACResult GetDecentralizedURL()
 {
 	// ** This function is for DSQL (Christian Spaces) **
-	// BiblePay - Purchase Plug-In API for web purchases
+	// Bible Pay - Purchase Plug-In API for web purchases
 	// The users Public-Funding-Address keypair contains the user funds they will purchase with (send test funds here)
     EnsureWalletIsUnlocked(pwalletMain);
 	// We authenticate with the CPK (this allows sites to not require log-in credentials, and to know the users nickname)
 	// We DO NOT pass the CPKs private key outside of the wallet
 	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
 	std::string sPFA = DefaultRecAddress("Public-Funding-Address");
-	BBPResult b;
+	DACResult b;
 	CBitcoinAddress pfaAddress;
 	if (!pfaAddress.SetString(sPFA))
 	{
 		b.fError = true;
-		b.ErrorCode = "Invalid Biblepay PFA address";
+		b.ErrorCode = "Invalid Bible pay PFA address";
 		return b;
 	}
 
@@ -3140,9 +3102,9 @@ BBPResult GetDecentralizedURL()
 	}
 	// This PrivKey will not be revealed to a sanctuary, or on the internet, but instead will be stored in a private place on the local computer, in the local browsers HTML5 local-storage database 
 	// and cannot be accessed by web sites or javascript scripting attacks (as the key is stored in a private namespace)
-	// PURPOSE: When the user decides to buy something from a BiblePay web-site, the BiblePay purchase api plugin will sign the purchase with this key (from local javascript in our namespace), then 
+	// PURPOSE: When the user decides to buy something from a Bible Pay web-site, the Bible Pay purchase api plugin will sign the purchase with this key (from local javascript in our namespace), then 
 	// we will only transmit the transaction itself to the network.  (This way the user can conveniently browse and securely buy things on the web).
-	// NOTE: The only private key we expose is "Public-Funding-Address", so be very careful and only fund this address with just enough BBP to complete test purchases.
+	// NOTE: The only private key we expose is "Public-Funding-Address", so be very careful and only fund this address with just enough currency to complete test purchases.
 	std::string sPFA_PrivKey = CBitcoinSecret(vchSecret).ToString();
 	std::string sNonce = GetRandHash().GetHex();
 	std::string sSignature;
@@ -3156,11 +3118,11 @@ BBPResult GetDecentralizedURL()
 	}
 	const CChainParams& chainparams = Params();
 	std::string sNetwork = chainparams.NetworkIDString();
-	std::string sDestinationURL = "https://web.biblepay.org";
+	std::string sDestinationURL = "https://web." + DOMAIN_NAME;
 	std::string sData = sCPK + "|" + sNonce + "|" + sSignature + "|" + sPFA + "|" + sPFA_PrivKey + "|" + sDestinationURL + "|" + sNetwork;
 	std::string sEncData = EncodeBase64(sData);
-	// Web.biblepay.org will determine if the user is in TestNet or MainNet (by reading the mapRequestHeaders["networkid"] from chainparams)
-	std::string sURL = "https://web.biblepay.org/wwwroot/biblepay_electrum.htm?data=" + sEncData;
+	// Web.b i b l e pay.org will determine if the user is in TestNet or MainNet (by reading the mapRequestHeaders["networkid"] from chainparams)
+	std::string sURL = "https://web." + DOMAIN_NAME + "/wwwroot/" + GetLcaseCoinName() + "_electrum.htm?data=" + sEncData;
 	b.fError = false;
 	b.Response = sURL;
 	return b;
@@ -3181,7 +3143,7 @@ std::string BIPFS_Payment(CAmount nAmount, std::string sTXID1, std::string sXML1
 	std::string sError;
 	UniValue u(UniValue::VOBJ);
 	u.push_back(Pair("CPK", sCPK));
-	BBPResult b = DSQL(u, "");
+	DACResult b = DSQL(u, "");
 	std::string sObjHash = ExtractXML(b.Response, "<hash>", "</hash>");
 	if (sObjHash.empty())
 	{
@@ -3235,7 +3197,7 @@ int LoadResearchers()
 	if (fDebug)
 		LogPrintf("LoadResearchers Start %f", GetAdjustedTime());
 
-	BBPResult b;
+	DACResult b;
 	for (int j = 0; j < 4; j++)
 	{
 		b = DSQL_ReadOnlyQuery("wwwroot/certs/wcgrac.xml");
@@ -3311,7 +3273,7 @@ std::string TeamToName(int iTeamID)
 	// 30513, 35006
 	if (iTeamID == 35006)
 	{
-		return "Biblepay";
+		return CURRENCY_NAME;
 	}
 	else if (iTeamID == 30513)
 	{
@@ -3464,7 +3426,7 @@ int64_t GetTxTime(uint256 blockHash, int& iHeight)
 	return 0;
 }
 
-bool GetTxBBP(uint256 txid, CTransactionRef& tx1)
+bool GetTxDAC(uint256 txid, CTransactionRef& tx1)
 {
 	uint256 hashBlock1;
 	return GetTransaction(txid, tx1, Params().GetConsensus(), hashBlock1, true);
@@ -3524,7 +3486,7 @@ std::vector<WhaleStake> GetDWS(bool fIncludeMemoryPool)
 			std::string sTXID = ii.first.second;
 			uint256 hashInput = uint256S(sTXID);
 			CTransactionRef tx1;
-			bool fGot = GetTxBBP(hashInput, tx1);
+			bool fGot = GetTxDAC(hashInput, tx1);
 			if (fGot)
 			{
 				WhaleStake w = GetWhaleStake(tx1);
@@ -3568,7 +3530,7 @@ CAmount GetAnnualDWSReward(int nHeight)
 	}
 	else if (nHeight >= consensusParams.ANTI_GPU_HEIGHT)
 	{
-		// Per https://wiki.biblepay.org/Emission_Schedule, DWS should emit 4.3MM per month in the first year, deflating at 20.04% per year
+		// Per https://wiki.bible[pay].org/Emission_Schedule, DWS should emit 4.3MM per month in the first year, deflating at 20.04% per year
 		nDWS = nTotal * .325;
 	}
 	if (fDebugSpam)
@@ -3872,9 +3834,9 @@ double GetWhaleStakesInMemoryPool(std::string sCPK)
 	return nTotal;
 }
 
-BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime)
+CoinVin GetCoinVIN(COutPoint o, int64_t nTxTime)
 {
-	BBPVin b;
+	CoinVin b;
 	
 	b.OutPoint = o;
 	b.HashBlock = uint256();
@@ -3970,7 +3932,7 @@ std::string SearchChain(int nBlocks, std::string sDest)
 	return sData;
 }
 
-uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t nBlockTime)
+uint256 ComputeRandomXTarget(uint256 dac_hash, int64_t nPrevBlockTime, int64_t nBlockTime)
 {
 	static int MAX_AGE = 60 * 30;
 	static int MAX_AGE2 = 60 * 45;
@@ -3979,7 +3941,7 @@ uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t n
 	int64_t nElapsed = nBlockTime - nPrevBlockTime;
 	if (nElapsed > MAX_AGE)
 	{
-		arith_uint256 bnHash = UintToArith256(bbp_hash);
+		arith_uint256 bnHash = UintToArith256(dac_hash);
 		bnHash *= 700;
 		bnHash /= nDivisor;
 		uint256 nBH = ArithToUint256(bnHash);
@@ -3988,7 +3950,7 @@ uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t n
 
 	if (nElapsed > MAX_AGE2)
 	{
-		arith_uint256 bnHash = UintToArith256(bbp_hash);
+		arith_uint256 bnHash = UintToArith256(dac_hash);
 		bnHash *= 200;
 		bnHash /= nDivisor;
 		uint256 nBH = ArithToUint256(bnHash);
@@ -3997,14 +3959,14 @@ uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t n
 	
 	if (nElapsed > MAX_AGE3 && !fProd)
 	{
-		arith_uint256 bnHash = UintToArith256(bbp_hash);
+		arith_uint256 bnHash = UintToArith256(dac_hash);
 		bnHash *= 10;
 		bnHash /= nDivisor;
 		uint256 nBH = ArithToUint256(bnHash);
 		return nBH;
 	}
 
-	return bbp_hash;
+	return dac_hash;
 }
 
 std::string ReverseHex(std::string const & src)
@@ -4025,17 +3987,17 @@ std::string ReverseHex(std::string const & src)
 static std::map<int, std::mutex> cs_rxhash;
 uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID)
 {
-		// *****************************************                      RandomX - BiblePay                         ************************************************************************
+		// *****************************************                      RandomX                                    ************************************************************************
 		// Starting at RANDOMX_HEIGHT, we now solve for an equation, rather than simply the difficulty and target.
-		// This is so our miners may earn a dual revenue stream (RandomX coins + BBP Coins).
-		// The equation is:  BlakeHash(Previous_BBP_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_BBP_Block_Difficulty
+		// This is so our miners may earn a dual revenue stream (RandomX coins + DAC Coins).
+		// The equation is:  BlakeHash(Previous_DAC_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_DAC_Block_Difficulty
 		// **********************************************************************************************************************************************************************************
 	std::unique_lock<std::mutex> lock(cs_rxhash[iThreadID]);
 	std::vector<unsigned char> vch(160);
 	CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 	std::string randomXBlockHeader = ExtractXML(sHeaderHex, "<rxheader>", "</rxheader>");
 	std::vector<unsigned char> data0 = ParseHex(randomXBlockHeader);
-	uint256 uRXMined = RandomX_BBPHash(data0, key, iThreadID);
+	uint256 uRXMined = RandomX_Hash(data0, key, iThreadID);
 	ss << hashPrevBlock << uRXMined;
 	return HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
 }

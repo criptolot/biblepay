@@ -81,7 +81,7 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const Conse
 }
 
 unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params) {
-    /* current difficulty formula, Biblepay - DarkGravity v3, written by Evan Duffield */
+    /* current difficulty formula, DarkGravity v3, written by Evan Duffield */
     const CBlockIndex *BlockLastSolved = pindexLast;
     const CBlockIndex *BlockReading = pindexLast;
     int64_t nActualTimespan = 0;
@@ -94,7 +94,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
 	
 	bool fProdChain = Params().NetworkIDString() == "main" ? true : false;
 
-	// BiblePay - Mandatory Upgrade at block f7000 (As of 08-15-2017 we are @3265 in prod & @1349 in testnet)
+	// Mandatory Upgrade at block f7000 (As of 08-15-2017 we are @3265 in prod & @1349 in testnet)
 	// This change should prevents blocks from being solved in clumps
     if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMin) 
 	{
@@ -127,7 +127,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
     arith_uint256 bnNew(PastDifficultyAverage);
 
     int64_t _nTargetTimespan = CountBlocks * params.nPowTargetSpacing; 
-	// 3-4-2018 Biblepay:  Change params.nPowTargetSpacing to equal 7 minute blocks during next mandatory, the default calculation calls for 7*60=420 nPowTargetSpacing
+	// DAC:  Change params.nPowTargetSpacing to equal 7 minute blocks during next mandatory, the default calculation calls for 7*60=420 nPowTargetSpacing
 	// Approaching this mathematically, with POBH, we have historically emitted 159 blocks per day out of 202, a rate of 20% below normal - a rate that is too slow.
 	// The dev team believes this is attributed entirely to the late block threshhold parameter.  After the F11000 cutover block, this late threshhold is being reduced
 	// from 30 minutes to 16 minutes, with 16 minutes bringing the blocks from 9 minute spacing to 8.1 minute spacing (meaning we are still going to be slow by 60.1 seconds)
@@ -222,7 +222,7 @@ unsigned int GetNextWorkRequiredBTC(const CBlockIndex* pindexLast, const CBlockH
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
-	// BiblePay only uses DGW
+	// DAC only uses DGW
 	return DarkGravityWave(pindexLast, pblock, params);
    
     // this is only active on devnets

@@ -1,7 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,7 +18,7 @@
 #include "crypto/sph_blake.h"
 #include "crypto/sph_bmw.h"
 #include "crypto/sph_groestl.h"
-#include "crypto/sph_biblepay.h"
+#include "crypto/sph_legacy.h"
 
 #include "crypto/sph_jh.h"
 #include "crypto/sph_keccak.h"
@@ -327,20 +327,6 @@ inline uint256 HashGroestl(const T1 pbegin, const T1 pend)
     return hash[0].trim256();
 }
 
-
-/* ------------ Biblepay Isolated hash ----------- */
-template<typename T1>
-inline uint256 HashBiblepayIsolated(const T1 pbegin, const T1 pend)
-{
-    sph_biblepay512_context  ctx_biblepay;
-    static unsigned char pblank[1];
-    uint512 hash[1];
-    sph_biblepay512_init(&ctx_biblepay);
-    sph_biblepay512 (&ctx_biblepay, (pbegin == pend ? pblank : static_cast<const void*>(&pbegin[0])), (pend - pbegin) * sizeof(pbegin[0]));
-    sph_biblepay512_close(&ctx_biblepay, static_cast<void*>(&hash[0]));
-    return hash[0].trim256();
-}
-
 /* ------------- Blake Hash -------------------- */
 template<typename T1>
 inline uint256 HashBlake(const T1 pbegin, const T1 pend)
@@ -422,10 +408,8 @@ inline uint256 HashX11(const T1 pbegin, const T1 pend)
 }
 
 template<typename T1>
-inline uint256 HashBiblePay(const T1 pbegin, const T1 pend)
+inline uint256 HashLegacy(const T1 pbegin, const T1 pend)
 {
-    // BiblePay's Seven Step Hashing System - December 16th, 2017 - Praise Jesus!
-
 	sph_blake512_context     ctx_blake;
     sph_bmw512_context       ctx_bmw;
     sph_groestl512_context   ctx_groestl;
@@ -433,7 +417,7 @@ inline uint256 HashBiblePay(const T1 pbegin, const T1 pend)
  
     sph_jh512_context        ctx_jh;
     sph_keccak512_context    ctx_keccak;
-    sph_biblepay512_context  ctx_biblepay;
+    sph_legacy512_context  ctx_biblepay;
 
     static unsigned char pblank[1];
     uint512 hash[7];
@@ -462,9 +446,9 @@ inline uint256 HashBiblePay(const T1 pbegin, const T1 pend)
     sph_keccak512 (&ctx_keccak, static_cast<const void*>(&hash[4]), 64);
     sph_keccak512_close(&ctx_keccak, static_cast<void*>(&hash[5]));
 
-	sph_biblepay512_init(&ctx_biblepay);
-    sph_biblepay512 (&ctx_biblepay, static_cast<const void*>(&hash[5]), 64);
-    sph_biblepay512_close(&ctx_biblepay, static_cast<void*>(&hash[6]));
+	sph_legacy512_init(&ctx_biblepay);
+    sph_legacy512 (&ctx_biblepay, static_cast<const void*>(&hash[5]), 64);
+    sph_legacy512_close(&ctx_biblepay, static_cast<void*>(&hash[6]));
 	
 	// Genesis 2:2
 	// And on the seventh day God ended His work which He had done, and He rested on the seventh day from all His work which He had done. 

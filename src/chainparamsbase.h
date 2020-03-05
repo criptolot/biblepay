@@ -9,8 +9,8 @@
 #include <vector>
 
 /**
- * CBaseChainParams defines the base parameters (shared between biblepay-cli and biblepayd)
- * of a given instance of the Biblepay system.
+ * CBaseChainParams defines the base parameters (shared between dac-cli and dacd)
+ * of a given instance of the DAC system.
  */
 class CBaseChainParams
 {

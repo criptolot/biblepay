@@ -4,7 +4,7 @@
 
 #include "hash.h"
 #include "utilstrencodings.h"
-#include "test/test_biblepay.h"
+#include "test/test_coin.h"
 
 #include <vector>
 

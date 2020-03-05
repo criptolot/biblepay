@@ -1,8 +1,8 @@
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
-#ifndef BIBLEPAY_HDCHAIN_H
-#define BIBLEPAY_HDCHAIN_H
+#ifndef DAC_HDCHAIN_H
+#define DAC_HDCHAIN_H
 
 #include "key.h"
 #include "sync.h"
@@ -148,4 +148,4 @@ public:
     std::string GetKeyPath() const;
 };
 
-#endif // BIBLEPAY_HDCHAIN_H
+#endif // DAC_HDCHAIN_H

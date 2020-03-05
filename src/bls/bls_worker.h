@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_CRYPTO_BLS_WORKER_H
-#define BIBLEPAY_CRYPTO_BLS_WORKER_H
+#ifndef DAC_CRYPTO_BLS_WORKER_H
+#define DAC_CRYPTO_BLS_WORKER_H
 
 #include "bls.h"
 
@@ -202,4 +202,4 @@ private:
     }
 };
 
-#endif //BIBLEPAY_CRYPTO_BLS_WORKER_H
+#endif //DAC_CRYPTO_BLS_WORKER_H

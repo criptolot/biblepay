@@ -1,6 +1,5 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -75,7 +74,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 		
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address))
                 {
-                    // Received by Biblepay Address
+                    // Received by Address
                     sub.type = TransactionRecord::RecvWithAddress;
                     sub.address = CBitcoinAddress(address).ToString();
                 }
@@ -87,7 +86,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 }
                 if (wtx.IsCoinBase())
                 {
-                    // BiblePay - RANDREWS - Check if one of our subtypes
+                    // Check if one of our DAC subtypes
 					if (sub.IsWhaleReward && i != 0)
 					{
 						sub.type = TransactionRecord::WhaleReward;
@@ -160,7 +159,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 CTxDestination address;
                 if (ExtractDestination(wtx.tx->vout[0].scriptPubKey, address))
                 {
-                    // Sent to Biblepay Address
+                    // Sent to DAC Address
                     sub.address = CBitcoinAddress(address).ToString();
                 }
                 else
@@ -247,7 +246,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 CTxDestination address;
                 if (ExtractDestination(txout.scriptPubKey, address))
                 {
-                    // Sent to Biblepay Address
+                    // Sent to DAC Address
                     sub.type = TransactionRecord::SendToAddress;
                     sub.address = CBitcoinAddress(address).ToString();
 					if (wtx.tx->IsCPKAssociation()) 

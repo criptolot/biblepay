@@ -39,7 +39,7 @@ void BusyWaitGuard(int iThreadID)
 	return;
 }
 
-uint256 RandomX_BBPHash(uint256 hash, uint256 uKey, int iThreadID)
+uint256 RandomX_Hash(uint256 hash, uint256 uKey, int iThreadID)
 {
 		BusyWaitGuard(iThreadID);
 						
@@ -62,7 +62,7 @@ uint256 RandomX_BBPHash(uint256 hash, uint256 uKey, int iThreadID)
 		return uint256(data1);
 }
 
-uint256 RandomX_BBPHash(std::vector<unsigned char> data0, uint256 uKey, int iThreadID)
+uint256 RandomX_Hash(std::vector<unsigned char> data0, uint256 uKey, int iThreadID)
 {
 		BusyWaitGuard(iThreadID);
 						
@@ -85,7 +85,7 @@ uint256 RandomX_BBPHash(std::vector<unsigned char> data0, uint256 uKey, int iThr
 }
 
 
-uint256 RandomX_BBPHash(std::vector<unsigned char> data0, std::vector<unsigned char> datakey)
+uint256 RandomX_Hash(std::vector<unsigned char> data0, std::vector<unsigned char> datakey)
 {
 	int iThreadID = 101;
 	randomx_flags flags = randomx_get_flags();

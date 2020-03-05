@@ -1,8 +1,8 @@
-// Copyright (c) 2014-2018 The BiblePay Core developers
+// Copyright (c) 2014-2018 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-//#define ENABLE_BIBLEPAY_DEBUG
+//#define ENABLE_DEBUG
 
 #include "governance-classes.h"
 #include "core_io.h"
@@ -327,7 +327,7 @@ bool CSuperblockManager::IsSuperblockTriggered(int nBlockHeight)
 
         if (pObj->IsSetCachedFunding()) 
 		{
-			// BIBLEPAY - If this is a Smart Contract, first we need to verify it meets the Quorum requirements
+			// DAC - If this is a Smart Contract, first we need to verify it meets the Quorum requirements
 			if (CSuperblock::IsSmartContract(nBlockHeight))
 			{
 				int iVotes = pObj->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
@@ -467,7 +467,7 @@ bool CSuperblockManager::GetSuperblockPayments(int nBlockHeight, std::vector<CTx
             // SET COINBASE OUTPUT TO SUPERBLOCK SETTING
 
             CTxOut txout = CTxOut(payment.nAmount, payment.script);
-			// BiblePay - QT
+			// DAC - QT
 			if (!bQTPhaseEmitted) 
 			{
 				txout.sTxOutMessage = GetQTPhaseXML(pSuperblock->GetGovernanceObject()->GetHash());
@@ -482,7 +482,7 @@ bool CSuperblockManager::GetSuperblockPayments(int nBlockHeight, std::vector<CTx
             ExtractDestination(payment.script, address1);
             CBitcoinAddress address2(address1);
 
-            // TODO: PRINT NICE N.N BIBLEPAY OUTPUT
+            // TODO: PRINT NICE N.N COIN OUTPUT
 
             DBG(std::cout << "CSuperblockManager::GetSuperblockPayments Before LogPrintf call, nAmount = " << payment.nAmount << std::endl;);
 			if (fDebug && fDebugSpam)
@@ -783,7 +783,7 @@ void CSuperblock::ParsePaymentSchedule(const std::string& strPaymentAddresses, c
         CBitcoinAddress address(vecParsed1[i]);
         if (!address.IsValid()) {
             std::ostringstream ostr;
-            ostr << "CSuperblock::ParsePaymentSchedule -- Invalid Biblepay Address : " << vecParsed1[i];
+            ostr << "CSuperblock::ParsePaymentSchedule -- Invalid Address : " << vecParsed1[i];
             LogPrintf("%s\n", ostr.str());
             throw std::runtime_error(ostr.str());
         }

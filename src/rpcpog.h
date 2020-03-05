@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core Developers, The BiblePay Developers
+// Copyright (c) 2014-2019 The Dash Core Developers, The DAC Core Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -44,7 +44,7 @@ struct CPK
   bool fValid = false;
 };
 
-struct BBPResult
+struct DACResult
 {
 	std::string Response;
 	bool fError = false;
@@ -68,7 +68,7 @@ struct Researcher
 	std::string CPK;
 };
 
-struct BBPVin
+struct CoinVin
 {
 	COutPoint OutPoint;
 	uint256 HashBlock = uint256S("0x0");
@@ -123,7 +123,7 @@ struct WhaleMetric
 	double DWU = 0;
 };
 
-struct BiblePayProposal
+struct DACProposal
 {
 	std::string sName;
 	int64_t nStartEpoch = 0;
@@ -253,9 +253,9 @@ std::vector<std::string> Split(std::string s, std::string delim);
 void MemorizeBlockChainPrayers(bool fDuringConnectBlock, bool fSubThread, bool fColdBoot, bool fDuringSanctuaryQuorum);
 double GetBlockVersion(std::string sXML);
 bool CheckStakeSignature(std::string sBitcoinAddress, std::string sSignature, std::string strMessage, std::string& strError);
-std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
+std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
 	std::string sSolution, int iTimeoutSecs, int iMaxSize, int iBreakOnError);
-std::string BiblePayHTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName);
+std::string HTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName);
 std::string FormatHTML(std::string sInput, int iInsertCount, std::string sStringToInsert);
 std::string GJE(std::string sKey, std::string sValue, bool bIncludeDelimiter, bool bQuoteValue);
 bool InstantiateOneClickMiningEntries();
@@ -297,10 +297,10 @@ std::string Path_Combine(std::string sPath, std::string sFileName);
 std::string DSQL_Ansi92Query(std::string sSQL);
 void ProcessBLSCommand(CTransactionRef tx);
 void UpdateHealthInformation(int iType);
-BBPResult GetDecentralizedURL();
+DACResult GetDecentralizedURL();
 std::string BIPFS_Payment(CAmount nAmount, std::string sTXID, std::string sXML);
-BBPResult DSQL_ReadOnlyQuery(std::string sXMLSource);
-BBPResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML);
+DACResult DSQL_ReadOnlyQuery(std::string sXMLSource);
+DACResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML);
 int LoadResearchers();
 std::string TeamToName(int iTeamID);
 std::string GetResearcherCPID(std::string sSearch);
@@ -313,8 +313,8 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError);
 double GetDWUBasedOnMaturity(double nDuration, double dDWU);
 double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount);
 std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
-BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime);
-bool GetTxBBP(uint256 txid, CTransactionRef& tx1);
+CoinVin GetCoinVIN(COutPoint o, int64_t nTxTime);
+bool GetTxDAC(uint256 txid, CTransactionRef& tx1);
 double GetWhaleStakesInMemoryPool(std::string sCPK);
 std::string GetCPKByCPID(std::string sCPID);
 int GetNextPODCTransmissionHeight(int height);
@@ -322,7 +322,7 @@ int GetWhaleStakeSuperblockHeight(int nHeight);
 std::string SearchChain(int nBlocks, std::string sDest);
 std::string GetResDataBySearch(std::string sSearch);
 int GetWCGIdByCPID(std::string sSearch);
-uint256 ComputeRandomXTarget(uint256 bbp_hash, int64_t nPrevBlockTime, int64_t nBlockTime);
+uint256 ComputeRandomXTarget(uint256 hash, int64_t nPrevBlockTime, int64_t nBlockTime);
 std::string ReverseHex(std::string const & src);
 uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID);
 

@@ -10,7 +10,7 @@
 #include "script/script.h"
 #include "serialize.h"
 #include "streams.h"
-#include "test/test_biblepay.h"
+#include "test/test_coin.h"
 #include "test/test_random.h"
 #include "util.h"
 #include "utilstrencodings.h"

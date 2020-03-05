@@ -1,9 +1,9 @@
-// Copyright (c) 2017-2018 The BiblePay Core developers
+// Copyright (c) 2017-2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_SIMPLIFIEDMNS_H
-#define BIBLEPAY_SIMPLIFIEDMNS_H
+#ifndef COIN_SIMPLIFIEDMNS_H
+#define COIN_SIMPLIFIEDMNS_H
 
 #include "bls/bls.h"
 #include "merkleblock.h"
@@ -147,4 +147,4 @@ public:
 
 bool BuildSimplifiedMNListDiff(const uint256& baseBlockHash, const uint256& blockHash, CSimplifiedMNListDiff& mnListDiffRet, std::string& errorRet);
 
-#endif //BIBLEPAY_SIMPLIFIEDMNS_H
+#endif //COIN_SIMPLIFIEDMNS_H

@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core Developers, The BiblePay Developers
+// Copyright (c) 2014-2019 The Dash Core Developers, The DAC Core Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -34,7 +34,7 @@
 extern CWallet* pwalletMain;
 #endif // ENABLE_WALLET
 
-//////////////////////////////////////////////////////////////////// BIBLEPAY - SMART CONTRACTS - CLIENT SIDE ///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////// DAC - SMART CONTRACTS - CLIENT SIDE ///////////////////////////////////////////////////////////////////////////////////////////////
 
 CPK GetCPKFromProject(std::string sProjName, std::string sCPKPtr)
 {
@@ -49,13 +49,13 @@ UniValue GetCampaigns()
 	std::map<std::string, std::string> mCampaigns = GetSporkMap("spork", "gsccampaigns");
 	int i = 0;
 	// List of Campaigns
-	results.push_back(Pair("List Of", "BiblePay Campaigns"));
+	results.push_back(Pair("List Of", "DAC Campaigns"));
 	for (auto s : mCampaigns)
 	{
 		results.push_back(Pair("campaign " + s.first, s.first));
 	} 
 
-	results.push_back(Pair("List Of", "BiblePay CPKs"));
+	results.push_back(Pair("List Of", "DAC CPKs"));
 	// List of Christian-Keypairs (Global members)
 	std::map<std::string, CPK> cp = GetGSCMap("cpk", "", true);
 	for (std::pair<std::string, CPK> a : cp)
@@ -246,9 +246,9 @@ CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary,
 				Researcher r = mvResearchers[sCPID];
 				if (r.found && r.rac > 1)
 				{
-					double nReqForNonBBP = GetRequiredCoinAgeForPODC(r.rac, r.teamid);
-					double nReqForBBP = GetRequiredCoinAgeForPODC(r.rac, 35006);
-					sWarning += " (Team BiblePay requires " + RoundToString(nReqForBBP, 0) + " in coin-age, while Non-BiblePay teams require " + RoundToString(nReqForNonBBP, 0) + ".) ";
+					double nReqForNonDac = GetRequiredCoinAgeForPODC(r.rac, r.teamid);
+					double nReqForDac = GetRequiredCoinAgeForPODC(r.rac, 35006);
+					sWarning += " (PODC Team Bible Pay requires " + RoundToString(nReqForDac, 0) + " in coin-age, while Non-Bible Pay teams require " + RoundToString(nReqForNonDac, 0) + ".) ";
 				}
 			}
 		}
@@ -270,7 +270,7 @@ CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary,
 
 	if (nTargetSpend < (.01 * COIN))
 	{
-		sError = "Sorry, GSC transmission amount is less than .01 BBP.";
+		sError = "Sorry, GSC transmission amount is less than .01 coins.";
 		return wtx;
 	}
 
@@ -415,7 +415,7 @@ bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError,
 	{
 		if (sDiary.length() < 10 || sDiary.empty())
 		{
-			sError = "Sorry, you have selected diary projects only, but biblepay did not receive a diary entry.";
+			sError = "Sorry, you have selected diary projects only, but we did not receive a diary entry.";
 			return false;
 		}
 	}

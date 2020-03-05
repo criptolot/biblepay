@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,6 +19,8 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "wallet/rpcwallet.h" 
+#include "validation.h"
+
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #endif // ENABLE_WALLET
@@ -170,9 +172,8 @@ UniValue gobject_prepare(const JSONRPCRequest& request)
 
     CGovernanceObject govobj(hashParent, nRevision, nTime, uint256(), strDataHex);
 
-    // This command is dangerous because it consumes 5 BIBLEPAY irreversibly.
+    // This command is dangerous because it consumes 2500 coins irreversibly.
     // If params are lost, it's very hard to bruteforce them and yet
-    // users ignore all instructions on biblepaycentral etc. and do not save them...
     // Let's log them here and hope users do not mess with debug.log
     LogPrintf("gobject_prepare -- params: %s %s %s %s, data: %s, hash: %s\n",
                 request.params[1].get_str(), request.params[2].get_str(),
@@ -344,7 +345,7 @@ void gobject_vote_conf_help()
 {
     throw std::runtime_error(
                 "gobject vote-conf <governance-hash> <vote> <vote-outcome>\n"
-                "Vote on a governance object by masternode configured in biblepay.conf\n"
+                "Vote on a governance object by masternode configured in .conf\n"
                 "\nArguments:\n"
                 "1. governance-hash   (string, required) hash of the governance object\n"
                 "2. vote              (string, required) vote, possible values: [funding|valid|delete|endorsed]\n"
@@ -399,7 +400,7 @@ UniValue gobject_vote_conf(const JSONRPCRequest& request)
         nFailed++;
         statusObj.push_back(Pair("result", "failed"));
         statusObj.push_back(Pair("errorMessage", "Can't find masternode by collateral output"));
-        resultsObj.push_back(Pair("biblepay.conf", statusObj));
+        resultsObj.push_back(Pair(".conf", statusObj));
         returnObj.push_back(Pair("overall", strprintf("Voted successfully %d time(s) and failed %d time(s).", nSuccessful, nFailed)));
         returnObj.push_back(Pair("detail", resultsObj));
         return returnObj;
@@ -419,7 +420,7 @@ UniValue gobject_vote_conf(const JSONRPCRequest& request)
         nFailed++;
         statusObj.push_back(Pair("result", "failed"));
         statusObj.push_back(Pair("errorMessage", "Failure to sign."));
-        resultsObj.push_back(Pair("biblepay.conf", statusObj));
+        resultsObj.push_back(Pair(".conf", statusObj));
         returnObj.push_back(Pair("overall", strprintf("Voted successfully %d time(s) and failed %d time(s).", nSuccessful, nFailed)));
         returnObj.push_back(Pair("detail", resultsObj));
         return returnObj;
@@ -435,7 +436,7 @@ UniValue gobject_vote_conf(const JSONRPCRequest& request)
         statusObj.push_back(Pair("errorMessage", exception.GetMessage()));
     }
 
-    resultsObj.push_back(Pair("biblepay.conf", statusObj));
+    resultsObj.push_back(Pair(".conf", statusObj));
 
     returnObj.push_back(Pair("overall", strprintf("Voted successfully %d time(s) and failed %d time(s).", nSuccessful, nFailed)));
     returnObj.push_back(Pair("detail", resultsObj));
@@ -942,7 +943,7 @@ UniValue gobject_getcurrentvotes(const JSONRPCRequest& request)
 #ifdef ENABLE_WALLET
             "  vote-alias         - Vote on a governance object by masternode proTxHash\n"
 #endif // ENABLE_WALLET
-            "  vote-conf          - Vote on a governance object by masternode configured in biblepay.conf\n"
+            "  vote-conf          - Vote on a governance object by masternode configured in .conf\n"
 #ifdef ENABLE_WALLET
             "  vote-many          - Vote on a governance object by all masternodes for which the voting key is in the wallet\n"
 #endif // ENABLE_WALLET
@@ -1109,7 +1110,7 @@ UniValue getgovernanceinfo(const JSONRPCRequest& request)
             "\nResult:\n"
             "{\n"
             "  \"governanceminquorum\": xxxxx,           (numeric) the absolute minimum number of votes needed to trigger a governance action\n"
-            "  \"proposalfee\": xxx.xx,                  (numeric) the collateral transaction fee which must be paid to create a proposal in " + CURRENCY_UNIT + "\n"
+            "  \"proposalfee\": xxx.xx,                  (numeric) the collateral transaction fee which must be paid to create a proposal in " + CURRENCY_NAME + "\n"
             "  \"superblockcycle\": xxxxx,               (numeric) the number of blocks between superblocks\n"
             "  \"lastsuperblock\": xxxxx,                (numeric) the block number of the last superblock\n"
             "  \"nextsuperblock\": xxxxx,                (numeric) the block number of the next superblock\n"
@@ -1149,8 +1150,8 @@ UniValue setautounlockpassword(const JSONRPCRequest& request)
 	{
         throw std::runtime_error(
             "setautounlockpassword password\n"
-			"Sets the internal encrypted string with your password.  This allows biblepay to automatically unlock the wallet for GSC transmissions (approx. once per day) and for ABN Mining (when you create a POBH block). \n"
-			"Note: When BiblePay core needs the password for one of these two uses only, if this password is set, it will unlock the wallet with that password, create the stake type transaction and immediately lock the wallet again (only if it was locked). \n"
+			"Sets the internal encrypted string with your password.  This allows the core wallet to automatically unlock the wallet for GSC transmissions (approx. once per day) and for ABN Mining (when you create a POBH block). \n"
+			"Note: When the core needs the password for one of these two uses only, if this password is set, it will unlock the wallet with that password, create the stake type transaction and immediately lock the wallet again (only if it was locked). \n"
             + HelpExampleCli("setautounlockpassword", "")
             );
     }
@@ -1227,7 +1228,7 @@ UniValue getsuperblockbudget(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. index         (numeric, required) The block index\n"
             "\nResult:\n"
-            "n                (numeric) The absolute maximum sum of superblock payments allowed, in " + CURRENCY_UNIT + "\n"
+            "n                (numeric) The absolute maximum sum of superblock payments allowed, in " + CURRENCY_NAME + "\n"
             "\nExamples:\n"
             + HelpExampleCli("getsuperblockbudget", "1000")
             + HelpExampleRpc("getsuperblockbudget", "1000")
@@ -1248,14 +1249,14 @@ UniValue getsuperblockbudget(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafe argNames
   //  --------------------- ------------------------  -----------------------  ------ ----------
-    /* Biblepay features */
-    { "biblepay",               "getgovernanceinfo",       &getgovernanceinfo,       true,  {} },
-    { "biblepay",               "getsuperblockbudget",     &getsuperblockbudget,     true,  {"index"} },
-    { "biblepay",               "gobject",                 &gobject,                 true,  {} },
-	{ "biblepay",               "autounlockpasswordlength",&autounlockpasswordlength,true,  {} },
-    { "biblepay",               "leaderboard",             &leaderboard,             true,  {} },
-    { "biblepay",               "setautounlockpassword",   &setautounlockpassword,   true,  {} },
-    { "biblepay",               "voteraw",                 &voteraw,                 true,  {} },
+    /* DAC features */
+    { CURRENCY_NAME,               "getgovernanceinfo",       &getgovernanceinfo,       true,  {} },
+    { CURRENCY_NAME,               "getsuperblockbudget",     &getsuperblockbudget,     true,  {"index"} },
+    { CURRENCY_NAME,               "gobject",                 &gobject,                 true,  {} },
+	{ CURRENCY_NAME,               "autounlockpasswordlength",&autounlockpasswordlength,true,  {} },
+    { CURRENCY_NAME,               "leaderboard",             &leaderboard,             true,  {} },
+    { CURRENCY_NAME,               "setautounlockpassword",   &setautounlockpassword,   true,  {} },
+    { CURRENCY_NAME,               "voteraw",                 &voteraw,                 true,  {} },
 
 };
 

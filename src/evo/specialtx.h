@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_SPECIALTX_H
-#define BIBLEPAY_SPECIALTX_H
+#ifndef DAC_SPECIALTX_H
+#define DAC_SPECIALTX_H
 
 #include "primitives/transaction.h"
 #include "streams.h"
@@ -49,4 +49,4 @@ void SetTxPayload(CMutableTransaction& tx, const T& payload)
 
 uint256 CalcTxInputsHash(const CTransaction& tx);
 
-#endif //BIBLEPAY_SPECIALTX_H
+#endif //DAC_SPECIALTX_H

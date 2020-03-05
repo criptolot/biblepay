@@ -1,12 +1,13 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2016 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "bitcoinunits.h"
 #include "chainparams.h"
 #include "primitives/transaction.h"
+#include "validation.h"
+#include "guiutil.h"
 
 #include <QSettings>
 #include <QStringList>
@@ -20,9 +21,9 @@ BitcoinUnits::BitcoinUnits(QObject *parent):
 QList<BitcoinUnits::Unit> BitcoinUnits::availableUnits()
 {
     QList<BitcoinUnits::Unit> unitlist;
-    unitlist.append(BIBLEPAY);
-    unitlist.append(mBIBLEPAY);
-    unitlist.append(uBIBLEPAY);
+    unitlist.append(COIN_UNIT);
+    unitlist.append(mCOIN_UNIT);
+    unitlist.append(uCOIN_UNIT);
     unitlist.append(duffs);
     return unitlist;
 }
@@ -31,9 +32,9 @@ bool BitcoinUnits::valid(int unit)
 {
     switch(unit)
     {
-    case BIBLEPAY:
-    case mBIBLEPAY:
-    case uBIBLEPAY:
+    case COIN_UNIT:
+    case mCOIN_UNIT:
+    case uCOIN_UNIT:
     case duffs:
         return true;
     default:
@@ -47,9 +48,9 @@ QString BitcoinUnits::name(int unit)
     {
         switch(unit)
         {
-            case BIBLEPAY: return QString("BBP");
-            case mBIBLEPAY: return QString("mBBP");
-            case uBIBLEPAY: return QString::fromUtf8("μBBP");
+            case COIN_UNIT: return GUIUtil::TOQS(CURRENCY_TICKER);
+            case mCOIN_UNIT: return GUIUtil::TOQS("m" + CURRENCY_TICKER);
+            case uCOIN_UNIT: return GUIUtil::TOQS("μ" + CURRENCY_TICKER);
             case duffs: return QString("duffs");
             default: return QString("???");
         }
@@ -58,9 +59,9 @@ QString BitcoinUnits::name(int unit)
     {
         switch(unit)
         {
-            case BIBLEPAY: return QString("tBBP");
-            case mBIBLEPAY: return QString("mtBBP");
-            case uBIBLEPAY: return QString::fromUtf8("μtBBP");
+			case COIN_UNIT: return GUIUtil::TOQS("t" + CURRENCY_TICKER);
+            case mCOIN_UNIT: return GUIUtil::TOQS("mt" + CURRENCY_TICKER);
+            case uCOIN_UNIT: return GUIUtil::TOQS("μt" + CURRENCY_TICKER);
             case duffs: return QString("tduffs");
             default: return QString("???");
         }
@@ -73,10 +74,10 @@ QString BitcoinUnits::description(int unit)
     {
         switch(unit)
         {
-            case BIBLEPAY: return QString("Biblepay");
-            case mBIBLEPAY: return QString("Milli-Biblepay (1 / 1" THIN_SP_UTF8 "000)");
-            case uBIBLEPAY: return QString("Micro-Biblepay (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-            case duffs: return QString("Ten Nano-Biblepay (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case COIN_UNIT: return GUIUtil::TOQS(CURRENCY_NAME);
+            case mCOIN_UNIT: return GUIUtil::TOQS("Milli-" + CURRENCY_NAME + " (1 / 1" THIN_SP_UTF8 "000)");
+            case uCOIN_UNIT: return GUIUtil::TOQS("Micro-" + CURRENCY_NAME + " (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case duffs: return GUIUtil::TOQS("Ten Nano-" + CURRENCY_NAME + " (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
             default: return QString("???");
         }
     }
@@ -84,10 +85,10 @@ QString BitcoinUnits::description(int unit)
     {
         switch(unit)
         {
-            case BIBLEPAY: return QString("TestBiblepays");
-            case mBIBLEPAY: return QString("Milli-TestBiblepay (1 / 1" THIN_SP_UTF8 "000)");
-            case uBIBLEPAY: return QString("Micro-TestBiblepay (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-            case duffs: return QString("Ten Nano-TestBiblepay (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case COIN_UNIT: return GUIUtil::TOQS("Test" + CURRENCY_NAME);
+            case mCOIN_UNIT: return GUIUtil::TOQS("Milli-Test" + CURRENCY_NAME + " (1 / 1" THIN_SP_UTF8 "000)");
+            case uCOIN_UNIT: return GUIUtil::TOQS("Micro-Test" + CURRENCY_NAME + " (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case duffs: return GUIUtil::TOQS("Ten Nano-Test" + CURRENCY_NAME + " (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
             default: return QString("???");
         }
     }
@@ -97,9 +98,9 @@ qint64 BitcoinUnits::factor(int unit)
 {
     switch(unit)
     {
-    case BIBLEPAY:  return 100000000;
-    case mBIBLEPAY: return 100000;
-    case uBIBLEPAY: return 100;
+    case COIN_UNIT:  return 100000000;
+    case mCOIN_UNIT: return 100000;
+    case uCOIN_UNIT: return 100;
     case duffs: return 1;
     default:   return 100000000;
     }
@@ -109,9 +110,9 @@ int BitcoinUnits::decimals(int unit)
 {
     switch(unit)
     {
-    case BIBLEPAY: return 8;
-    case mBIBLEPAY: return 5;
-    case uBIBLEPAY: return 2;
+    case COIN_UNIT: return 8;
+    case mCOIN_UNIT: return 5;
+    case uCOIN_UNIT: return 2;
     case duffs: return 0;
     default: return 0;
     }

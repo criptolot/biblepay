@@ -59,7 +59,7 @@
 #include <boost/thread.hpp>
 
 #if defined(NDEBUG)
-# error "BiblePay Core cannot be compiled without assertions."
+# error "DAC Core cannot be compiled without assertions."
 #endif
 
 std::atomic<int64_t> nTimeBestReceived(0); // Used only to inform the wallet of when we last received a block
@@ -1001,7 +1001,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 
 
     /* 
-        Biblepay Related Inventory Messages
+        Related Inventory Messages
 
         --
 
@@ -1427,21 +1427,6 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     CNetMsgMaker msgMaker(pfrom->GetSendVersion());
     connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::BLOCKTXN, resp));
 }
-
-double GetPeerVersion(std::string sVersion)
-{
-	sVersion = strReplace(sVersion, "BiblePay Core:", "");
-	sVersion = strReplace(sVersion, "Biblepay Core:", "");
-	sVersion = strReplace(sVersion, "Develop", "");
-	sVersion = strReplace(sVersion, "Main", "");
-	sVersion = strReplace(sVersion, "Test", "");
-	sVersion = strReplace(sVersion, ":", "");
-	sVersion = strReplace(sVersion, "-", "");
-	sVersion = strReplace(sVersion, "/", "");
-	sVersion = strReplace(sVersion, ".", "");
-	double dVersion = cdbl(sVersion, 0);
-	return dVersion;
-}
 	
 bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc)
 {
@@ -1635,16 +1620,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             pfrom->fRelayTxes = fRelay; // set to true after we get the first filter* message
         }
 
-		// BIBLEPAY
-		double dPeerVersion = GetPeerVersion(pfrom->cleanSubVer);
-		if (dPeerVersion < 1501 && !fProd && dPeerVersion > 1000)
-		{
-		    LogPrintf("Disconnecting unauthorized peer in TestNet using old version %f\r\n", (double)dPeerVersion);
-			Misbehaving(pfrom->GetId(), 1);
-        	pfrom->fDisconnect = true;
-			return true;
-		}
-
 		int64_t nTimeDrift = std::abs(GetAdjustedTime() - nTime);
         if (nTimeDrift > (5 * 60))
         {
@@ -1653,9 +1628,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 			pfrom->fDisconnect = true;
 			return true;
         }
-
-		// End of BiblePay
-
 
         // Change version
         pfrom->SetSendVersion(nSendVersion);
@@ -3296,15 +3268,15 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, const std::atomic<bool>& i
             else if (strstr(e.what(), "size too large"))
             {
                 // Allow exceptions from over-long size
-				if (strCommand == "mnw")
-				{
-					// This placeholder is reserved for a Log Message.  We must wait until all biblepay-classic sanctuaries are retired (as they are still sending this oversized message).
-					// We have confirmed the deterministic nodes can cope with this temporary spam.
-				}
-				else
-				{
-					LogPrintf("%s(%s, %u bytes): Exception '%s' caught\n", __func__, SanitizeString(strCommand), nMessageSize, e.what());
-				}
+				//if (strCommand == "mnw")
+				//{
+				//	// This placeholder is reserved for a Log Message.  We must wait until all classic sanctuaries are retired (as they are still sending this oversized message).
+				//	// We have confirmed the deterministic nodes can cope with this temporary spam.
+				//}
+				//else
+				//{
+				LogPrintf("%s(%s, %u bytes): Exception '%s' caught\n", __func__, SanitizeString(strCommand), nMessageSize, e.what());
+				//}
             }
             else if (strstr(e.what(), "non-canonical ReadCompactSize()"))
             {

@@ -1,11 +1,10 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "bitcoingui.h"
@@ -323,7 +322,7 @@ void BitcoinGUI::createActions()
     tabGroup->addAction(overviewAction);
 
     sendCoinsAction = new QAction(QIcon(":/icons/" + theme + "/send"), tr("&Send"), this);
-    sendCoinsAction->setStatusTip(tr("Send coins to a Biblepay address"));
+    sendCoinsAction->setStatusTip(tr("Send coins to another address"));
     sendCoinsAction->setToolTip(sendCoinsAction->statusTip());
     sendCoinsAction->setCheckable(true);
 #ifdef Q_OS_MAC
@@ -333,21 +332,20 @@ void BitcoinGUI::createActions()
 #endif
     tabGroup->addAction(sendCoinsAction);
 
-	// BiblePay
+	// DAC
 	proposalListAction = new QAction(QIcon(":/icons/" + theme + "/edit"), tr("&Proposals"), this);
 	proposalListAction->setStatusTip(tr("List Proposals"));
 	proposalListAction->setToolTip(proposalListAction->statusTip());
 	proposalListAction->setCheckable(true);
 	tabGroup->addAction(proposalListAction); 
-	
-	// End BiblePay
+	// End DAC
 
     sendCoinsMenuAction = new QAction(QIcon(":/icons/" + theme + "/send"), sendCoinsAction->text(), this);
     sendCoinsMenuAction->setStatusTip(sendCoinsAction->statusTip());
     sendCoinsMenuAction->setToolTip(sendCoinsMenuAction->statusTip());
 
     receiveCoinsAction = new QAction(QIcon(":/icons/" + theme + "/receiving_addresses"), tr("&Receive"), this);
-    receiveCoinsAction->setStatusTip(tr("Request payments (generates QR codes and biblepay: URIs)"));
+    receiveCoinsAction->setStatusTip(tr("Request payments (generates QR codes and URIs)"));
     receiveCoinsAction->setToolTip(receiveCoinsAction->statusTip());
     receiveCoinsAction->setCheckable(true);
 #ifdef Q_OS_MAC
@@ -399,7 +397,7 @@ void BitcoinGUI::createActions()
 	connect(orphanAction, SIGNAL(triggered()), this, SLOT(showAccountability()));
 
 	webAction = new QAction(QIcon(":/icons/" + theme + "/account32"), tr("Decentralized &Web"), this);
-	webAction->setStatusTip(tr("Navigate BiblePay Decentralized Web"));
+	webAction->setStatusTip(tr("Navigate the Decentralized Web"));
 	webAction->setToolTip(webAction->statusTip());
 	webAction->setCheckable(true);
 	tabGroup->addAction(webAction);
@@ -454,7 +452,7 @@ void BitcoinGUI::createActions()
     OneClickMiningAction->setStatusTip(tr("One Click Mining Configuration"));
 
     aboutAction = new QAction(QIcon(":/icons/" + theme + "/about"), tr("&About %1").arg(tr(PACKAGE_NAME)), this);
-    aboutAction->setStatusTip(tr("Show information about BiblePay Core"));
+    aboutAction->setStatusTip(tr("Show information about DAC Core"));
     aboutAction->setMenuRole(QAction::AboutRole);
     aboutAction->setEnabled(false);
 
@@ -479,9 +477,9 @@ void BitcoinGUI::createActions()
     unlockWalletAction->setToolTip(tr("Unlock wallet"));
     lockWalletAction = new QAction(tr("&Lock Wallet"), this);
     signMessageAction = new QAction(QIcon(":/icons/" + theme + "/edit"), tr("Sign &message..."), this);
-    signMessageAction->setStatusTip(tr("Sign messages with your Biblepay addresses to prove you own them"));
+    signMessageAction->setStatusTip(tr("Sign messages with your addresses to prove you own them"));
     verifyMessageAction = new QAction(QIcon(":/icons/" + theme + "/transaction_0"), tr("&Verify message..."), this);
-    verifyMessageAction->setStatusTip(tr("Verify messages to ensure they were signed with specified Biblepay addresses"));
+    verifyMessageAction->setStatusTip(tr("Verify messages to ensure they were signed with specified addresses"));
 
     openInfoAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Information"), this);
     openInfoAction->setStatusTip(tr("Show diagnostic information"));
@@ -524,11 +522,11 @@ void BitcoinGUI::createActions()
     usedReceivingAddressesAction->setStatusTip(tr("Show the list of used receiving addresses and labels"));
 
     openAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_DirOpenIcon), tr("Open &URI..."), this);
-    openAction->setStatusTip(tr("Open a biblepay: URI or payment request"));
+    openAction->setStatusTip(tr("Open a URI or payment request"));
 
     showHelpMessageAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Command-line options"), this);
     showHelpMessageAction->setMenuRole(QAction::NoRole);
-    showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Biblepay command-line options").arg(tr(PACKAGE_NAME)));
+    showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible command-line options").arg(tr(PACKAGE_NAME)));
 
     showPrivateSendHelpAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&PrivateSend information"), this);
     showPrivateSendHelpAction->setMenuRole(QAction::NoRole);
@@ -542,7 +540,7 @@ void BitcoinGUI::createActions()
     connect(showHelpMessageAction, SIGNAL(triggered()), this, SLOT(showHelpMessageClicked()));
     connect(showPrivateSendHelpAction, SIGNAL(triggered()), this, SLOT(showPrivateSendHelpClicked()));
 
-	// BIBLEPAY - Read Bible Actions
+	// Read Bible Actions
 	connect(sinnerAction, SIGNAL(triggered()), this, SLOT(sinnerClicked()));
     connect(TheLordsPrayerAction, SIGNAL(triggered()), this, SLOT(TheLordsPrayerClicked()));
     connect(TheApostlesCreedAction, SIGNAL(triggered()), this, SLOT(TheApostlesCreedClicked()));
@@ -646,7 +644,7 @@ void BitcoinGUI::createMenuBar()
         tools->addAction(OneClickMiningAction);
     }
 
-	// BiblePay - Prayers, Jesus' Commandments, and Reading the Bible
+	// DAC - Prayers, Jesus' Commandments, and Reading the Bible
 	if (walletFrame)
 	{
 		QMenu *menuBible = appMenuBar->addMenu(tr("&Bible"));
@@ -995,8 +993,8 @@ void BitcoinGUI::JesusConciseCommandmentsClicked()
 void BitcoinGUI::OneClickMiningClicked()
 {
    if(!clientModel) return;
-    std::string sNarr = "Are you sure you would like to configure Biblepay Mining (this means biblepay will search for new blocks in the background, and will resume during each restart)?";
-    int ret = QMessageBox::warning(this, tr("Modify Biblepay Configuration File for Mining?"), GUIUtil::TOQS(sNarr), QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok);
+    std::string sNarr = "Are you sure you would like to configure Mining (this means the wallet will search for new blocks in the background, and will resume during each restart)?";
+    int ret = QMessageBox::warning(this, tr("Modify the Configuration File for Mining?"), GUIUtil::TOQS(sNarr), QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok);
     if (ret==QMessageBox::Ok)
     {
         // Modify user configuration file
@@ -1008,13 +1006,14 @@ void BitcoinGUI::OneClickMiningClicked()
 
 void BitcoinGUI::showDecentralizedWeb()
 {
-	BBPResult b = GetDecentralizedURL();
+	DACResult b = GetDecentralizedURL();
 	QDesktopServices::openUrl(QUrl(GUIUtil::TOQS(b.Response)));
 }
 
 void BitcoinGUI::showAccountability()
 {
-	QDesktopServices::openUrl(QUrl("http://accountability.biblepay.org/"));
+	std::string sURL = "http://accountability." + DOMAIN_NAME + "/";
+	QDesktopServices::openUrl(QUrl(GUIUtil::TOQS(sURL)));
 }
 
 void BitcoinGUI::gotoProposalAddPage()
@@ -1179,7 +1178,7 @@ void BitcoinGUI::updateNetworkState()
     }
 
     if (clientModel->getNetworkActive()) {
-        labelConnectionsIcon->setToolTip(tr("%n active connection(s) to Biblepay network", "", count));
+        labelConnectionsIcon->setToolTip(tr("%n active connection(s) to the network", "", count));
     } else {
         labelConnectionsIcon->setToolTip(tr("Network activity disabled"));
         icon = ":/icons/" + theme + "/network_disabled";
@@ -1388,7 +1387,7 @@ void BitcoinGUI::setAdditionalDataSyncProgress(double nSyncProgress)
 
 void BitcoinGUI::message(const QString &title, const QString &message, unsigned int style, bool *ret)
 {
-    QString strTitle = tr("BiblePay Core"); // default title
+    QString strTitle = tr("DAC Core Wallet"); // default title
     // Default to information icon
     int nMBoxIcon = QMessageBox::Information;
     int nNotifyIcon = Notificator::Information;
@@ -1414,7 +1413,7 @@ void BitcoinGUI::message(const QString &title, const QString &message, unsigned 
             break;
         }
     }
-    // Append title to "BiblePay Core - "
+    // Append title to "DAC Core - "
     if (!msgType.isEmpty())
         strTitle += " - " + msgType;
 

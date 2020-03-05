@@ -429,7 +429,7 @@ crypto_libbiblepay_crypto_a_SOURCES += \
   crypto/sph_cubehash.h \
   crypto/sph_echo.h \
   crypto/sph_groestl.h \
-  crypto/sph_biblepay.h \
+  crypto/sph_legacy.h \
   crypto/sph_jh.h \
   crypto/sph_keccak.h \
   crypto/sph_luffa.h \
@@ -660,12 +660,12 @@ EXTRA_DIST = $(CTAES_DIST)
 EXTRA_DIST += $(IMMER_DIST)
 
 
-config/biblepay-config.h: config/stamp-h1
+config/coin-config.h: config/stamp-h1
 	@$(MAKE) -C $(top_builddir) $(subdir)/$(@)
-config/stamp-h1: $(top_srcdir)/$(subdir)/config/biblepay-config.h.in $(top_builddir)/config.status
+config/stamp-h1: $(top_srcdir)/$(subdir)/config/coin-config.h.in $(top_builddir)/config.status
 	$(AM_V_at)$(MAKE) -C $(top_builddir) $(subdir)/$(@)
-$(top_srcdir)/$(subdir)/config/biblepay-config.h.in:  $(am__configure_deps)
-	$(AM_V_at)$(MAKE) -C $(top_srcdir) $(subdir)/config/biblepay-config.h.in
+$(top_srcdir)/$(subdir)/config/coin-config.h.in:  $(am__configure_deps)
+	$(AM_V_at)$(MAKE) -C $(top_srcdir) $(subdir)/config/coin-config.h.in
 
 clean-local:
 	-$(MAKE) -C secp256k1 clean

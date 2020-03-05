@@ -5,6 +5,7 @@
 #include "net.h"
 #include "utilstrencodings.h"
 #include "utiltime.h"
+#include "validation.h"
 
 /*
 If you need to broadcast an alert, here's what to do:
@@ -12,8 +13,8 @@ If you need to broadcast an alert, here's what to do:
 1. Modify alert parameters below, see alert.* and comments in the code
    for what does what.
 
-2. run biblepayd with -printalert or -sendalert like this:
-   /path/to/biblepayd -printalert
+2. run coind with -printalert or -sendalert like this:
+   /path/to/coind -printalert
 
 One minute after starting up the alert will be broadcast. It is then
 flooded through the network until the nRelayUntil time, and will be
@@ -57,10 +58,10 @@ void ThreadSendAlert(CConnman& connman)
     //  Higher numbers mean higher priority
     alert.nPriority     = 5000;
     alert.strComment    = "";
-    alert.strStatusBar  = "URGENT: Upgrade required: see https://www.biblepay.org";
+    alert.strStatusBar  = "URGENT: Upgrade required: see " + DOMAIN_NAME;
 
     // Set specific client version/versions here. If setSubVer is empty, no filtering on subver is done:
-    // alert.setSubVer.insert(std::string("/BiblePay Core:0.12.0.58/"));
+    // alert.setSubVer.insert(std::string("/Core:0.12.0.58/"));
 
     // Sign
     if(!alert.Sign())

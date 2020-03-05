@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,7 @@ const std::string CSporkManager::SERIALIZATION_VERSION_STRING = "CSporkManager-V
 std::map<int, int64_t> mapSporkDefaults = {
     {SPORK_2_INSTANTSEND_ENABLED,              0},             // ON
     {SPORK_3_INSTANTSEND_BLOCK_FILTERING,      0},             // ON
-    {SPORK_5_INSTANTSEND_MAX_VALUE,            500000},        // 500,000 Biblepay
+    {SPORK_5_INSTANTSEND_MAX_VALUE,            500000},        // 500,000 
     {SPORK_6_NEW_SIGS,                         4070908800ULL}, // OFF
     {SPORK_9_SUPERBLOCKS_ENABLED,              4070908800ULL}, // OFF
     {SPORK_12_RECONSIDER_BLOCKS,               0},             // 0 BLOCKS
@@ -114,7 +114,7 @@ void CSporkManager::CheckAndRemove()
 
 void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman& connman)
 {
-    if(fLiteMode) return; // disable all Biblepay specific functionality
+    if(fLiteMode) return; // disable all DAC specific functionality
 
     if (strCommand == NetMsgType::SPORK) {
 

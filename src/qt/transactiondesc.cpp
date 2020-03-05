@@ -1,5 +1,4 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -327,7 +326,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     strHTML += "<b>" + tr("Output index") + ":</b> " + QString::number(rec->getOutputIndex()) + "<br>";
     strHTML += "<b>" + tr("Transaction total size") + ":</b> " + QString::number(wtx.tx->GetTotalSize()) + " bytes<br>";
 
-    // Message from normal biblepay:URI (biblepay:XyZ...?message=example)
+    // Message from normal URI (bible_pay:XyZ...?message=example)
     Q_FOREACH (const PAIRTYPE(std::string, std::string)& r, wtx.vOrderForm)
         if (r.first == "Message")
             strHTML += "<br><b>" + tr("Message") + ":</b><br>" + GUIUtil::HtmlEscape(r.second, true) + "<br>";
@@ -371,7 +370,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
 			sNetworkMessage += wtx.tx->vout[i1].sTxOutMessage;
 		}
 
-		// Biblepay - Read actual block, so we can give the user even more information
+		// DAC - Read actual block, so we can give the user even more information
 		
 		if (nDepth > 0)
 		{
@@ -408,7 +407,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
 			if(wallet->IsMine(txout))
 			{
                 strHTML += "<b>" + tr("Credit") + ":</b> " + BitcoinUnits::formatHtmlWithUnit(unit, wallet->GetCredit(txout, ISMINE_ALL)) + "<br>";
-				strHTML += "<b>To:<b> " + QString::fromStdString(sDest) + " " + QString::fromStdString(RoundToString(txout.nValue / COIN, 4)) + " BBP<br>";
+				strHTML += "<b>To:<b> " + QString::fromStdString(sDest) + " " + QString::fromStdString(RoundToString(txout.nValue / COIN, 4)) + " " + QString::fromStdString(CURRENCY_NAME) + "<br>";
 			}
 			
 		}

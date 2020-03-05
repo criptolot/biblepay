@@ -25,7 +25,7 @@ namespace Consensus { struct Params; };
 
 static const bool DEFAULT_PRINTPRIORITY = false;
 
-void GenerateBBP(bool fGenerate, int nThreads, const CChainParams& chainparams);
+void GenerateCoins(bool fGenerate, int nThreads, const CChainParams& chainparams);
 bool CreateBlockForStratum(std::string sAddress, uint256 uRandomXKey, std::vector<unsigned char> vRandomXHeader, std::string& sError, CBlock& blockX);
 
 struct CBlockTemplate

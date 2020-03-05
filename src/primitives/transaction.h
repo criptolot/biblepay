@@ -164,7 +164,7 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(nValue);
         READWRITE(*(CScriptBase*)(&scriptPubKey));
-		// R Andrews - Biblepay - Reserve space for Prayers and IPFS TxID pointers
+		// DAC - Reserve space for Prayers and IPFS TxID pointers
 		READWRITE(LIMITED_STRING(sTxOutMessage, 3000));
     }
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -129,13 +129,13 @@ UniValue getnewaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             "getnewaddress ( \"account\" )\n"
-            "\nReturns a new Biblepay address for receiving payments.\n"
+            "\nReturns a new address for receiving payments.\n"
             "If 'account' is specified (DEPRECATED), it is added to the address book \n"
             "so payments received with the address will be credited to 'account'.\n"
             "\nArguments:\n"
             "1. \"account\"        (string, optional) DEPRECATED. The account name for the address to be linked to. If not provided, the default account \"\" is used. It can also be set to the empty string \"\" to represent the default account. The account does not need to exist, it will be created if there is no account by the given name.\n"
             "\nResult:\n"
-            "\"address\"    (string) The new biblepay address\n"
+            "\"address\"    (string) The new address\n"
             "\nExamples:\n"
             + HelpExampleCli("getnewaddress", "")
             + HelpExampleRpc("getnewaddress", "")
@@ -185,11 +185,11 @@ UniValue getaccountaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "getaccountaddress \"account\"\n"
-            "\nDEPRECATED. Returns the current Biblepay address for receiving payments to this account.\n"
+            "\nDEPRECATED. Returns the current address for receiving payments to this account.\n"
             "\nArguments:\n"
             "1. \"account\"       (string, required) The account name for the address. It can also be set to the empty string \"\" to represent the default account. The account does not need to exist, it will be created and a new address created  if there is no account by the given name.\n"
             "\nResult:\n"
-            "\"address\"          (string) The account biblepay address\n"
+            "\"address\"          (string) The account address\n"
             "\nExamples:\n"
             + HelpExampleCli("getaccountaddress", "")
             + HelpExampleCli("getaccountaddress", "\"\"")
@@ -219,7 +219,7 @@ UniValue getrawchangeaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             "getrawchangeaddress\n"
-            "\nReturns a new Biblepay address, for receiving change.\n"
+            "\nReturns a new address, for receiving change.\n"
             "This is for use with raw transactions, NOT normal use.\n"
             "\nResult:\n"
             "\"address\"    (string) The address\n"
@@ -259,7 +259,7 @@ UniValue setaccount(const JSONRPCRequest& request)
             "setaccount \"address\" \"account\"\n"
             "\nDEPRECATED. Sets the account associated with the given address.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The biblepay address to be associated with an account.\n"
+            "1. \"address\"         (string, required) The address to be associated with an account.\n"
             "2. \"account\"         (string, required) The account to assign the address to.\n"
             "\nExamples:\n"
             + HelpExampleCli("setaccount", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\" \"tabby\"")
@@ -270,7 +270,7 @@ UniValue setaccount(const JSONRPCRequest& request)
 
     CBitcoinAddress address(request.params[0].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Biblepay address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 
     std::string strAccount;
     if (request.params.size() > 1)
@@ -306,7 +306,7 @@ UniValue getaccount(const JSONRPCRequest& request)
             "getaccount \"address\"\n"
             "\nDEPRECATED. Returns the account associated with the given address.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The biblepay address for account lookup.\n"
+            "1. \"address\"         (string, required) The address for account lookup.\n"
             "\nResult:\n"
             "\"accountname\"        (string) the account address\n"
             "\nExamples:\n"
@@ -318,7 +318,7 @@ UniValue getaccount(const JSONRPCRequest& request)
 
     CBitcoinAddress address(request.params[0].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Biblepay address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 
     std::string strAccount;
     std::map<CTxDestination, CAddressBookData>::iterator mi = pwallet->mapAddressBook.find(address.Get());
@@ -344,7 +344,7 @@ UniValue getaddressesbyaccount(const JSONRPCRequest& request)
             "1. \"account\"        (string, required) The account name.\n"
             "\nResult:\n"
             "[                     (json array of string)\n"
-            "  \"address\"         (string) a biblepay address associated with the given account\n"
+            "  \"address\"         (string) an address associated with the given account\n"
             "  ,...\n"
             "]\n"
             "\nExamples:\n"
@@ -382,7 +382,7 @@ static void SendMoney(CWallet * const pwallet, const CTxDestination &address, CA
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
     }
 
-    // Parse Biblepay address
+    // Parse address
     CScript scriptPubKey = GetScriptForDestination(address);
 
     // Create and send the transaction
@@ -424,15 +424,15 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "\nSend an amount to a given address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
-            "1. \"address\"            (string, required) The biblepay address to send to.\n"
-            "2. \"amount\"             (numeric or string, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
+            "1. \"address\"            (string, required) The address to send to.\n"
+            "2. \"amount\"             (numeric or string, required) The amount in " + CURRENCY_NAME + " to send. eg 0.1\n"
             "3. \"comment\"            (string, optional) A comment used to store what the transaction is for. \n"
             "                             This is not part of the transaction, just kept in your wallet.\n"
             "4. \"comment_to\"         (string, optional) A comment to store the name of the person or organization \n"
             "                             to which you're sending the transaction. This is not part of the \n"
             "                             transaction, just kept in your wallet.\n"
             "5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
-            "                             The recipient will receive less amount of Biblepay than you enter in the amount field.\n"
+            "                             The recipient will receive less amount of the currency than you enter in the amount field.\n"
             "6. \"use_is\"             (bool, optional, default=false) Send this transaction as InstantSend\n"
             "7. \"use_ps\"             (bool, optional, default=false) Use anonymized funds only\n"
             "\nResult:\n"
@@ -448,7 +448,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
 
     CBitcoinAddress address(request.params[0].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Biblepay address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 
     // Amount
     CAmount nAmount = AmountFromValue(request.params[1]);
@@ -492,15 +492,15 @@ UniValue instantsendtoaddress(const JSONRPCRequest& request)
             "\nSend an amount to a given address. The amount is a real and is rounded to the nearest 0.00000001\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
-            "1. \"address\"     (string, required) The biblepay address to send to.\n"
-            "2. \"amount\"      (numeric, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
+            "1. \"address\"     (string, required) The address to send to.\n"
+            "2. \"amount\"      (numeric, required) The amount in " + CURRENCY_NAME + " to send. eg 0.1\n"
             "3. \"comment\"     (string, optional) A comment used to store what the transaction is for. \n"
             "                             This is not part of the transaction, just kept in your wallet.\n"
             "4. \"comment_to\"  (string, optional) A comment to store the name of the person or organization \n"
             "                             to which you're sending the transaction. This is not part of the \n"
             "                             transaction, just kept in your wallet.\n"
             "5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
-            "                             The recipient will receive less amount of Biblepay than you enter in the amount field.\n"
+            "                             The recipient will receive less amount of currency than you enter in the amount field.\n"
             "\nResult:\n"
             "\"transactionid\"  (string) The transaction id.\n"
             "\nExamples:\n"
@@ -514,7 +514,7 @@ UniValue instantsendtoaddress(const JSONRPCRequest& request)
 
     CBitcoinAddress address(request.params[0].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Biblepay address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 
     // Amount
     CAmount nAmount = AmountFromValue(request.params[1]);
@@ -556,8 +556,8 @@ UniValue listaddressgroupings(const JSONRPCRequest& request)
             "[\n"
             "  [\n"
             "    [\n"
-            "      \"address\",            (string) The biblepay address\n"
-            "      amount,                 (numeric) The amount in " + CURRENCY_UNIT + "\n"
+            "      \"address\",            (string) The address\n"
+            "      amount,                 (numeric) The amount in " + CURRENCY_NAME + "\n"
             "      \"account\"             (string, optional) DEPRECATED. The account\n"
             "    ]\n"
             "    ,...\n"
@@ -603,10 +603,10 @@ UniValue listaddressbalances(const JSONRPCRequest& request)
             "listaddressbalances ( minamount )\n"
             "\nLists addresses of this wallet and their balances\n"
             "\nArguments:\n"
-            "1. minamount               (numeric, optional, default=0) Minimum balance in " + CURRENCY_UNIT + " an address should have to be shown in the list\n"
+            "1. minamount               (numeric, optional, default=0) Minimum balance in " + CURRENCY_NAME + " an address should have to be shown in the list\n"
             "\nResult:\n"
             "{\n"
-            "  \"address\": amount,       (string) The biblepay address and the amount in " + CURRENCY_UNIT + "\n"
+            "  \"address\": amount,       (string) The address and the amount in " + CURRENCY_NAME + "\n"
             "  ,...\n"
             "}\n"
             "\nExamples:\n"
@@ -647,7 +647,7 @@ UniValue signmessage(const JSONRPCRequest& request)
             "\nSign a message with the private key of an address"
             + HelpRequiringPassphrase(pwallet) + "\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The biblepay address to use for the private key.\n"
+            "1. \"address\"         (string, required) The address to use for the private key.\n"
             "2. \"message\"         (string, required) The message to create a signature of.\n"
             "\nResult:\n"
             "\"signature\"          (string) The signature of the message encoded in base 64\n"
@@ -705,11 +705,11 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
             "getreceivedbyaddress \"address\" ( minconf addlocked )\n"
             "\nReturns the total amount received by the given address in transactions with at least minconf confirmations.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The biblepay address for transactions.\n"
+            "1. \"address\"         (string, required) The address for transactions.\n"
             "2. minconf             (numeric, optional, default=1) Only include transactions confirmed at least this many times.\n"
             "3. addlocked           (bool, optional, default=false) Whether to include transactions locked via InstantSend.\n"
             "\nResult:\n"
-            "amount   (numeric) The total amount in " + CURRENCY_UNIT + " received at this address.\n"
+            "amount   (numeric) The total amount in " + CURRENCY_NAME + " received at this address.\n"
             "\nExamples:\n"
             "\nThe amount from transactions with at least 1 confirmation\n"
             + HelpExampleCli("getreceivedbyaddress", "\"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\"") +
@@ -723,10 +723,10 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    // Biblepay address
+    // Address
     CBitcoinAddress address = CBitcoinAddress(request.params[0].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Biblepay address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     CScript scriptPubKey = GetScriptForDestination(address.Get());
     if (!IsMine(*pwallet, scriptPubKey)) {
         return ValueFromAmount(0);
@@ -771,7 +771,7 @@ UniValue getreceivedbyaccount(const JSONRPCRequest& request)
             "2. minconf        (numeric, optional, default=1) Only include transactions confirmed at least this many times.\n"
             "3. addlocked      (bool, optional, default=false) Whether to include transactions locked via InstantSend.\n"
             "\nResult:\n"
-            "amount            (numeric) The total amount in " + CURRENCY_UNIT + " received for this account.\n"
+            "amount            (numeric) The total amount in " + CURRENCY_NAME + " received for this account.\n"
             "\nExamples:\n"
             "\nAmount received by the default account with at least 1 confirmation\n"
             + HelpExampleCli("getreceivedbyaccount", "\"\"") +
@@ -836,7 +836,7 @@ UniValue getbalance(const JSONRPCRequest& request)
             "3. addlocked      (bool, optional, default=false) Whether to include the value of transactions locked via InstantSend in the wallet's balance.\n"
             "4. include_watchonly (bool, optional, default=false) Also include balance in watch-only addresses (see 'importaddress')\n"
             "\nResult:\n"
-            "amount              (numeric) The total amount in " + CURRENCY_UNIT + " received for this account.\n"
+            "amount              (numeric) The total amount in " + CURRENCY_NAME + " received for this account.\n"
             "\nExamples:\n"
             "\nThe total amount in the wallet\n"
             + HelpExampleCli("getbalance", "") +
@@ -926,15 +926,15 @@ UniValue movecmd(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. \"fromaccount\"    (string, required) The name of the account to move funds from. May be the default account using \"\".\n"
             "2. \"toaccount\"      (string, required) The name of the account to move funds to. May be the default account using \"\".\n"
-            "3. amount           (numeric) Quantity of " + CURRENCY_UNIT + " to move between accounts.\n"
+            "3. amount           (numeric) Quantity of " + CURRENCY_NAME + " to move between accounts.\n"
             "4. (dummy)          (numeric, optional) Ignored. Remains for backward compatibility.\n"
             "5. \"comment\"        (string, optional) An optional comment, stored in the wallet only.\n"
             "\nResult:\n"
             "true|false          (boolean) true if successful.\n"
             "\nExamples:\n"
-            "\nMove 0.01 " + CURRENCY_UNIT + " from the default account to the account named tabby\n"
+            "\nMove 0.01 " + CURRENCY_NAME + " from the default account to the account named tabby\n"
             + HelpExampleCli("move", "\"\" \"tabby\" 0.01") +
-            "\nMove 0.01 " + CURRENCY_UNIT + " timotei to akiko with a comment and funds have 6 confirmations\n"
+            "\nMove 0.01 " + CURRENCY_NAME + " timotei to akiko with a comment and funds have 6 confirmations\n"
             + HelpExampleCli("move", "\"timotei\" \"akiko\" 0.01 6 \"happy birthday!\"") +
             "\nAs a json rpc call\n"
             + HelpExampleRpc("move", "\"timotei\", \"akiko\", 0.01, 6, \"happy birthday!\"")
@@ -972,15 +972,15 @@ UniValue sendfrom(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 3 || request.params.size() > 7)
         throw std::runtime_error(
             "sendfrom \"fromaccount\" \"toaddress\" amount ( minconf addlocked \"comment\" \"comment_to\" )\n"
-            "\nDEPRECATED (use sendtoaddress). Sent an amount from an account to a biblepay address."
+            "\nDEPRECATED (use sendtoaddress). Sent an amount from an account to an address."
             + HelpRequiringPassphrase(pwallet) + "\n"
             "\nArguments:\n"
             "1. \"fromaccount\"       (string, required) The name of the account to send funds from. May be the default account using \"\".\n"
             "                       Specifying an account does not influence coin selection, but it does associate the newly created\n"
             "                       transaction with the account, so the account's balance computation and transaction history can reflect\n"
             "                       the spend.\n"
-            "2. \"toaddress\"         (string, required) The biblepay address to send funds to.\n"
-            "3. amount              (numeric or string, required) The amount in " + CURRENCY_UNIT + " (transaction fee is added on top).\n"
+            "2. \"toaddress\"         (string, required) The address to send funds to.\n"
+            "3. amount              (numeric or string, required) The amount in " + CURRENCY_NAME + " (transaction fee is added on top).\n"
             "4. minconf             (numeric, optional, default=1) Only use funds with at least this many confirmations.\n"
             "5. addlocked         (bool, optional, default=false) Whether to include transactions locked via InstantSend.\n"
             "6. \"comment\"           (string, optional) A comment used to store what the transaction is for. \n"
@@ -991,7 +991,7 @@ UniValue sendfrom(const JSONRPCRequest& request)
             "\nResult:\n"
             "\"txid\"                 (string) The transaction id.\n"
             "\nExamples:\n"
-            "\nSend 0.01 " + CURRENCY_UNIT + " from the default account to the address, must have at least 1 confirmation\n"
+            "\nSend 0.01 " + CURRENCY_NAME + " from the default account to the address, must have at least 1 confirmation\n"
             + HelpExampleCli("sendfrom", "\"\" \"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\" 0.01") +
             "\nSend 0.01 from the tabby account to the given address, funds must have at least 6 confirmations\n"
             + HelpExampleCli("sendfrom", "\"tabby\" \"XwnLY9Tf7Zsef8gMGL2fhWA9ZmMjt4KPwG\" 0.01 6 false \"donation\" \"seans outpost\"") +
@@ -1004,7 +1004,7 @@ UniValue sendfrom(const JSONRPCRequest& request)
     std::string strAccount = AccountFromValue(request.params[0]);
     CBitcoinAddress address(request.params[1].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Biblepay address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     CAmount nAmount = AmountFromValue(request.params[2]);
     if (nAmount <= 0)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
@@ -1049,7 +1049,7 @@ UniValue sendmany(const JSONRPCRequest& request)
             "1. \"fromaccount\"           (string, required) DEPRECATED. The account to send the funds from. Should be \"\" for the default account\n"
             "2. \"amounts\"               (string, required) A json object with addresses and amounts\n"
             "    {\n"
-            "      \"address\":amount     (numeric or string) The biblepay address is the key, the numeric amount (can be string) in " + CURRENCY_UNIT + " is the value\n"
+            "      \"address\":amount     (numeric or string) The address is the key, the numeric amount (can be string) in " + CURRENCY_NAME + " is the value\n"
             "      ,...\n"
             "    }\n"
             "3. minconf                 (numeric, optional, default=1) Only use the balance confirmed at least this many times.\n"
@@ -1057,7 +1057,7 @@ UniValue sendmany(const JSONRPCRequest& request)
             "5. \"comment\"               (string, optional) A comment\n"
             "6. subtractfeefromamount   (array, optional) A json array with addresses.\n"
             "                           The fee will be equally deducted from the amount of each selected address.\n"
-            "                           Those recipients will receive less biblepays than you enter in their corresponding amount field.\n"
+            "                           Those recipients will receive less currency than you enter in their corresponding amount field.\n"
             "                           If no addresses are specified here, the sender pays the fee.\n"
             "    [\n"
             "      \"address\"          (string) Subtract fee from this address\n"
@@ -1108,7 +1108,7 @@ UniValue sendmany(const JSONRPCRequest& request)
     {
         CBitcoinAddress address(name_);
         if (!address.IsValid())
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Biblepay address: ")+name_);
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid address: ")+name_);
 
         if (setAddress.count(address))
             throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ")+name_);
@@ -1182,20 +1182,20 @@ UniValue addmultisigaddress(const JSONRPCRequest& request)
     {
         std::string msg = "addmultisigaddress nrequired [\"key\",...] ( \"account\" )\n"
             "\nAdd a nrequired-to-sign multisignature address to the wallet.\n"
-            "Each key is a Biblepay address or hex-encoded public key.\n"
+            "Each key is an address or hex-encoded public key.\n"
             "If 'account' is specified (DEPRECATED), assign address to that account.\n"
 
             "\nArguments:\n"
             "1. nrequired        (numeric, required) The number of required signatures out of the n keys or addresses.\n"
-            "2. \"keys\"         (string, required) A json array of biblepay addresses or hex-encoded public keys\n"
+            "2. \"keys\"         (string, required) A json array of addresses or hex-encoded public keys\n"
             "     [\n"
-            "       \"address\"  (string) biblepay address or hex-encoded public key\n"
+            "       \"address\"  (string) address or hex-encoded public key\n"
             "       ...,\n"
             "     ]\n"
             "3. \"account\"      (string, optional) DEPRECATED. An account to assign the addresses to.\n"
 
             "\nResult:\n"
-            "\"address\"         (string) A biblepay address associated with the keys.\n"
+            "\"address\"         (string) An address associated with the keys.\n"
 
             "\nExamples:\n"
             "\nAdd a multisig address from 2 addresses\n"
@@ -1382,7 +1382,7 @@ UniValue listreceivedbyaddress(const JSONRPCRequest& request)
             "    \"involvesWatchonly\" : true,        (bool) Only returned if imported addresses were involved in transaction\n"
             "    \"address\" : \"receivingaddress\",    (string) The receiving address\n"
             "    \"account\" : \"accountname\",         (string) DEPRECATED. The account of the receiving address. The default account is \"\".\n"
-            "    \"amount\" : x.xxx,                  (numeric) The total amount in " + CURRENCY_UNIT + " received by the address\n"
+            "    \"amount\" : x.xxx,                  (numeric) The total amount in " + CURRENCY_NAME + " received by the address\n"
             "    \"confirmations\" : n                (numeric) The number of confirmations of the most recent transaction included.\n"
             "                                                 If 'addlocked' is true, the number of confirmations can be less than\n"
             "                                                 configured for transactions locked via InstantSend\n"
@@ -1580,18 +1580,18 @@ UniValue listtransactions(const JSONRPCRequest& request)
             "  {\n"
             "    \"account\":\"accountname\",  (string) DEPRECATED. The account name associated with the transaction. \n"
             "                                                It will be \"\" for the default account.\n"
-            "    \"address\":\"address\",    (string) The biblepay address of the transaction. Not present for \n"
+            "    \"address\":\"address\",    (string) The address of the transaction. Not present for \n"
             "                                                move transactions (category = move).\n"
             "    \"category\":\"send|receive|move\", (string) The transaction category. 'move' is a local (off blockchain)\n"
             "                                                transaction between accounts, and not associated with an address,\n"
             "                                                transaction id or block. 'send' and 'receive' transactions are \n"
             "                                                associated with an address, transaction id and block details\n"
-            "    \"amount\": x.xxx,          (numeric) The amount in " + CURRENCY_UNIT + ". This is negative for the 'send' category, and for the\n"
+            "    \"amount\": x.xxx,          (numeric) The amount in " + CURRENCY_NAME + ". This is negative for the 'send' category, and for the\n"
             "                                         'move' category for moves outbound. It is positive for the 'receive' category,\n"
             "                                         and for the 'move' category for inbound funds.\n"
             "    \"label\": \"label\",       (string) A comment for the address/transaction, if any\n"
             "    \"vout\": n,                (numeric) the vout value\n"
-            "    \"fee\": x.xxx,             (numeric) The amount of the fee in " + CURRENCY_UNIT + ". This is negative and only available for the \n"
+            "    \"fee\": x.xxx,             (numeric) The amount of the fee in " + CURRENCY_NAME + ". This is negative and only available for the \n"
             "                                         'send' category of transactions.\n"
             "    \"confirmations\": n,       (numeric) The number of blockchain confirmations for the transaction. Available for 'send' and \n"
             "                                         'receive' category of transactions. Negative confirmations indicate the\n"
@@ -1793,12 +1793,12 @@ UniValue listsinceblock(const JSONRPCRequest& request)
             "{\n"
             "  \"transactions\": [\n"
             "    \"account\":\"accountname\",  (string) DEPRECATED. The account name associated with the transaction. Will be \"\" for the default account.\n"
-            "    \"address\":\"address\",    (string) The biblepay address of the transaction. Not present for move transactions (category = move).\n"
+            "    \"address\":\"address\",    (string) The address of the transaction. Not present for move transactions (category = move).\n"
             "    \"category\":\"send|receive\",  (string) The transaction category. 'send' has negative amounts, 'receive' has positive amounts.\n"
-            "    \"amount\": x.xxx,          (numeric) The amount in " + CURRENCY_UNIT + ". This is negative for the 'send' category, and for the 'move' category for moves \n"
+            "    \"amount\": x.xxx,          (numeric) The amount in " + CURRENCY_NAME + ". This is negative for the 'send' category, and for the 'move' category for moves \n"
             "                                          outbound. It is positive for the 'receive' category, and for the 'move' category for inbound funds.\n"
             "    \"vout\" : n,               (numeric) the vout value\n"
-            "    \"fee\": x.xxx,             (numeric) The amount of the fee in " + CURRENCY_UNIT + ". This is negative and only available for the 'send' category of transactions.\n"
+            "    \"fee\": x.xxx,             (numeric) The amount of the fee in " + CURRENCY_NAME + ". This is negative and only available for the 'send' category of transactions.\n"
             "    \"confirmations\" : n,      (numeric) The number of blockchain confirmations for the transaction. Available for 'send' and 'receive' category of transactions.\n"
             "                                          When it's < 0, it means the transaction conflicted that many blocks ago.\n"
             "    \"instantlock\" : true|false, (bool) Current transaction lock state. Available for 'send' and 'receive' category of transactions.\n"
@@ -1900,8 +1900,8 @@ UniValue gettransaction(const JSONRPCRequest& request)
             "2. \"include_watchonly\"     (bool, optional, default=false) Whether to include watch-only addresses in balance calculation and details[]\n"
             "\nResult:\n"
             "{\n"
-            "  \"amount\" : x.xxx,        (numeric) The transaction amount in " + CURRENCY_UNIT + "\n"
-            "  \"fee\": x.xxx,            (numeric) The amount of the fee in " + CURRENCY_UNIT + ". This is negative and only available for the \n"
+            "  \"amount\" : x.xxx,        (numeric) The transaction amount in " + CURRENCY_NAME + "\n"
+            "  \"fee\": x.xxx,            (numeric) The amount of the fee in " + CURRENCY_NAME + ". This is negative and only available for the \n"
             "                              'send' category of transactions.\n"
             "  \"instantlock\" : true|false, (bool) Current transaction lock state\n"
             "  \"instantlock_internal\" : true|false, (bool) Current internal transaction lock state\n"
@@ -1916,12 +1916,12 @@ UniValue gettransaction(const JSONRPCRequest& request)
             "  \"details\" : [\n"
             "    {\n"
             "      \"account\" : \"accountname\",      (string) DEPRECATED. The account name involved in the transaction, can be \"\" for the default account.\n"
-            "      \"address\" : \"address\",          (string) The biblepay address involved in the transaction\n"
+            "      \"address\" : \"address\",          (string) The address involved in the transaction\n"
             "      \"category\" : \"send|receive\",    (string) The category, either 'send' or 'receive'\n"
-            "      \"amount\" : x.xxx,               (numeric) The amount in " + CURRENCY_UNIT + "\n"
+            "      \"amount\" : x.xxx,               (numeric) The amount in " + CURRENCY_NAME + "\n"
             "      \"label\" : \"label\",              (string) A comment for the address/transaction, if any\n"
             "      \"vout\" : n,                     (numeric) the vout value\n"
-            "      \"fee\": x.xxx,                     (numeric) The amount of the fee in " + CURRENCY_UNIT + ". This is negative and only available for the \n"
+            "      \"fee\": x.xxx,                     (numeric) The amount of the fee in " + CURRENCY_NAME + ". This is negative and only available for the \n"
             "                                           'send' category of transactions.\n"
             "      \"abandoned\": xxx                  (bool) 'true' if the transaction has been abandoned (inputs are respendable). Only available for the \n"
             "                                           'send' category of transactions.\n"			
@@ -2100,7 +2100,7 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
         throw std::runtime_error(
             "walletpassphrase \"passphrase\" timeout ( mixingonly )\n"
             "\nStores the wallet decryption key in memory for 'timeout' seconds.\n"
-            "This is needed prior to performing transactions related to private keys such as sending biblepays\n"
+            "This is needed prior to performing transactions related to private keys such as sending coins\n"
             "\nArguments:\n"
             "1. \"passphrase\"        (string, required) The wallet passphrase\n"
             "2. timeout             (numeric, required) The time to keep the decryption key in seconds.\n"
@@ -2271,7 +2271,7 @@ UniValue encryptwallet(const JSONRPCRequest& request)
             "\nExamples:\n"
             "\nEncrypt you wallet\n"
             + HelpExampleCli("encryptwallet", "\"my pass phrase\"") +
-            "\nNow set the passphrase to use the wallet, such as for signing or sending biblepay\n"
+            "\nNow set the passphrase to use the wallet, such as for signing or sending coins\n"
             + HelpExampleCli("walletpassphrase", "\"my pass phrase\"") +
             "\nNow we can so something like sign\n"
             + HelpExampleCli("signmessage", "\"address\" \"test message\"") +
@@ -2309,7 +2309,7 @@ UniValue encryptwallet(const JSONRPCRequest& request)
     // slack space in .dat files; that is bad if the old data is
     // unencrypted private keys. So:
     StartShutdown();
-    return "Wallet encrypted; BiblePay Core server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
+    return "Wallet encrypted; Core server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
 }
 
 UniValue lockunspent(const JSONRPCRequest& request)
@@ -2325,7 +2325,7 @@ UniValue lockunspent(const JSONRPCRequest& request)
             "\nUpdates list of temporarily unspendable outputs.\n"
             "Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.\n"
             "If no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked.\n"
-            "A locked transaction output will not be chosen by automatic coin selection, when spending biblepays.\n"
+            "A locked transaction output will not be chosen by automatic coin selection, when spending coins.\n"
             "Locks are stored in memory only. Nodes start with zero locked outputs, and the locked output list\n"
             "is always cleared (by virtue of process exit) when a node stops or fails.\n"
             "Also see the listunspent call\n"
@@ -2466,7 +2466,7 @@ UniValue settxfee(const JSONRPCRequest& request)
             "settxfee amount\n"
             "\nSet the transaction fee per kB. Overwrites the paytxfee parameter.\n"
             "\nArguments:\n"
-            "1. amount         (numeric or string, required) The transaction fee in " + CURRENCY_UNIT + "/kB\n"
+            "1. amount         (numeric or string, required) The transaction fee in " + CURRENCY_NAME + "/kB\n"
             "\nResult:\n"
             "true|false        (boolean) Returns true if successful\n"
             "\nExamples:\n"
@@ -2520,7 +2520,7 @@ UniValue setprivatesendamount(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "setprivatesendamount amount\n"
-            "\nSet the goal amount in " + CURRENCY_UNIT + " for PrivateSend mixing.\n"
+            "\nSet the goal amount in " + CURRENCY_NAME + " for PrivateSend mixing.\n"
             "\nArguments:\n"
             "1. amount         (numeric, required) The default amount is " + std::to_string(DEFAULT_PRIVATESEND_AMOUNT) +
             " Cannot be more than " + std::to_string(MAX_PRIVATESEND_AMOUNT) + " nor less than " + std::to_string(MIN_PRIVATESEND_AMOUNT) +
@@ -2532,7 +2532,7 @@ UniValue setprivatesendamount(const JSONRPCRequest& request)
     int nAmount = request.params[0].get_int();
 
     if (nAmount > MAX_PRIVATESEND_AMOUNT || nAmount < MIN_PRIVATESEND_AMOUNT)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount of " + CURRENCY_UNIT + " as mixing goal amount");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount of " + CURRENCY_NAME + " as mixing goal amount");
 
     privateSendClient.nPrivateSendAmount = nAmount;
 
@@ -2553,18 +2553,18 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
             "\nResult:\n"
             "{\n"
             "  \"walletversion\": xxxxx,     (numeric) the wallet version\n"
-            "  \"balance\": xxxxxxx,         (numeric) the total confirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"balance\": xxxxxxx,         (numeric) the total confirmed balance of the wallet in " + CURRENCY_NAME + "\n"
             + (!fLiteMode ?
-            "  \"privatesend_balance\": xxxxxx, (numeric) the anonymized biblepay balance of the wallet in " + CURRENCY_UNIT + "\n" : "") +
-            "  \"unconfirmed_balance\": xxx, (numeric) the total unconfirmed balance of the wallet in " + CURRENCY_UNIT + "\n"
-            "  \"immature_balance\": xxxxxx, (numeric) the total immature balance of the wallet in " + CURRENCY_UNIT + "\n"
+            "  \"privatesend_balance\": xxxxxx, (numeric) the anonymized balance of the wallet in " + CURRENCY_NAME + "\n" : "") +
+            "  \"unconfirmed_balance\": xxx, (numeric) the total unconfirmed balance of the wallet in " + CURRENCY_NAME + "\n"
+            "  \"immature_balance\": xxxxxx, (numeric) the total immature balance of the wallet in " + CURRENCY_NAME + "\n"
             "  \"txcount\": xxxxxxx,         (numeric) the total number of transactions in the wallet\n"
             "  \"keypoololdest\": xxxxxx,    (numeric) the timestamp (seconds since Unix epoch) of the oldest pre-generated key in the key pool\n"
             "  \"keypoolsize\": xxxx,        (numeric) how many new keys are pre-generated (only counts external keys)\n"
             "  \"keypoolsize_hd_internal\": xxxx, (numeric) how many new keys are pre-generated for internal use (used for change outputs, only appears if the wallet is using this feature, otherwise external keys are used)\n"
             "  \"keys_left\": xxxx,          (numeric) how many new keys are left since last automatic backup\n"
             "  \"unlocked_until\": ttt,      (numeric) the timestamp in seconds since epoch (midnight Jan 1 1970 GMT) that the wallet is unlocked for transfers, or 0 if the wallet is locked\n"
-            "  \"paytxfee\": x.xxxx,         (numeric) the transaction fee configuration, set in " + CURRENCY_UNIT + "/kB\n"
+            "  \"paytxfee\": x.xxxx,         (numeric) the transaction fee configuration, set in " + CURRENCY_NAME + "/kB\n"
             "  \"hdchainid\": \"<hash>\",      (string) the ID of the HD chain\n"
             "  \"hdaccountcount\": xxx,      (numeric) how many accounts of the HD chain are in this wallet\n"
             "    [\n"
@@ -2724,9 +2724,9 @@ UniValue listunspent(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. minconf          (numeric, optional, default=1) The minimum confirmations to filter\n"
             "2. maxconf          (numeric, optional, default=9999999) The maximum confirmations to filter\n"
-            "3. \"addresses\"      (string) A json array of biblepay addresses to filter\n"
+            "3. \"addresses\"      (string) A json array of addresses to filter\n"
             "    [\n"
-            "      \"address\"     (string) biblepay address\n"
+            "      \"address\"     (string) address\n"
             "      ,...\n"
             "    ]\n"
             "4. include_unsafe (bool, optional, default=true) Include outputs that are not safe to spend\n"
@@ -2736,10 +2736,10 @@ UniValue listunspent(const JSONRPCRequest& request)
             "  {\n"
             "    \"txid\" : \"txid\",          (string) the transaction id \n"
             "    \"vout\" : n,               (numeric) the vout value\n"
-            "    \"address\" : \"address\",    (string) the biblepay address\n"
+            "    \"address\" : \"address\",    (string) the address\n"
             "    \"account\" : \"account\",    (string) DEPRECATED. The associated account, or \"\" for the default account\n"
             "    \"scriptPubKey\" : \"key\",   (string) the script key\n"
-            "    \"amount\" : x.xxx,         (numeric) the transaction output amount in " + CURRENCY_UNIT + "\n"
+            "    \"amount\" : x.xxx,         (numeric) the transaction output amount in " + CURRENCY_NAME + "\n"
             "    \"confirmations\" : n,      (numeric) The number of confirmations\n"
             "    \"redeemScript\" : n        (string) The redeemScript if scriptPubKey is P2SH\n"
             "    \"spendable\" : xxx,        (bool) Whether we have the private keys to spend this output\n"
@@ -2778,7 +2778,7 @@ UniValue listunspent(const JSONRPCRequest& request)
             const UniValue& input = inputs[idx];
             CBitcoinAddress address(input.get_str());
             if (!address.IsValid())
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Biblepay address: ")+input.get_str());
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid address: ")+input.get_str());
             if (setAddress.count(address))
                 throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ")+input.get_str());
            setAddress.insert(address);
@@ -2864,16 +2864,16 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
                             "1. \"hexstring\"           (string, required) The hex string of the raw transaction\n"
                             "2. options                 (object, optional)\n"
                             "   {\n"
-                            "     \"changeAddress\"          (string, optional, default pool address) The biblepay address to receive the change\n"
+                            "     \"changeAddress\"          (string, optional, default pool address) The address to receive the change\n"
                             "     \"changePosition\"         (numeric, optional, default random) The index of the change output\n"
                             "     \"includeWatching\"        (boolean, optional, default false) Also select inputs which are watch only\n"
                             "     \"lockUnspents\"           (boolean, optional, default false) Lock selected unspent outputs\n"
                             "     \"reserveChangeKey\"       (boolean, optional, default true) Reserves the change output key from the keypool\n"
-                            "     \"feeRate\"                (numeric, optional, default not set: makes wallet determine the fee) Set a specific feerate (" + CURRENCY_UNIT + " per KB)\n"
+                            "     \"feeRate\"                (numeric, optional, default not set: makes wallet determine the fee) Set a specific feerate (" + CURRENCY_NAME + " per KB)\n"
                             "     \"subtractFeeFromOutputs\" (array, optional) A json array of integers.\n"
                             "                              The fee will be equally deducted from the amount of each specified output.\n"
                             "                              The outputs are specified by their zero-based index, before any change output is added.\n"
-                            "                              Those recipients will receive less biblepay than you enter in their corresponding amount field.\n"
+                            "                              Those recipients will receive less currency than you enter in their corresponding amount field.\n"
                             "                              If no outputs are specified here, the sender pays the fee.\n"
                             "                                  [vout_index,...]\n"
                             "   }\n"
@@ -2881,7 +2881,7 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
                             "\nResult:\n"
                             "{\n"
                             "  \"hex\":       \"value\", (string)  The resulting raw transaction (hex-encoded string)\n"
-                            "  \"fee\":       n,         (numeric) Fee in " + CURRENCY_UNIT + " the resulting transaction pays\n"
+                            "  \"fee\":       n,         (numeric) Fee in " + CURRENCY_NAME + " the resulting transaction pays\n"
                             "  \"changepos\": n          (numeric) The position of the added change output, or -1\n"
                             "}\n"
                             "\nExamples:\n"
@@ -2933,7 +2933,7 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
             CBitcoinAddress address(options["changeAddress"].get_str());
 
             if (!address.IsValid())
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "changeAddress must be a valid biblepay address");
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "changeAddress must be a valid address");
 
             changeAddress = address.Get();
         }

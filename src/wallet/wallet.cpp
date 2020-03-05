@@ -1,7 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2021 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -2679,7 +2679,7 @@ void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe, const
 				{
                     if (CPrivateSend::IsCollateralAmount(pcoin->tx->vout[i].nValue)) continue; // do not use collateral amounts
                     found = !CPrivateSend::IsDenominatedAmount(pcoin->tx->vout[i].nValue);
-					// Do not use BBP_DENOMINATED (PODC) coins either
+					// Do not use DENOMINATED (PODC) coins either
 					if (IsPODCDenominated(pcoin->tx->vout[i].nValue) || nDepth < 1)
 						found = false;
 	            }
@@ -2696,7 +2696,7 @@ void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe, const
                     found = true;
                 }
 
-				// BIBLEPAY - ANTI-BOT NET RULES:
+				// ANTI-BOT NET RULES:
 				if (dMinCoinAge > 0) 
 				{
 					if (nDepth < 1 || pcoin->tx->vout[i].nValue <= (GSC_DUST * COIN) || pcoin->tx->vout[i].nValue == SANCTUARY_COLLATERAL * COIN) 
@@ -3003,7 +3003,7 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
     std::vector<COutput> vCoins(vAvailableCoins);
 	double nFoundCoinAge = 0;
 	CAmount nTotalRequired = 0;
-	// R Andrews - BIBLEPAY - If this is an ABN or GSC, we need to sort the AvailableCoins vector by amount, and use the smallest coin-age(s) first
+	// DAC - If this is an ABN or GSC, we need to sort the AvailableCoins vector by amount, and use the smallest coin-age(s) first
 	if (nMinCoinAge > 0)
 	{
 		
@@ -3813,7 +3813,8 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                     return false;
                 }
                 if (fUseInstantSend && nValueIn > sporkManager.GetSporkValue(SPORK_5_INSTANTSEND_MAX_VALUE)*COIN) {
-                    strFailReason += " " + strprintf(_("InstantSend doesn't support sending values that high yet. Transactions are currently limited to %1 BIBLEPAY."), sporkManager.GetSporkValue(SPORK_5_INSTANTSEND_MAX_VALUE));
+                    strFailReason += " " + strprintf(_("InstantSend doesn't support sending values that high yet. Transactions are currently limited to %1 %s."), 
+						sporkManager.GetSporkValue(SPORK_5_INSTANTSEND_MAX_VALUE), CURRENCY_NAME);
                     return false;
                 }
 
@@ -3831,7 +3832,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
 
                         // Fill a vout to ourself
                         // TODO: pass in scriptChange instead of reservekey so
-                        // change transaction isn't always pay-to-biblepay-address
+                        // change transaction isn't always pay-to-coin-address
                         CScript scriptChange;
 
                         // coin control: send change to custom address
@@ -3854,7 +3855,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                             // Reserve a new key pair from key pool
 							if (fPursePubKey)
 							{
-								// BBP - R Andrews - 11-4-2019 - Exact spent non-financial transaction send change back to external purse:
+								// DAC - Exact spent non-financial transaction send change back to external purse:
 								scriptChange = GetScriptForDestination(baPurse.Get());
 							}
 							else
@@ -5129,11 +5130,11 @@ std::string CWallet::GetWalletHelpString(bool showDebug)
     strUsage += HelpMessageOpt("-disablewallet", _("Do not load the wallet and disable wallet RPC calls"));
     strUsage += HelpMessageOpt("-keypool=<n>", strprintf(_("Set key pool size to <n> (default: %u)"), DEFAULT_KEYPOOL_SIZE));
     strUsage += HelpMessageOpt("-fallbackfee=<amt>", strprintf(_("A fee rate (in %s/kB) that will be used when fee estimation has insufficient data (default: %s)"),
-                                                               CURRENCY_UNIT, FormatMoney(DEFAULT_FALLBACK_FEE)));
+                                                               CURRENCY_NAME, FormatMoney(DEFAULT_FALLBACK_FEE)));
     strUsage += HelpMessageOpt("-mintxfee=<amt>", strprintf(_("Fees (in %s/kB) smaller than this are considered zero fee for transaction creation (default: %s)"),
-                                                            CURRENCY_UNIT, FormatMoney(DEFAULT_TRANSACTION_MINFEE)));
+                                                            CURRENCY_NAME, FormatMoney(DEFAULT_TRANSACTION_MINFEE)));
     strUsage += HelpMessageOpt("-paytxfee=<amt>", strprintf(_("Fee (in %s/kB) to add to transactions you send (default: %s)"),
-                                                            CURRENCY_UNIT, FormatMoney(payTxFee.GetFeePerK())));
+                                                            CURRENCY_NAME, FormatMoney(payTxFee.GetFeePerK())));
     strUsage += HelpMessageOpt("-rescan", _("Rescan the block chain for missing wallet transactions on startup"));
     strUsage += HelpMessageOpt("-salvagewallet", _("Attempt to recover private keys from a corrupt wallet on startup"));
     strUsage += HelpMessageOpt("-spendzeroconfchange", strprintf(_("Spend unconfirmed change when sending transactions (default: %u)"), DEFAULT_SPEND_ZEROCONF_CHANGE));
@@ -5203,7 +5204,7 @@ CWallet* CWallet::CreateWalletFromFile(const std::string walletFile)
         else if (nLoadWalletRet == DB_NONCRITICAL_ERROR)
         {
             InitWarning(strprintf(_("Error reading %s! All keys read correctly, but transaction data"
-                                         " or address book entries might be missing or incorrect.  Please rerun once with -upgradewallet if you are migrating from BiblePay Classic. "),
+                                         " or address book entries might be missing or incorrect.  Please rerun once with -upgradewallet if you are migrating from the Classic Version. "),
                 walletFile));
         }
         else if (nLoadWalletRet == DB_TOO_NEW) {

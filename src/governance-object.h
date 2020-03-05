@@ -1,12 +1,12 @@
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef GOVERNANCE_OBJECT_H
 #define GOVERNANCE_OBJECT_H
 
-//#define ENABLE_BIBLEPAY_DEBUG
+//#define ENABLE_COIN_DEBUG
 
 #include "cachemultimap.h"
 #include "governance-exceptions.h"
@@ -26,7 +26,7 @@ class CGovernanceTriggerManager;
 class CGovernanceObject;
 class CGovernanceVote;
 
-// BiblePay - During Evolution Cutover we transition to v70718, Prod is on v70737 as of 11-27-2019
+// During Evolution Cutover we transition to v70718, Prod is on v70737 as of 11-27-2019
 static const int MIN_GOVERNANCE_PEER_PROTO_VERSION = 70737;
 
 static const int GOVERNANCE_FILTER_PROTO_VERSION = 70737;

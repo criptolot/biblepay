@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_PROVIDERTX_H
-#define BIBLEPAY_PROVIDERTX_H
+#ifndef COIN_PROVIDERTX_H
+#define COIN_PROVIDERTX_H
 
 #include "bls/bls.h"
 #include "consensus/validation.h"
@@ -234,4 +234,4 @@ bool CheckProUpRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CVal
 bool CheckProUpRevTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state);
 bool CheckNonFinancialTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state);
 
-#endif //BIBLEPAY_PROVIDERTX_H
+#endif //COIN_PROVIDERTX_H

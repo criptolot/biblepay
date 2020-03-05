@@ -1,7 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -156,7 +156,7 @@ UniValue generatetoaddress(const JSONRPCRequest& request)
             "\nMine blocks immediately to a specified address (before the RPC call returns)\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
-            "2. address      (string, required) The address to send the newly generated Biblepay to.\n"
+            "2. address      (string, required) The address to send the newly generated coins to.\n"
             "3. maxtries     (numeric, optional) How many iterations to try (default = 1000000).\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
@@ -200,7 +200,7 @@ UniValue getgenerate(const JSONRPCRequest& request)
         throw std::runtime_error(
             "getgenerate\n"
             "\nReturn if the server is set to generate coins or not. The default is false.\n"
-            "It is set with the command line argument -gen (or " + std::string(BITCOIN_CONF_FILENAME) + " setting gen)\n"
+            "It is set with the command line argument -gen (or " + std::string(GetConfFileName()) + " setting gen)\n"
             "It can also be set with the setgenerate call.\n"
             "\nResult\n"
             "true|false      (boolean) If the server is set to generate coins or not\n"
@@ -252,7 +252,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
 	obj.push_back(Pair("hashcounter",      nHashCounter));
 	obj.push_back(Pair("pooledtx",         (uint64_t)mempool.size()));
 	obj.push_back(Pair("chain",            Params().NetworkIDString()));
-	obj.push_back(Pair("biblepay-generate",getgenerate(request)));
+	obj.push_back(Pair("dac-generate",getgenerate(request)));
 	return obj;
 }
 
@@ -549,10 +549,10 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
 
     if (Params().MiningRequiresPeers()) {
         if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)
-            throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "BiblePay Core is not connected!");
+            throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Core is not connected!");
 
         if (IsInitialBlockDownload())
-            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BiblePay Core is downloading blocks...");
+            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Core is downloading blocks...");
     }
 
     // Get expected MN/superblock payees. The call to GetBlockTxOuts might fail on regtest/devnet or when
@@ -564,7 +564,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     if (sporkManager.IsSporkActive(SPORK_9_SUPERBLOCKS_ENABLED)
         && !masternodeSync.IsSynced()
         && CSuperblock::IsValidBlockHeight(chainActive.Height() + 1))
-            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BiblePay Core is syncing with network...");
+            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Core is syncing with network...");
 
     static unsigned int nTransactionsUpdatedLast;
 
@@ -936,7 +936,7 @@ UniValue estimatesmartfee(const JSONRPCRequest& request)
             "1. nblocks     (numeric)\n"
             "\nResult:\n"
             "{\n"
-            "  \"feerate\" : x.x,     (numeric) estimate fee-per-kilobyte (in " + CURRENCY_UNIT + ")\n"
+            "  \"feerate\" : x.x,     (numeric) estimate fee-per-kilobyte (in " + CURRENCY_NAME + ")\n"
             "  \"blocks\" : n         (numeric) block number where estimate was found\n"
             "}\n"
             "\n"
@@ -994,7 +994,7 @@ UniValue setgenerate(const JSONRPCRequest& request)
     }
     mapArgs["-gen"] = (fGenerate ? "1" : "0");
     mapArgs ["-genproclimit"] = itostr(nGenProcLimit);
-    GenerateBBP(fGenerate, nGenProcLimit, Params());
+    GenerateCoins(fGenerate, nGenProcLimit, Params());
     return NullUniValue;
 }
 

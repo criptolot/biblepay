@@ -1,11 +1,10 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "splashscreen.h"
@@ -151,7 +150,7 @@ static void InitMessage(SplashScreen *splash, const std::string &message)
         Qt::QueuedConnection,
         Q_ARG(QString, QString::fromStdString(message)),
         Q_ARG(int, Qt::AlignBottom|Qt::AlignHCenter),
-        Q_ARG(QColor, QColor(255,215,0))); //BiblePay - Gold / Bezaleel
+        Q_ARG(QColor, QColor(255,215,0))); //DAC - Gold / Bezaleel
 }
 
 static void ShowProgress(SplashScreen *splash, const std::string &title, int nProgress)

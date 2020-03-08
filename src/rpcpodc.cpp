@@ -157,7 +157,7 @@ double GetCryptoPrice(std::string sSymbol)
 	std::string sC1 = HTTPSPost(false, 0, "", "", "api", GetSporkValue("bms"), GetSporkValue("getbmscryptoprice" + sSymbol), 
 		SSL_PORT, "", CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, TERM_TYPE);
 	double dDebugLevel = cdbl(GetArg("-debuglevel", "0"), 0);
-	if (dDebugLevel == 1 || true)
+	if (dDebugLevel == 1)
 		LogPrintf("CryptoPrice %s %s", sSymbol, sC1);
 	std::string sPrice = ExtractXML(sC1, "<MIDPOINT>", "</MIDPOINT>");
 	double dMid = cdbl(sPrice, 12);

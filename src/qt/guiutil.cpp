@@ -917,7 +917,13 @@ QString getThemeName()
 		std::string sMySettings = settings.fileName().toUtf8().constData();
 		LogPrintf("\n Using QT settings file location %s \n", sMySettings);
 	}
-    QString theme = settings.value("theme", "").toString();
+	// DAC - Since we only have one theme so far... Use DAC for DAC, otherwise pass through to use the selected BiblePay theme:
+	 QString theme = settings.value("theme", "").toString();
+
+	if (CURRENCY_NAME == "DAC")
+	{
+		return QString("dac");
+	}
 
     if(!theme.isEmpty()){
         return theme;
@@ -932,6 +938,9 @@ QString loadStyleSheet()
     QSettings settings;
     QString cssName;
     QString theme = settings.value("theme", "").toString();
+	// DAC - Override style sheet
+	if (CURRENCY_NAME == "DAC")
+		theme = "dac";
 
     if(!theme.isEmpty()){
         cssName = QString(":/css/") + theme; 

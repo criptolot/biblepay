@@ -121,6 +121,7 @@ std::map<std::string, Researcher> mvResearchers;
 
 std::string msGithubVersion;
 std::string msLanguage;
+
 std::string msMasterNodeLegacyPrivKey;
 std::string msSessionID;
 std::string sOS;
@@ -3726,7 +3727,7 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 		{
 			double nDiff = GetDifficulty(pindexPrev);
 			double nMinRXDiff = GetSporkDouble("MIN_RX_DIFF", 50);
-			if (nHeight > consensusParams.RANDOMX_HEIGHT && nDiff > nMinRXDiff && nMinRXDiff > 0 && fProd && !LateBlock(block, pindexPrev, (60 * 30)))
+			if (nHeight > consensusParams.RANDOMX_HEIGHT && nDiff > nMinRXDiff && nMinRXDiff > 0 && !LateBlock(block, pindexPrev, (60 * 30)))
 			{
 				// Must be solved by a pool (this prevents miners from circumventing the 10% tithe to orphan-charity)
 				std::string sPoolList = GetSporkValue("RX_POOLS");

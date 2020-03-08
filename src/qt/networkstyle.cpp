@@ -6,6 +6,7 @@
 
 #include "guiconstants.h"
 #include "guiutil.h"
+#include "validation.h"
 
 #include "chainparams.h"
 #include "tinyformat.h"
@@ -72,7 +73,8 @@ NetworkStyle::NetworkStyle(const QString &_appName, const int iconColorHueShift,
     // Grab theme from settings
     QString theme = GUIUtil::getThemeName();
     // load pixmap
-    QPixmap appIconPixmap(":/icons/bitcoin");
+	QString toolbarIcon = GUIUtil::TOQS(":icons/toolbaricon_" + CURRENCY_NAME);
+    QPixmap appIconPixmap(toolbarIcon);
     QPixmap splashImagePixmap(":/images/" + theme + "/splash");
 
     if(iconColorHueShift != 0 && iconColorSaturationReduction != 0)

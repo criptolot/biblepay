@@ -48,6 +48,18 @@ extern bool fMasternodeMode;
 extern bool fLiteMode;
 extern int nWalletBackups;
 
+
+/** DAC-Classic Settings **/
+
+extern std::string msEXE;
+extern std::string CURRENCY_NAME;
+extern std::string DOMAIN_NAME;
+extern std::string GITHUB_URL;
+extern std::string CURRENCY_TICKER;
+
+
+
+
 static const bool DEFAULT_LOGTIMEMICROS  = false;
 static const bool DEFAULT_LOGIPS         = false;
 static const bool DEFAULT_LOGTIMESTAMPS  = true;
@@ -55,6 +67,7 @@ static const bool DEFAULT_LOGTHREADNAMES = false;
 std::string GetConfFileName();
 std::string GetLcaseCoinName();
 std::string GetLcaseTicker();
+void SetCurrencyName(std::string sEXE);
 
 /** Signals for translation. */
 class CTranslationInterface

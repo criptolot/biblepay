@@ -149,6 +149,7 @@ std::string GetGithubVersion()
 
 double GetCryptoPrice(std::string sSymbol)
 {
+	boost::to_lower(sSymbol);
 	int SSL_PORT = 443;
 	int CONNECTION_TIMEOUT = 15;
 	int TRANSMISSION_TIMEOUT = 15000;
@@ -156,8 +157,8 @@ double GetCryptoPrice(std::string sSymbol)
 	std::string sC1 = HTTPSPost(false, 0, "", "", "api", GetSporkValue("bms"), GetSporkValue("getbmscryptoprice" + sSymbol), 
 		SSL_PORT, "", CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, TERM_TYPE);
 	double dDebugLevel = cdbl(GetArg("-debuglevel", "0"), 0);
-	if (dDebugLevel == 1)
-		LogPrintf("CryptoPrice %s", sC1);
+	if (dDebugLevel == 1 || true)
+		LogPrintf("CryptoPrice %s %s", sSymbol, sC1);
 	std::string sPrice = ExtractXML(sC1, "<MIDPOINT>", "</MIDPOINT>");
 	double dMid = cdbl(sPrice, 12);
 	return dMid;
@@ -166,7 +167,7 @@ double GetCryptoPrice(std::string sSymbol)
 double GetPBase(double& out_BTC)
 {
 	// Get the DAC market price based on midpoint of bid-ask in Satoshi * BTC price in USD
-	double dDacPrice = GetCryptoPrice(GetLcaseTicker());
+	double dDacPrice = GetCryptoPrice("bbp");  // ToDo:  Revisit this after the community votes, etc.
 	double dBTC = GetCryptoPrice("btc");
 	out_BTC = dBTC;
 	double dPriceUSD = dBTC * dDacPrice;

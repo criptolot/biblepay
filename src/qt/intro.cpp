@@ -9,6 +9,7 @@
 
 #include "intro.h"
 #include "ui_intro.h"
+#include "validation.h"
 
 #include "guiutil.h"
 
@@ -209,7 +210,8 @@ bool Intro::pickDataDirectory()
         /* Let the user choose one */
         Intro intro;
         intro.setDataDirectory(dataDirDefaultCurrent);
-        intro.setWindowIcon(QIcon(":icons/bitcoin"));
+		// DAC - Choose the toolbaricon
+        intro.setWindowIcon(QIcon(GUIUtil::TOQS(":icons/toolbaricon_" + CURRENCY_NAME)));
 
         while(true)
         {

@@ -2689,9 +2689,15 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("error", "Unable to read block."));
 		}
 	}
+	else if (sItem == "getdacinfo")
+	{
+		results.push_back(Pair("currency_name", CURRENCY_NAME));
+		results.push_back(Pair("DOMAIN_NAME", DOMAIN_NAME));
+		results.push_back(Pair("TICKER", CURRENCY_TICKER));
+	}
 	else if (sItem == "price")
 	{
-		double dDacPrice = GetCryptoPrice(GetLcaseTicker());
+		double dDacPrice = GetCryptoPrice("bbp"); // For now, we must force the ticker to be BBP, otherwise we will not have a leaderboard consensus (for cameroon-one and Kairos etc).
 		double dBTC = GetCryptoPrice("btc");
 		double dDASH = GetCryptoPrice("dash");
 		results.push_back(Pair(CURRENCY_TICKER + "/BTC", RoundToString(dDacPrice, 12)));

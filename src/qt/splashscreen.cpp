@@ -38,20 +38,21 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     setWindowFlags(Qt::FramelessWindowHint);
 
     // set reference point, paddings
-    int paddingLeft             = 14;
+    int paddingLeft             = 60;
     int paddingTop              = 470;
-    int titleVersionVSpace      = 17;
-    int titleCopyrightVSpace    = 22;
+    int titleVersionVSpace      = 19;
+    int titleCopyrightVSpace    = 25;
 
-    float fontFactor            = 1.0;
+    float fontFactor            = 1.25;
 
-    // define text to place
-    QString titleText       = tr(PACKAGE_NAME);
+    // define text to place (String(tr(PACKAGE_NAME));
+	printf(" CURRENCY_NAME %s", CURRENCY_NAME.c_str());
+    QString titleText       = GUIUtil::TOQS(CURRENCY_NAME + " Core");
     QString versionText     = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
-    QString copyrightText   = QString::fromUtf8(CopyrightHolders("\xc2\xA9", 2014, COPYRIGHT_YEAR).c_str());
+    QString copyrightText   = QString::fromUtf8(CopyrightHolders("\xc2\xA9", 2020, COPYRIGHT_YEAR).c_str());
     QString titleAddText    = networkStyle->getTitleAddText();
     // networkstyle.cpp can't (yet) read themes, so we do it here to get the correct Splash-screen
-    QString splashScreenPath = ":/images/" + GUIUtil::getThemeName() + "/splash";
+	QString splashScreenPath = ":/images/" + GUIUtil::getThemeName() + "/splash";
     if(GetBoolArg("-regtest", false))
         splashScreenPath = ":/images/" + GUIUtil::getThemeName() + "/splash_testnet";
     if(GetBoolArg("-testnet", false))
@@ -66,12 +67,20 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
 
     QPainter pixPaint(&pixmap);
 	// gold: 255,215,0 (Bezaleel)
-    pixPaint.setPen(QColor(100,100,100));
-	pixPaint.setPen(QColor(255,0,0)); // Red (Version)
-	pixPaint.setPen(QColor(192,192,192)); // Silver
+	// If Bezaleel (or DAC):
+	if (true)
+	{
+		pixPaint.setPen(QColor(100,100,100));
+		pixPaint.setPen(QColor(255,0,0)); // Red (Version)
+		pixPaint.setPen(QColor(192,192,192)); // Silver
+	}
+	else
+	{
+		pixPaint.setPen(QColor(0,0,5)); // Black
+	}
 
     // check font size and drawing with
-    pixPaint.setFont(QFont(font, 28*fontFactor));
+    pixPaint.setFont(QFont(font, 28 * fontFactor));
     QFontMetrics fm = pixPaint.fontMetrics();
     int titleTextWidth = fm.width(titleText);
     if (titleTextWidth > 160) {

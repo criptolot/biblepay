@@ -1241,50 +1241,6 @@ std::string SubmitToIPFS(std::string sPath, std::string& sError)
 	sError = ExtractXML(sData,"<ERROR>","</ERROR>");
 	return sHash;
 }	
-/*
-std::string SendBusinessObject(std::string sType, std::string sPrimaryKey, std::string sValue, double dStorageFee, std::string sSignKey, bool fSign, std::string& sError)
-{
-	const Consensus::Params& consensusParams = Params().GetConsensus();
-    std::string sAddress = consensusParams.FoundationAddress;
-    CBitcoinAddress address(sAddress);
-    if (!address.IsValid())
-	{
-		sError = "Invalid Destination Address";
-		return sError;
-	}
-    CAmount nAmount = AmountFromValue(dStorageFee);
-	CAmount nMinimumBalance = AmountFromValue(dStorageFee);
-    CWalletTx wtx;
-	boost::to_upper(sPrimaryKey); // Following same pattern
-	boost::to_upper(sType);
-	std::string sNonceValue = RoundToString(GetAdjustedTime(), 0);
-	// Add immunity to replay attacks (Add message nonce)
- 	std::string sMessageType      = "<MT>" + sType  + "</MT>";  
-    std::string sMessageKey       = "<MK>" + sPrimaryKey   + "</MK>";
-	std::string sMessageValue     = "<MV>" + sValue + "</MV>";
-	std::string sNonce            = "<NONCE>" + sNonceValue + "</NONCE>";
-	std::string sBOSignKey        = "<BOSIGNER>" + sSignKey + "</BOSIGNER>";
-	std::string sMessageSig = "";
-
-	if (fSign)
-	{
-		std::string sSignature = "";
-		bool bSigned = SignStake(sSignKey, sValue + sNonceValue, sError, sSignature);
-		if (bSigned) 
-		{
-			sMessageSig = "<BOSIG>" + sSignature + "</BOSIG>";
-		}
-		else
-		{
-			LogPrintf(" signing business object failed %s key %s ",sPrimaryKey.c_str(), sSignKey.c_str());
-		}
-	}
-	std::string s1 = sMessageType + sMessageKey + sMessageValue + sNonce + sBOSignKey + sMessageSig;
-	RPCSendMoney(address.Get(), nAmount, nMinimumBalance, 0, 0, "", 0, wtx, sError);
-	if (!sError.empty()) ;
-    return wtx.GetHash().GetHex().c_str();
-}
-*/
 
 int GetSignalInt(std::string sLocalSignal)
 {
@@ -2740,28 +2696,6 @@ CAmount GetTitheTotal(CTransaction tx)
 	 return nTotal;
 }
 
-CAmount GetNonTitheTotal(CTransaction tx)
-{
-	CAmount nTotal = 0;
-	const Consensus::Params& consensusParams = Params().GetConsensus();
-	std::string sBlk = GetSporkValue("RcvBlk");
-	if (!sBlk.empty())
-	{
-		double nLow = GetSporkDouble("RcvBlkLow", 0);
-		double nHigh = GetSporkDouble("RcvBlkHigh", 0);
-		for (int i = 0; i < (int)tx.vout.size(); i++)
-		{
- 			std::string sRecip = PubKeyToAddress(tx.vout[i].scriptPubKey);
-			if (!sRecip.empty() && Contains(sBlk, sRecip))
-			{
-				double nAmt = (double)tx.vout[i].nValue / COIN;
-				if (nAmt > nLow && nAmt < nHigh)
-					nTotal += tx.vout[i].nValue;
-			}
-		}
-	}
-	return nTotal;
-}
 
 double AddVector(std::string sData, std::string sDelim)
 {

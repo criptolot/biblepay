@@ -115,6 +115,15 @@ namespace boost {
 // DAC only features
 bool fMasternodeMode = false;
 bool fLiteMode = false;
+
+
+std::string msEXE = "";
+std::string CURRENCY_NAME = "";
+std::string DOMAIN_NAME = "";
+std::string GITHUB_URL = "";
+std::string CURRENCY_TICKER = "";
+
+
 /**
     nWalletBackups:
         1..10   - number of automatic backups to keep
@@ -221,6 +230,8 @@ static boost::mutex* mutexDebugLog = NULL;
 static std::list<std::string>* vMsgsBeforeOpenLog;
 static std::atomic<int> logAcceptCategoryCacheCounter(0);
 
+
+
 static int FileWriteStr(const std::string &str, FILE *fp)
 {
     return fwrite(str.data(), 1, str.size(), fp);
@@ -232,6 +243,38 @@ static void DebugPrintInit()
     mutexDebugLog = new boost::mutex();
     vMsgsBeforeOpenLog = new std::list<std::string>;
 }
+
+bool Contains2(std::string data, std::string instring)
+{
+	std::size_t found = 0;
+	found = data.find(instring);
+	if (found != std::string::npos) return true;
+	return false;
+}
+
+void SetCurrencyName(std::string sEXE)
+{
+	boost::to_lower(sEXE);
+	msEXE = sEXE;
+	bool fDAC = Contains2(msEXE, "dac");
+
+	if (fDAC)
+	{
+		CURRENCY_NAME = "DAC";
+		DOMAIN_NAME = "biblepay.org";  // ToDo: Change this depending on what we do
+		GITHUB_URL = "https://github.com/biblepay/biblepay";  // ToDo: Change this depending on what we do
+		CURRENCY_TICKER = "DAC";
+	}
+	else
+	{
+		CURRENCY_NAME = "BIBLEPAY";
+		DOMAIN_NAME = "biblepay.org";
+		GITHUB_URL = "https://github.com/biblepay/biblepay";
+		CURRENCY_TICKER = "BBP";
+	}
+	printf(" CURRENCY_NAME=%s, DOMAIN=%s, TICKER=%s\n ", CURRENCY_NAME.c_str(), DOMAIN_NAME.c_str(), CURRENCY_TICKER.c_str());
+}
+
 
 std::string GetLcaseTicker()
 {

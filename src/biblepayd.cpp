@@ -75,6 +75,7 @@ bool AppInit(int argc, char* argv[])
     //
     // If Qt is used, parameters/coinname.conf are parsed in qt/coin.cpp's main()
     ParseParameters(argc, argv);
+	SetCurrencyName(argv[0]);
 
     // Process help and version before taking care about datadir
     if (IsArgSet("-?") || IsArgSet("-h") ||  IsArgSet("-help") || IsArgSet("-version"))

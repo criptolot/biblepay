@@ -141,12 +141,6 @@ void KillBlockchainFiles();
 bool LateBlock(const CBlock& block, const CBlockIndex* pindexPrev, int iMinutes);
 int64_t LateBlockIndex(const CBlockIndex* pindexPrev, int iMinutes);
 
-/** DAC-Classic Settings **/
-static const std::string CURRENCY_NAME = "BIBLEPAY";
-static const std::string DOMAIN_NAME = "biblepay.org";
-static const std::string GITHUB_URL = "https://github.com/biblepay/biblepay-evolution";
-static const std::string CURRENCY_TICKER = "BBP";
-
 
 static const std::string BUSINESS_OBJECTS = "BUSINESS_OBJECTS";
 static const int MINIMUM_EMAIL_LENGTH = 5; 

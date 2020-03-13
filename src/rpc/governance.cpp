@@ -527,7 +527,7 @@ void gobject_vote_many_help(CWallet* const pwallet)
 UniValue gobject_vote_many(const JSONRPCRequest& request)
 {
     CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
-    if (request.fHelp || request.params.size() != 4)
+    if (request.fHelp || (request.params.size() != 4 && request.params.size() != 5))
         gobject_vote_many_help(pwallet);
 
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
@@ -536,6 +536,9 @@ UniValue gobject_vote_many(const JSONRPCRequest& request)
     uint256 hash = ParseHashV(request.params[1], "Object hash");
     std::string strVoteSignal = request.params[2].get_str();
     std::string strVoteOutcome = request.params[3].get_str();
+	double nPercent = 1.0;
+	if (request.params.size() > 4)
+		nPercent = cdbl(request.params[4].get_str(), 2);
 
     vote_signal_enum_t eVoteSignal = CGovernanceVoting::ConvertVoteSignal(strVoteSignal);
     if (eVoteSignal == VOTE_SIGNAL_NONE) {
@@ -554,10 +557,17 @@ UniValue gobject_vote_many(const JSONRPCRequest& request)
     std::map<uint256, CKey> votingKeys;
 
     auto mnList = deterministicMNManager->GetListAtChainTip();
-    mnList.ForEachMN(true, [&](const CDeterministicMNCPtr& dmn) {
+	int maxCount = mnList.GetValidMNsCount() * nPercent;
+	LogPrintf("Voting with Total Sancs %f, MaxParticipating %f ", 
+		mnList.GetValidMNsCount(), maxCount);
+	int iVoted = 0;
+    mnList.ForEachMN(true, [&](const CDeterministicMNCPtr& dmn) 
+	{
         CKey votingKey;
-        if (pwallet->GetKey(dmn->pdmnState->keyIDVoting, votingKey)) {
+		bool fVote = nPercent == 1 || iVoted <= maxCount;
+        if (fVote && pwallet->GetKey(dmn->pdmnState->keyIDVoting, votingKey)) {
             votingKeys.emplace(dmn->proTxHash, votingKey);
+			iVoted++;
         }
     });
 

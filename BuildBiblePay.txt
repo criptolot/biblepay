@@ -1,4 +1,4 @@
-Build BiblePay Evolution - Ubuntu
+Build BiblePay - Ubuntu
 
 /* Optional:  How to increase swap space on a machine with 1gb of ram:
 free #check if swap is 0 then do this:
@@ -37,10 +37,10 @@ cd biblepay-evolution/src/crypto/RandomX
 mkdir build && cd build
 cmake -DARCH=native ..
 make
-cd ../../../../..
+cd ../../../..
 # end of RandomX Part
 prefix=x86_64-pc-linux-gnu
-cd biblepay-evolution/depends
+cd biblepay/depends
 make -j 4 # Choose a good -j value, depending on the number of CPU cores available
 cd ..
 ./autogen.sh
@@ -48,18 +48,18 @@ cd ..
 ./configure --prefix `pwd`/depends/x86_64-pc-linux-gnu
 make
 See more here:
-https://github.com/biblepay/biblepay-evolution/blob/master/doc/build-unix.md
+https://github.com/biblepay/biblepay/blob/master/doc/build-unix.md
 
 
 ** How to upgrade BiblePay: **
-cd ~/biblepay-evolution
+cd ~/biblepay
 git pull origin master
 cd src
 make
 
 
 *** NOTE:  
-Watchman-on-the-wall is no longer required in BiblePay-Evolution (as it is compiled as a part of our wallet now) ****
+Watchman-on-the-wall is no longer required in BiblePay (as it is compiled as a part of our wallet now) ****
 
 
 *** TROUBLESHOOTING ****
@@ -82,8 +82,8 @@ cd depends
 make HOST=i686-w64-mingw32 -j4
 cd ..
 ./autogen.sh
-./configure --prefix /biblepay-evolution/depends/i686-w64-mingw32
+./configure --prefix /biblepay/depends/i686-w64-mingw32
 cd src
 sudo make
 make deploy
-(deploy files in /biblepay-evolution)
+(deploy files in /biblepay)

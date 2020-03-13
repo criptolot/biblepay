@@ -36,7 +36,9 @@ config.status
 configure
 libtool
 src/config/biblepay-config.h
+src/config/coin-config.h
 src/config/biblepay-config.h.in
+src/config/coin-config.h.in
 src/config/stamp-h1
 share/setup.nsi
 share/qt/Info.plist
@@ -83,6 +85,7 @@ libconftest.dylib*
 Makefile
 biblepay-qt
 Biblepay-Qt.app
+!/depends/Makefile
 
 # Unit-tests
 Makefile.test
@@ -109,6 +112,7 @@ linux-coverage-build
 linux-build
 win32-build
 qa/pull-tester/tests_config.py
+qa/pull-tester/tests_config.ini
 qa/cache/*
 
 !src/leveldb*/Makefile
@@ -134,3 +138,7 @@ make
 # CLion
 .idea
 cmake-build-debug
+contrib/devtools/windows/DevelopBiblePay.sln
+contrib/devtools/windows/DevelopBiblePay.suo
+src/.vs/src/v15/.suo
+src/.vs/VSWorkspaceState.json

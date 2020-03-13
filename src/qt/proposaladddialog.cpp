@@ -56,7 +56,7 @@ void ProposalAddDialog::UpdateDisplay()
 {
 	int nNextHeight = GetNextSuperblock();
 
-	std::string sInfo = "Note: Proposal Cost is 2500 BBP.  Next Superblock at height: " + RoundToString(nNextHeight, 0) + "<br>Warning: You must unlock the wallet before submitting the proposal.";
+	std::string sInfo = "Note: Proposal Cost is 2500 " + CURRENCY_NAME + ".  Next Superblock at height: " + RoundToString(nNextHeight, 0) + "<br>Warning: You must unlock the wallet before submitting the proposal.";
 
 	if (fProposalNeedsSubmitted)
 	{
@@ -172,11 +172,11 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 	}
 	std::string sNarr = (sError.empty()) ? "Successfully Prepared Proposal " + sPrepareTxId + ".   NOTE: You must wait 6 confirms for the proposal to be submitted.  Please check back on this page periodically "
 		+ " to ensure a successful transmission and that no error message is listed in the bottom area of the page. "
-		+ "<br>WARNING: Do not shut down BiblePay until the proposal is submitted, otherwise you may lose your proposal submission and proposal collateral.  "
-		+" <br><br>Thank you for using the BiblePay Governance System." : sError;
+		+ "<br>WARNING: Do not shut down the core wallet until the proposal is submitted, otherwise you may lose your proposal submission and proposal collateral.  "
+		+" <br><br>Thank you for using our Governance System." : sError;
 	if (sError.empty())
 	{
-		// Set the proposal up to be submitted after 6 confirms using Biblepay Governance Service:
+		// Set the proposal up to be submitted after 6 confirms using our Governance Service:
 		nProposalPrepareHeight = chainActive.Tip()->nHeight;
 		msProposalResult = "Submitting Proposal at height " + RoundToString(nProposalPrepareHeight + 6, 0) + "...";
 		uTxIdFee = uint256S(sPrepareTxId);

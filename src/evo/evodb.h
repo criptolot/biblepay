@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_EVODB_H
-#define BIBLEPAY_EVODB_H
+#ifndef DAC_EVODB_H
+#define DAC_EVODB_H
 
 #include "dbwrapper.h"
 #include "sync.h"
@@ -88,4 +88,4 @@ public:
 
 extern CEvoDB* evoDb;
 
-#endif //BIBLEPAY_EVODB_H
+#endif //DAC_EVODB_H

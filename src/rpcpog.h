@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core Developers, The BiblePay Developers
+// Copyright (c) 2014-2019 The Dash Core Developers, The DAC Core Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -44,7 +44,7 @@ struct CPK
   bool fValid = false;
 };
 
-struct BBPResult
+struct DACResult
 {
 	std::string Response;
 	bool fError = false;
@@ -68,7 +68,7 @@ struct Researcher
 	std::string CPK;
 };
 
-struct BBPVin
+struct CoinVin
 {
 	COutPoint OutPoint;
 	uint256 HashBlock = uint256S("0x0");
@@ -123,7 +123,7 @@ struct WhaleMetric
 	double DWU = 0;
 };
 
-struct BiblePayProposal
+struct DACProposal
 {
 	std::string sName;
 	int64_t nStartEpoch = 0;
@@ -202,28 +202,16 @@ double GetBlockMagnitude(int nChainHeight);
 uint256 PercentToBigIntBase(int iPercent);
 std::string GetIPFromAddress(std::string sAddress);
 bool SubmitProposalToNetwork(uint256 txidFee, int64_t nStartTime, std::string sHex, std::string& sError, std::string& out_sGovObj);
-int GetLastDCSuperblockWithPayment(int nChainHeight);
 std::string SubmitToIPFS(std::string sPath, std::string& sError);
-std::string SendBusinessObject(std::string sType, std::string sPrimaryKey, std::string sValue, double dStorageFee, std::string sSignKey, bool fSign, std::string& sError);
 UniValue GetDataList(std::string sType, int iMaxAgeInDays, int& iSpecificEntry, std::string sSearch, std::string& outEntry);
-UserVote GetSumOfSignal(std::string sType, std::string sIPFSHash);
 int GetSignalInt(std::string sLocalSignal);
 double GetDifficulty(const CBlockIndex* blockindex);
 bool LogLimiter(int iMax1000);
 std::string PubKeyToAddress(const CScript& scriptPubKey);
-void RecoverOrphanedChain(int iCondition);
-void RecoverOrphanedChainNew(int iCondition);
 UniValue ContributionReport();
 int DeserializePrayersFromFile();
 double Round(double d, int place);
 void SerializePrayersToFile(int nHeight);
-std::string GetFileNameFromPath(std::string sPath);
-
-void UpdatePogPool(CBlockIndex* pindex, const CBlock& block);
-void InitializePogPool(const CBlockIndex* pindexLast, int nSize, const CBlock& block);
-std::string GetTitherAddress(CTransaction ctx, std::string& sNickName);
-CAmount GetTitheAmount(CTransaction ctx);
-double GetTitheAgeAndSpentAmount(CTransaction ctx, CBlockIndex* pindex, CAmount& spentAmount);
 std::string AmountToString(const CAmount& amount);
 CBlockIndex* FindBlockByHeight(int nHeight);
 std::string rPad(std::string data, int minWidth);
@@ -234,28 +222,21 @@ bool Contains(std::string data, std::string instring);
 std::string GetVersionAlert();
 bool CheckNonce(bool f9000, unsigned int nNonce, int nPrevHeight, int64_t nPrevBlockTime, int64_t nBlockTime, const Consensus::Params& params);
 bool RPCSendMoney(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend=false, std::string sOptionalData = "", double nCoinAge = 0);
-bool FundWithExternalPurse(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, 
-	bool fUseInstantSend, CAmount nExactAmount, std::string sOptionalData, double dMinCoinAge, std::string sPursePubKey);
-
+bool FundWithExternalPurse(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend, CAmount nExactAmount, std::string sOptionalData, double dMinCoinAge, std::string sPursePubKey);
 std::vector<char> ReadBytesAll(char const* filename);
 std::string VectToString(std::vector<unsigned char> v);
 CAmount StringToAmount(std::string sValue);
 bool CompareMask(CAmount nValue, CAmount nMask);
 std::string GetElement(std::string sIn, std::string sDelimiter, int iPos);
-std::string TitheErrorToString(int TitheError);
-std::string GetPOGBusinessObjectList(std::string sType, std::string sFields);
 bool CopyFile(std::string sSrc, std::string sDest);
-CAmount R20(CAmount amount);
-bool PODCEnabled(int nHeight);
-bool POGEnabled(int nHeight, int64_t nTime);
 std::string Caption(std::string sDefault, int iMaxLen);
 std::vector<std::string> Split(std::string s, std::string delim);
 void MemorizeBlockChainPrayers(bool fDuringConnectBlock, bool fSubThread, bool fColdBoot, bool fDuringSanctuaryQuorum);
 double GetBlockVersion(std::string sXML);
 bool CheckStakeSignature(std::string sBitcoinAddress, std::string sSignature, std::string strMessage, std::string& strError);
-std::string BiblepayHTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
+std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
 	std::string sSolution, int iTimeoutSecs, int iMaxSize, int iBreakOnError);
-std::string BiblePayHTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName);
+std::string HTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName);
 std::string FormatHTML(std::string sInput, int iInsertCount, std::string sStringToInsert);
 std::string GJE(std::string sKey, std::string sValue, bool bIncludeDelimiter, bool bQuoteValue);
 bool InstantiateOneClickMiningEntries();
@@ -281,10 +262,7 @@ int GetHeightByEpochTime(int64_t nEpoch);
 bool CheckABNSignature(const CBlock& block, std::string& out_CPK);
 std::string GetPOGBusinessObjectList(std::string sType, std::string sFields);
 std::string SignMessageEvo(std::string strAddress, std::string strMessage, std::string& sError);
-CAmount GetNonTitheTotal(CTransaction tx);
 const CBlockIndex* GetBlockIndexByTransactionHash(const uint256 &hash);
-CWalletTx GetAntiBotNetTx(CBlockIndex* pindexLast, double nMinCoinAge, CReserveKey& reservekey, std::string& sXML, std::string sPoolMiningPublicKey, std::string& sError);
-void SpendABN();
 double AddVector(std::string sData, std::string sDelim);
 int ReassessAllChains();
 double GetFees(CTransactionRef tx);
@@ -296,11 +274,10 @@ std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath);
 std::string Path_Combine(std::string sPath, std::string sFileName);
 std::string DSQL_Ansi92Query(std::string sSQL);
 void ProcessBLSCommand(CTransactionRef tx);
-void UpdateHealthInformation(int iType);
-BBPResult GetDecentralizedURL();
+DACResult GetDecentralizedURL();
 std::string BIPFS_Payment(CAmount nAmount, std::string sTXID, std::string sXML);
-BBPResult DSQL_ReadOnlyQuery(std::string sXMLSource);
-BBPResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML);
+DACResult DSQL_ReadOnlyQuery(std::string sXMLSource);
+DACResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML);
 int LoadResearchers();
 std::string TeamToName(int iTeamID);
 std::string GetResearcherCPID(std::string sSearch);
@@ -313,8 +290,8 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError);
 double GetDWUBasedOnMaturity(double nDuration, double dDWU);
 double GetOwedBasedOnMaturity(double nDuration, double dDWU, double dAmount);
 std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed);
-BBPVin GetBBPVIN(COutPoint o, int64_t nTxTime);
-bool GetTxBBP(uint256 txid, CTransactionRef& tx1);
+CoinVin GetCoinVIN(COutPoint o, int64_t nTxTime);
+bool GetTxDAC(uint256 txid, CTransactionRef& tx1);
 double GetWhaleStakesInMemoryPool(std::string sCPK);
 std::string GetCPKByCPID(std::string sCPID);
 int GetNextPODCTransmissionHeight(int height);
@@ -322,5 +299,8 @@ int GetWhaleStakeSuperblockHeight(int nHeight);
 std::string SearchChain(int nBlocks, std::string sDest);
 std::string GetResDataBySearch(std::string sSearch);
 int GetWCGIdByCPID(std::string sSearch);
+uint256 ComputeRandomXTarget(uint256 hash, int64_t nPrevBlockTime, int64_t nBlockTime);
+std::string ReverseHex(std::string const & src);
+uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID);
 
 #endif

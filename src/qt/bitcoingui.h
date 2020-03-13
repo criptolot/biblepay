@@ -6,7 +6,7 @@
 #define BITCOIN_QT_BITCOINGUI_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "amount.h"
@@ -107,7 +107,7 @@ private:
     QAction *signMessageAction;
     QAction *verifyMessageAction;
     QAction *aboutAction;
-	// RANDREWS - BIBLEPAY - Add Read Bible
+	// DAC - Add Read Bible
 	QAction *orphanAction;
 	QAction *webAction;
 	QAction *OneClickMiningAction;
@@ -122,8 +122,7 @@ private:
 	QAction *proposalListAction;
 	QAction *businessObjectListMenuAction;
 	// Note: Any orphaned Action results in a crash (pun intended)
-	
-	// END OF BIBLEPAY
+	// END OF DAC
 
     QAction *receiveCoinsAction;
     QAction *receiveCoinsMenuAction;
@@ -146,9 +145,7 @@ private:
     QAction *openAction;
     QAction *showHelpMessageAction;
     QAction *showPrivateSendHelpAction;
-	// BIBLEPAY:
-	//QAction *openProposalsAction;
-   
+  
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
     QMenu *dockIconMenu;
@@ -274,7 +271,7 @@ private Q_SLOTS:
     /** Show about dialog */
     void aboutClicked();
 
-	/** BiblePay - Show built-in prayers or commandments **/
+	/** DAC - Show built-in prayers or commandments **/
 	void sinnerClicked();
 	void TheLordsPrayerClicked();
 	void TheApostlesCreedClicked();
@@ -296,7 +293,7 @@ private Q_SLOTS:
     void showPeers();
     void showRepair();
 
-    /** Open external (default) editor with biblepay.conf */
+    /** Open external (default) editor for .conf */
     void showConfEditor();
     /** Show folder with wallet backups in default file browser */
     void showBackups();

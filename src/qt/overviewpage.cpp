@@ -1,6 +1,5 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -39,7 +38,7 @@ class TxViewDelegate : public QAbstractItemDelegate
     Q_OBJECT
 public:
     TxViewDelegate(const PlatformStyle *_platformStyle, QObject *parent=nullptr):
-        QAbstractItemDelegate(), unit(BitcoinUnits::BIBLEPAY),
+        QAbstractItemDelegate(), unit(BitcoinUnits::COIN_UNIT),
         platformStyle(_platformStyle)
     {
 
@@ -180,7 +179,7 @@ OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) 
 		// R Andrews - ToDo: move private send button to the menu 
 		ui->togglePrivateSend->setVisible(false);
 		ui->privateSendInfo->setVisible(false);
-		// End of BiblePay
+		// End of DAC
 
 		
         // Disable privateSendClient builtin support for automatic backups while we are in GUI,
@@ -287,7 +286,7 @@ void OverviewPage::setWalletModel(WalletModel *model)
     this->walletModel = model;
     if(model && model->getOptionsModel())
     {
-        // update the display unit, to not use the default ("BIBLEPAY")
+        // update the display unit, to not use the default ("DAC")
         updateDisplayUnit();
         // Keep up to date with wallet
         setBalance(model->getBalance(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance(),
@@ -492,7 +491,7 @@ void OverviewPage::updateAdvancedPSUI(bool fShowAdvancedPSUI) {
     ui->privateSendAuto->setVisible(fShowAdvancedPSUI);
     ui->privateSendReset->setVisible(fShowAdvancedPSUI);
 	
-	// ToDo: If BiblePay decides to use private send, set this information box to true:
+	// ToDo: If DAC decides to use private send, set this information box to true:
     ui->privateSendInfo->setVisible(false);
     
 	ui->labelPrivateSendLastMessage->setVisible(fShowAdvancedPSUI);
@@ -501,7 +500,7 @@ void OverviewPage::updateAdvancedPSUI(bool fShowAdvancedPSUI) {
 void OverviewPage::privateSendStatus()
 {
 
-	// BIBLEPAY: Update Prayers on Overview Page
+	// DAC: Update Prayers on Overview Page
 	PRAYER_MODULUS++;
 	if ((PRAYER_MODULUS % 60) == 0)
 	{
@@ -513,7 +512,7 @@ void OverviewPage::privateSendStatus()
 		if (fDebugSpam)
 			LogPrintf(" Prayer Modulus %f complete ", PRAYER_MODULUS);
 	}
-	// END OF BIBLEPAY
+	// END OF DAC
 
     if(!masternodeSync.IsBlockchainSynced() || ShutdownRequested()) return;
 

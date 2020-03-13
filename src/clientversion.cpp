@@ -10,14 +10,14 @@
 
 /**
  * Name of client reported in the 'version' message. Report the same name
- * for both biblepayd and biblepay-qt, to make it harder for attackers to
+ * for both dacd and dac-qt, to make it harder for attackers to
  * target servers or GUI users specifically.
  */
 const std::string CLIENT_NAME("BiblePay Core");
 
 const int BIBLEPAY_VERSION_MAJOR = 1;
-const int BIBLEPAY_VERSION_MINOR = 4;
-const int BIBLEPAY_VERSION_REVISION = 8;
+const int BIBLEPAY_VERSION_MINOR = 5;
+const int BIBLEPAY_VERSION_REVISION = 0;
 const int BIBLEPAY_VERSION_BUILD = 7;
 
 

@@ -127,8 +127,8 @@ BITCOIN_TESTS =\
   test/skiplist_tests.cpp \
   test/streams_tests.cpp \
   test/subsidy_tests.cpp \
-  test/test_biblepay.cpp \
-  test/test_biblepay.h \
+  test/test_coin.cpp \
+  test/test_coin.h \
   test/test_random.h \
   test/testutil.cpp \
   test/testutil.h \

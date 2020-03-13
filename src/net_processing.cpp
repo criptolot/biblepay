@@ -59,7 +59,7 @@
 #include <boost/thread.hpp>
 
 #if defined(NDEBUG)
-# error "BiblePay Core cannot be compiled without assertions."
+# error "DAC Core cannot be compiled without assertions."
 #endif
 
 std::atomic<int64_t> nTimeBestReceived(0); // Used only to inform the wallet of when we last received a block
@@ -1001,7 +1001,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 
 
     /* 
-        Biblepay Related Inventory Messages
+        Related Inventory Messages
 
         --
 
@@ -1390,10 +1390,10 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
         }
     } // release cs_main
 
-    if (it != pfrom->vRecvGetData.end()) {
+    if (it != pfrom->vRecvGetData.end() && !pfrom->fPauseSend) {
         const CInv &inv = *it;
-        it++;
         if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK || inv.type == MSG_CMPCT_BLOCK) {
+            it++;
             ProcessGetBlockData(pfrom, consensusParams, inv, connman, interruptMsgProc);
         }
     }
@@ -1426,21 +1426,6 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     LOCK(cs_main);
     CNetMsgMaker msgMaker(pfrom->GetSendVersion());
     connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::BLOCKTXN, resp));
-}
-
-double GetPeerVersion(std::string sVersion)
-{
-	sVersion = strReplace(sVersion, "BiblePay Core:", "");
-	sVersion = strReplace(sVersion, "Biblepay Core:", "");
-	sVersion = strReplace(sVersion, "Develop", "");
-	sVersion = strReplace(sVersion, "Main", "");
-	sVersion = strReplace(sVersion, "Test", "");
-	sVersion = strReplace(sVersion, ":", "");
-	sVersion = strReplace(sVersion, "-", "");
-	sVersion = strReplace(sVersion, "/", "");
-	sVersion = strReplace(sVersion, ".", "");
-	double dVersion = cdbl(sVersion, 0);
-	return dVersion;
 }
 	
 bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc)
@@ -1510,6 +1495,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             connman.PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE, std::string("Duplicate version message")));
             LOCK(cs_main);
             Misbehaving(pfrom->GetId(), 1);
+			if (fDebug)
+				LogPrintf("Duplicate version message %f ", 7011);
             return false;
         }
 
@@ -1535,21 +1522,24 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
         if (pfrom->nServicesExpected & ~nServices)
         {
-            LogPrint("net", "peer=%d does not offer the expected services (%08x offered, %08x expected); disconnecting\n", pfrom->id, nServices, pfrom->nServicesExpected);
+			if (fDebug)
+				LogPrintf("peer=%d does not offer the expected services (%08x offered, %08x expected); disconnecting\n", pfrom->id, nServices, pfrom->nServicesExpected);
             connman.PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_NONSTANDARD,
                                strprintf("Expected to offer services %08x", pfrom->nServicesExpected)));
             pfrom->fDisconnect = true;
-            return false;
+			
+            return true;
         }
 
-        if (nVersion < MIN_PEER_PROTO_VERSION)
+        if (nVersion < MIN_PEER_PROTO_VERSION && fProd)
         {
             // disconnect from peers older than this proto version
-            LogPrintf("peer=%d using obsolete version %i; disconnecting\n", pfrom->id, nVersion);
+			if (fDebug)
+				LogPrintf("peer=%d using obsolete production version %i; disconnecting\n", pfrom->id, nVersion);
             connman.PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
                                strprintf("Version must be %d or greater", MIN_PEER_PROTO_VERSION)));
             pfrom->fDisconnect = true;
-            return false;
+            return true;
         }
 
         if (nVersion == 10300)
@@ -1575,12 +1565,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 	    if ((nVersion < MIN_PEER_PROTO_VERSION_DIP3) || (!fProd && nVersion < MIN_PEER_TESTNET_PROTO_VERSION))
         {
 			// disconnect from peers older than this proto version	            vRecv >> pfrom->receivedMNAuthChallenge;
-			if (fDebugSpam)	
+			if (fDebug)	
 				LogPrintf("peer=%d using obsolete version %i; disconnecting\n", pfrom->id, nVersion);	
             connman.PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,	
                                strprintf("Version must be %d or greater", MIN_PEER_PROTO_VERSION_DIP3)));	
             pfrom->fDisconnect = true;	
-            return false;	
+            return true;	
         }	
 		
         if (pfrom->fInbound && !connman.CheckIncomingNonce(nNonce))
@@ -1611,6 +1601,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 return true;
             }
         }
+		if (fDebug && !fProd)
+			LogPrintf(" pushing version %f", 1702);
 
         connman.PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::VERACK));
 
@@ -1628,27 +1620,14 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             pfrom->fRelayTxes = fRelay; // set to true after we get the first filter* message
         }
 
-		// BIBLEPAY
-		double dPeerVersion = GetPeerVersion(pfrom->cleanSubVer);
-		if (dPeerVersion < 1428 && !fProd && dPeerVersion > 1000)
-		{
-		    LogPrint("net", "Disconnecting unauthorized peer in TestNet using old version %f\r\n", (double)dPeerVersion);
-			Misbehaving(pfrom->GetId(), 1);
-        	pfrom->fDisconnect = true;
-			return false;
-		}
-
 		int64_t nTimeDrift = std::abs(GetAdjustedTime() - nTime);
         if (nTimeDrift > (5 * 60))
         {
             LogPrintf("Disconnecting unauthorized peer with Network Time off by %f seconds!\r\n",(double)nTimeDrift);
 			Misbehaving(pfrom->GetId(), 12);
 			pfrom->fDisconnect = true;
-			return false;
+			return true;
         }
-
-		// End of BiblePay
-
 
         // Change version
         pfrom->SetSendVersion(nSendVersion);
@@ -1698,8 +1677,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (fLogIPs)
             remoteAddr = ", peeraddr=" + pfrom->addr.ToString();
 
-        if (fDebugSpam)
-			LogPrintf("receive version message: %s: version %d, blocks=%d, us=%s, peer=%d%s\n",
+        if (fDebug && !fProd)
+			LogPrintf("received version message: %s: version %d, blocks=%d, us=%s, peer=%d%s\n",
                   cleanSubVer, pfrom->nVersion,
                   pfrom->nStartingHeight, addrMe.ToString(), pfrom->id,
                   remoteAddr);
@@ -3289,15 +3268,15 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, const std::atomic<bool>& i
             else if (strstr(e.what(), "size too large"))
             {
                 // Allow exceptions from over-long size
-				if (strCommand == "mnw")
-				{
-					// This placeholder is reserved for a Log Message.  We must wait until all biblepay-classic sanctuaries are retired (as they are still sending this oversized message).
-					// We have confirmed the deterministic nodes can cope with this temporary spam.
-				}
-				else
-				{
-					LogPrintf("%s(%s, %u bytes): Exception '%s' caught\n", __func__, SanitizeString(strCommand), nMessageSize, e.what());
-				}
+				//if (strCommand == "mnw")
+				//{
+				//	// This placeholder is reserved for a Log Message.  We must wait until all classic sanctuaries are retired (as they are still sending this oversized message).
+				//	// We have confirmed the deterministic nodes can cope with this temporary spam.
+				//}
+				//else
+				//{
+				LogPrintf("%s(%s, %u bytes): Exception '%s' caught\n", __func__, SanitizeString(strCommand), nMessageSize, e.what());
+				//}
             }
             else if (strstr(e.what(), "non-canonical ReadCompactSize()"))
             {
@@ -3314,9 +3293,9 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, const std::atomic<bool>& i
 
         if (!fRet) 
 		{
-			if (strCommand != "mnw" && strCommand != "govobjvote")
+			if (true)
 			{				
-				LogPrintf("%s(%s, %u bytes) FAILED peer=%d\n", __func__, SanitizeString(strCommand), nMessageSize, pfrom->id);
+				LogPrintf("%s(%s, %u bytes) (ProcessMessages::ERROR) - FAILED - Message %s, peer=%d\n", __func__, SanitizeString(strCommand), strCommand, nMessageSize, pfrom->id);
 			}
         }
 

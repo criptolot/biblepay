@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_QUORUMS_BLOCKPROCESSOR_H
-#define BIBLEPAY_QUORUMS_BLOCKPROCESSOR_H
+#ifndef COIN_QUORUMS_BLOCKPROCESSOR_H
+#define COIN_QUORUMS_BLOCKPROCESSOR_H
 
 #include "llmq/quorums_commitment.h"
 #include "llmq/quorums_utils.h"
@@ -68,4 +68,4 @@ extern CQuorumBlockProcessor* quorumBlockProcessor;
 
 }
 
-#endif//BIBLEPAY_QUORUMS_BLOCKPROCESSOR_H
+#endif//COIN_QUORUMS_BLOCKPROCESSOR_H

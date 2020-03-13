@@ -11,7 +11,8 @@
 void initkjv();
 uint256 BibleHashClassic(uint256 hash, int64_t nBlockTime, int64_t nPrevBlockTime, bool bMining, int nPrevHeight, const CBlockIndex* pindexLast, bool bRequireTxIndex, 
 	bool f7000, bool f8000, bool f9000, bool fTitheBlocksActive, unsigned int nNonce, const Consensus::Params& params);
-uint256 BibleHashV2(uint256 hash, int64_t nBlockTime, int64_t nPrevBlockTime, bool bMining, int nPrevHeight);
+uint256 BibleHashV2(uint256 hash, int64_t nBlockTime, int64_t nPrevBlockTime, bool bMining, int nPrevHeight, std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID);
+
 std::string GetSin(int iSinNumber, std::string& out_Description);
 std::string GetVerse(std::string sBook, int iChapter, int iVerse, int iBookStart, int iBookEnd);
 std::string GetBook(int iBookNumber);

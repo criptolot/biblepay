@@ -1,12 +1,11 @@
 // Copyright (c) 2011-2014 The Bitcoin Core developers
 // Copyright (c) 2014-2016 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "openuridialog.h"
 #include "ui_openuridialog.h"
-
+#include "validation.h"
 #include "guiutil.h"
 #include "walletmodel.h"
 
@@ -18,7 +17,7 @@ OpenURIDialog::OpenURIDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 #if QT_VERSION >= 0x040700
-    ui->uriEdit->setPlaceholderText("biblepay:");
+    ui->uriEdit->setPlaceholderText(GUIUtil::TOQS(CURRENCY_NAME + ":"));
 #endif
 }
 
@@ -50,5 +49,5 @@ void OpenURIDialog::on_selectFileButton_clicked()
     if(filename.isEmpty())
         return;
     QUrl fileUri = QUrl::fromLocalFile(filename);
-    ui->uriEdit->setText("biblepay:?r=" + QUrl::toPercentEncoding(fileUri.toString()));
+    ui->uriEdit->setText(GUIUtil::TOQS(CURRENCY_NAME + ":?r=") + QUrl::toPercentEncoding(fileUri.toString()));
 }

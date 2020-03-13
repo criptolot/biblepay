@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The BiblePay Core developers
+// Copyright (c) 2017-2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,6 +9,7 @@
 #include "llmq/quorums_commitment.h"
 #include "simplifiedmns.h"
 #include "specialtx.h"
+#include "spork.h"
 
 #include "chainparams.h"
 #include "consensus/merkle.h"
@@ -55,8 +56,11 @@ bool CheckCbTxMerkleRoots(const CBlock& block, const CBlockIndex* pindex, CValid
         return true;
     }
 
+	bool fChainLocksActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
 	bool fLLMQActive = pindex->nHeight >= Params().GetConsensus().LLMQHeight;
-	if (!fLLMQActive) 
+	bool fDMEnabled = pindex->nHeight >= sporkManager.GetSporkValue(SPORK_15_DETERMINISTIC_MNS_ENABLED);
+
+	if (!fLLMQActive || !fChainLocksActive || !fDMEnabled) 
 		return true;
 
     static int64_t nTimePayload = 0;

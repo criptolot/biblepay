@@ -12,7 +12,6 @@
 #include "chainparams.h"
 #include "primitives/block.h"
 #include "uint256.h"
-
 #include <math.h>
 
 unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const Consensus::Params& params) {
@@ -82,7 +81,7 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const Conse
 }
 
 unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params) {
-    /* current difficulty formula, Biblepay - DarkGravity v3, written by Evan Duffield */
+    /* current difficulty formula, DarkGravity v3, written by Evan Duffield */
     const CBlockIndex *BlockLastSolved = pindexLast;
     const CBlockIndex *BlockReading = pindexLast;
     int64_t nActualTimespan = 0;
@@ -95,7 +94,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
 	
 	bool fProdChain = Params().NetworkIDString() == "main" ? true : false;
 
-	// BiblePay - Mandatory Upgrade at block f7000 (As of 08-15-2017 we are @3265 in prod & @1349 in testnet)
+	// Mandatory Upgrade at block f7000 (As of 08-15-2017 we are @3265 in prod & @1349 in testnet)
 	// This change should prevents blocks from being solved in clumps
     if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMin) 
 	{
@@ -128,7 +127,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
     arith_uint256 bnNew(PastDifficultyAverage);
 
     int64_t _nTargetTimespan = CountBlocks * params.nPowTargetSpacing; 
-	// 3-4-2018 Biblepay:  Change params.nPowTargetSpacing to equal 7 minute blocks during next mandatory, the default calculation calls for 7*60=420 nPowTargetSpacing
+	// DAC:  Change params.nPowTargetSpacing to equal 7 minute blocks during next mandatory, the default calculation calls for 7*60=420 nPowTargetSpacing
 	// Approaching this mathematically, with POBH, we have historically emitted 159 blocks per day out of 202, a rate of 20% below normal - a rate that is too slow.
 	// The dev team believes this is attributed entirely to the late block threshhold parameter.  After the F11000 cutover block, this late threshhold is being reduced
 	// from 30 minutes to 16 minutes, with 16 minutes bringing the blocks from 9 minute spacing to 8.1 minute spacing (meaning we are still going to be slow by 60.1 seconds)
@@ -223,7 +222,7 @@ unsigned int GetNextWorkRequiredBTC(const CBlockIndex* pindexLast, const CBlockH
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
-	// BiblePay only uses DGW
+	// DAC only uses DGW
 	return DarkGravityWave(pindexLast, pblock, params);
    
     // this is only active on devnets
@@ -271,7 +270,8 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params, 
-	int64_t nBlockTime, int64_t nPrevBlockTime, int nPrevHeight, unsigned int nNonce, const CBlockIndex* pindexPrev, bool bLoadingBlockIndex)
+	int64_t nBlockTime, int64_t nPrevBlockTime, int nPrevHeight, unsigned int nNonce, const CBlockIndex* pindexPrev, std::string sHeaderHex,
+	uint256 uRXKey, int iThreadID, bool bLoadingBlockIndex)
 {
     bool fNegative;
     bool fOverflow;
@@ -280,6 +280,10 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
     // Check range
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
         return false;
+	// RandomX performance:
+	int64_t nElapsed = GetAdjustedTime() - nPrevBlockTime;
+	if ((nElapsed > (60 * 60 * 8) && bLoadingBlockIndex) || (nElapsed > (60 * 60 * 24)))
+		return true;
 
 	if (nPrevHeight < params.EVOLUTION_CUTOVER_HEIGHT)
 	{
@@ -291,22 +295,41 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
 		uint256 uBibleHashClassic = BibleHashClassic(hash, nBlockTime, nPrevBlockTime, true, nPrevHeight, NULL, false, f_7000, f_8000, f_9000, fTitheBlocksActive, nNonce, params);
 		if (UintToArith256(uBibleHashClassic) > bnTarget && nPrevBlockTime > 0) 
 		{
+			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[0] height %f, nonce %f", nPrevHeight, nNonce);
+  
 			return false;
 		}
 	}
-	else
+	else if (nPrevHeight >= params.EVOLUTION_CUTOVER_HEIGHT && nPrevHeight < params.RANDOMX_HEIGHT)
 	{
 		// Anti-GPU check:
 		bool fNonce = CheckNonce(true, nNonce, nPrevHeight, nPrevBlockTime, nBlockTime, params);
 		if (!fNonce)
 		{
+				LogPrintf("\nCheckBlockHeader::ERROR-FAILED[3] height %f, nonce %f", nPrevHeight, nNonce);
+  
 			return error("CheckProofOfWork: ERROR: High Nonce, PrevTime %f, Time %f, Nonce %f ", (double)nPrevBlockTime, (double)nBlockTime, (double)nNonce);
 		}
-
-		uint256 uBibleHash = BibleHashV2(hash, nBlockTime, nPrevBlockTime, true, nPrevHeight);
+		
+		
+		uint256 uBibleHash = BibleHashV2(hash, nBlockTime, nPrevBlockTime, true, nPrevHeight, sHeaderHex, uRXKey, pindexPrev->GetBlockHash(), iThreadID);
 		if (UintToArith256(uBibleHash) > bnTarget && nPrevBlockTime > 0) 
 		{
+			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[1] height %f, nonce %f", nPrevHeight, nNonce);
+  
 			return false;
+		}
+	}
+	else if (nPrevHeight >= params.RANDOMX_HEIGHT)
+	{
+		// RandomX Era:
+		uint256 rxhash = GetRandomXHash(sHeaderHex, uRXKey, pindexPrev->GetBlockHash(), iThreadID);
+		if (UintToArith256(ComputeRandomXTarget(rxhash, nPrevBlockTime, nBlockTime)) > bnTarget) 
+		{
+			LogPrintf("\nCheckBlockHeader::ERROR-FAILED[2] height %f, nonce %f", nPrevHeight, nNonce);
+  
+			return error("CheckProofOfWork Failed:ERROR: RandomX high-hash, Height %f, PrevTime %f, Time %f, Nonce %f ", (double)nPrevHeight, 
+				(double)nPrevBlockTime, (double)nBlockTime, (double)nNonce);
 		}
 	}
 	

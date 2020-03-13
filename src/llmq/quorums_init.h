@@ -1,10 +1,9 @@
 // Copyright (c) 2018-2019 The Dash Core developers
-// Copyright (c) 2018-2019 The BiblePay Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_QUORUMS_INIT_H
-#define BIBLEPAY_QUORUMS_INIT_H
+#ifndef COIN_QUORUMS_INIT_H
+#define COIN_QUORUMS_INIT_H
 
 class CDBWrapper;
 class CEvoDB;
@@ -26,4 +25,4 @@ void StopLLMQSystem();
 void InterruptLLMQSystem();
 }
 
-#endif //BIBLEPAY_QUORUMS_INIT_H
+#endif //COIN_QUORUMS_INIT_H

@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "optionsdialog.h"
@@ -94,10 +94,14 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     /* Theme selector */
     ui->theme->addItem(QString("biblepay-light"), QVariant("light"));
     ui->theme->addItem(QString("biblepay-light-hires"), QVariant("light-hires"));
-    ui->theme->addItem(QString("biblepay-light-retro"), QVariant("light-retro"));
-    ui->theme->addItem(QString("biblepay-light-hires-retro"), QVariant("light-hires-retro"));
-    ui->theme->addItem(QString("biblepay-blue"), QVariant("drkblue"));
+ //   ui->theme->addItem(QString("biblepay-light-retro"), QVariant("light-retro"));
+ //   ui->theme->addItem(QString("biblepay-light-hires-retro"), QVariant("light-hires-retro"));
+ //   ui->theme->addItem(QString("biblepay-blue"), QVariant("drkblue"));
+	// Default for BiblePay:
     ui->theme->addItem(QString("biblepay-bezaleel"), QVariant("bezaleel"));
+	// Default for DAC:
+	ui->theme->addItem(QString("DAC"), QVariant("dac"));
+	
     ui->theme->addItem(QString("biblepay-traditional"), QVariant("trad"));
 
     /* Language selector */

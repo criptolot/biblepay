@@ -1,6 +1,5 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -132,7 +131,7 @@ CoinControlDialog::CoinControlDialog(const PlatformStyle *_platformStyle, QWidge
     // (un)select all
     connect(ui->pushButtonSelectAll, SIGNAL(clicked()), this, SLOT(buttonSelectAllClicked()));
 
-	// Select Some (BiblePay)
+	// Select Some 
 	connect(ui->pushButtonSelectSome, SIGNAL(clicked()), this, SLOT(buttonSelectSomeClicked()));
     
 	// Toggle lock state
@@ -201,7 +200,7 @@ void CoinControlDialog::buttonSelectSomeClicked()
 	{
 		if (ui->treeWidget->topLevelItem(i)->checkState(COLUMN_CHECKBOX) != state)
 		{
-			// BIBLEPAY - Select 3% of the checkboxes
+			// Select 3% of the checkboxes
 			if (GetRandInt(100) <= 3)
 				ui->treeWidget->topLevelItem(i)->setCheckState(COLUMN_CHECKBOX, state);
 		}
@@ -623,7 +622,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     }
 
     // actually update labels
-    int nDisplayUnit = BitcoinUnits::BIBLEPAY;
+    int nDisplayUnit = BitcoinUnits::COIN_UNIT;
     if (model && model->getOptionsModel())
         nDisplayUnit = model->getOptionsModel()->getDisplayUnit();
 
@@ -751,7 +750,7 @@ void CoinControlDialog::updateView()
             {
                 sAddress = QString::fromStdString(CBitcoinAddress(outputAddress).ToString());
 
-                // if listMode or change => show biblepay address. In tree mode, address is not shown again for direct wallet address outputs
+                // if listMode or change => show address. In tree mode, address is not shown again for direct wallet address outputs
                 if (!treeMode || (!(sAddress == sWalletAddress)))
                     itemOutput->setText(COLUMN_ADDRESS, sAddress);
 

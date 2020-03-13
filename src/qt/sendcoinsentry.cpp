@@ -1,6 +1,5 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2016 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -42,9 +41,9 @@ SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *par
     ui->deleteButton_is->setIcon(QIcon(":/icons/" + theme + "/remove"));
     ui->deleteButton_s->setIcon(QIcon(":/icons/" + theme + "/remove"));
       
-    // normal biblepay address field
+    // normal address field
     GUIUtil::setupAddressWidget(ui->payTo, this);
-    // just a label for displaying biblepay address(es)
+    // just a label for displaying address(es)
     ui->payTo_is->setFont(GUIUtil::fixedPitchFont());
 
     // Connect signals
@@ -199,13 +198,13 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
     recipient.fSubtractFeeFromAmount = (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked);
-	// BiblePay - Messages and Prayers:
+	// DAC: Messages and Prayers:
 	recipient.txtMessage = ui->txtMessage->text();
 	recipient.fDonate = (ui->chkDonate->checkState() == Qt::Checked);
 	recipient.fTithe = (ui->chkTithe->checkState() == Qt::Checked);
 	recipient.fPrayer = (ui->chkPrayer->checkState() == Qt::Checked);
 	recipient.fDiary = (ui->chkDiary->checkState() == Qt::Checked);
-	// End of BiblePay
+	// End of DAC
     return recipient;
 }
 

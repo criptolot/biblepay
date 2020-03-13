@@ -1,7 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The BiblePay Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2014-2020 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,7 +12,7 @@
 #define BITCOIN_UTIL_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "compat.h"
@@ -37,23 +36,38 @@
 
 // Uncomment the following line to enable debugging messages
 // or enable on a per file basis prior to inclusion of util.h
-//#define ENABLE_BIBLEPAY_DEBUG
-#ifdef ENABLE_BIBLEPAY_DEBUG
+#ifdef ENABLE_DAC_DEBUG
 #define DBG( x ) x
 #else
 #define DBG( x ) 
 #endif
 
-//Biblepay only features
+//Specific DAC features
 
 extern bool fMasternodeMode;
 extern bool fLiteMode;
 extern int nWalletBackups;
 
+
+/** DAC-Classic Settings **/
+
+extern std::string msEXE;
+extern std::string CURRENCY_NAME;
+extern std::string DOMAIN_NAME;
+extern std::string GITHUB_URL;
+extern std::string CURRENCY_TICKER;
+
+
+
+
 static const bool DEFAULT_LOGTIMEMICROS  = false;
 static const bool DEFAULT_LOGIPS         = false;
 static const bool DEFAULT_LOGTIMESTAMPS  = true;
 static const bool DEFAULT_LOGTHREADNAMES = false;
+std::string GetConfFileName();
+std::string GetLcaseCoinName();
+std::string GetLcaseTicker();
+void SetCurrencyName(std::string sEXE);
 
 /** Signals for translation. */
 class CTranslationInterface
@@ -77,7 +91,7 @@ extern bool fLogIPs;
 extern std::atomic<bool> fReopenDebugLog;
 extern CTranslationInterface translationInterface;
 
-extern const char * const BITCOIN_CONF_FILENAME;
+//extern const char * const BITCOIN_CONF_FILENAME;
 extern const char * const BITCOIN_PID_FILENAME;
 
 /**
@@ -261,7 +275,7 @@ void RenameThreadPool(ctpl::thread_pool& tp, const char* baseName);
  */
 template <typename Callable> void TraceThread(const char* name,  Callable func)
 {
-    std::string s = strprintf("biblepay-%s", name);
+    std::string s = strprintf("dac-%s", name);
     RenameThread(s.c_str());
     try
     {

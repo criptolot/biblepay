@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -167,13 +167,13 @@ void masternode_list_help()
             "  json           - Print info in JSON format (can be additionally filtered, partial match)\n"
             "  lastpaidblock  - Print the last block height a node was paid on the network\n"
             "  lastpaidtime   - Print the last time a node was paid on the network\n"
-            "  owneraddress   - Print the masternode owner Biblepay address\n"
-            "  payee          - Print the masternode payout Biblepay address (can be additionally filtered,\n"
+            "  owneraddress   - Print the masternode owner address\n"
+            "  payee          - Print the masternode payout address (can be additionally filtered,\n"
             "                   partial match)\n"
             "  pubKeyOperator - Print the masternode operator public key\n"
             "  status         - Print masternode status: ENABLED / POSE_BANNED\n"
             "                   (can be additionally filtered, partial match)\n"
-            "  votingaddress  - Print the masternode voting Biblepay address\n"
+            "  votingaddress  - Print the masternode voting address\n"
         );
 }
 
@@ -663,11 +663,11 @@ UniValue masternodelist(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafe argNames
   //  --------------------- ------------------------  -----------------------  ------ ----------
-    { "biblepay",               "masternode",             &masternode,             true,  {} },
-    { "biblepay",               "masternodelist",         &masternodelist,         true,  {} },
-    { "biblepay",               "getpoolinfo",            &getpoolinfo,            true,  {} },
+    { CURRENCY_NAME,               "masternode",             &masternode,             true,  {} },
+    { CURRENCY_NAME,               "masternodelist",         &masternodelist,         true,  {} },
+    { CURRENCY_NAME,               "getpoolinfo",            &getpoolinfo,            true,  {} },
 #ifdef ENABLE_WALLET
-    { "biblepay",               "privatesend",            &privatesend,            false, {} },
+    { CURRENCY_NAME,               "privatesend",            &privatesend,            false, {} },
 #endif // ENABLE_WALLET
 };
 

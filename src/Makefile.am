@@ -47,8 +47,13 @@ BITCOIN_INCLUDES=-I$(builddir) -I$(builddir)/obj $(BDB_CPPFLAGS) $(BOOST_CPPFLAG
 
 BITCOIN_INCLUDES += -I$(srcdir)/secp256k1/include
 BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
+#-L$(srcdir)/crypto/RandomX/build
 
-BLS_LIBS=-lchiabls -lgmp
+if TARGET_WINDOWS
+BLS_LIBS=-lchiabls -lgmp -L$(srcdir)/crypto/RandomX/buildwin64 -lrandomx
+else
+BLS_LIBS=-lchiabls -lgmp -L$(srcdir)/crypto/RandomX/build -lrandomx
+endif
 
 LIBBITCOIN_SERVER=libbiblepay_server.a
 LIBBITCOIN_COMMON=libbiblepay_common.a
@@ -82,8 +87,8 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_ZMQ)
-
+  $(LIBBITCOIN_ZMQ) 
+ 
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
 
 bin_PROGRAMS =
@@ -140,6 +145,7 @@ BITCOIN_CORE_H = \
   evo/mnauth.h \
   evo/providertx.h \
   evo/simplifiedmns.h \
+  randomx_bbp.h \
   evo/specialtx.h \
   privatesend.h \
   privatesend-client.h \
@@ -331,6 +337,7 @@ libbiblepay_server_a_SOURCES = \
   pow.cpp \
   privatesend.cpp \
   privatesend-server.cpp \
+  randomx_bbp.cpp \
   rest.cpp \
   rpc/blockchain.cpp \
   rpc/masternode.cpp \
@@ -422,7 +429,7 @@ crypto_libbiblepay_crypto_a_SOURCES += \
   crypto/sph_cubehash.h \
   crypto/sph_echo.h \
   crypto/sph_groestl.h \
-  crypto/sph_biblepay.h \
+  crypto/sph_legacy.h \
   crypto/sph_jh.h \
   crypto/sph_keccak.h \
   crypto/sph_luffa.h \
@@ -430,7 +437,8 @@ crypto_libbiblepay_crypto_a_SOURCES += \
   crypto/sph_simd.h \
   crypto/sph_skein.h \
   crypto/sph_types.h 
- 
+
+#  crypto/RandomX/src/randomx.h
 # consensus: shared between all executables that validate any consensus rules.
 libbiblepay_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbiblepay_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
@@ -456,6 +464,8 @@ libbiblepay_consensus_a_SOURCES = \
   script/biblepayconsensus.cpp \
   script/interpreter.cpp \
   script/interpreter.h \
+  randomx_bbp.h \
+  randomx_bbp.cpp \
   script/script.cpp \
   script/script.h \
   script/script_error.cpp \
@@ -559,8 +569,8 @@ biblepayd_LDADD = \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBLEVELDB) \
   $(LIBMEMENV) \
-  $(LIBSECP256K1)
-
+  $(LIBSECP256K1) 
+  
 biblepayd_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(BLS_LIBS)
 
 # biblepay-cli binary #
@@ -577,7 +587,8 @@ biblepay_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CRYPTO)
+  $(LIBBITCOIN_CRYPTO) 
+  
 
 biblepay_cli_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS) $(BLS_LIBS)
 #
@@ -599,7 +610,7 @@ biblepay_tx_LDADD = \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
-
+ 
 biblepay_tx_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(CRYPTO_LIBS) $(BLS_LIBS)
 #
 
@@ -613,7 +624,7 @@ if GLIBC_BACK_COMPAT
 endif
 
 libbiblepayconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libbiblepayconsensus_la_LIBADD = $(LIBSECP256K1) $(BLS_LIBS)
+libbiblepayconsensus_la_LIBADD = $(LIBSECP256K1) $(BLS_LIBS) $(EVENT_PTHREADS_LIBS)
 libbiblepayconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
 libbiblepayconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
@@ -649,12 +660,12 @@ EXTRA_DIST = $(CTAES_DIST)
 EXTRA_DIST += $(IMMER_DIST)
 
 
-config/biblepay-config.h: config/stamp-h1
+config/coin-config.h: config/stamp-h1
 	@$(MAKE) -C $(top_builddir) $(subdir)/$(@)
-config/stamp-h1: $(top_srcdir)/$(subdir)/config/biblepay-config.h.in $(top_builddir)/config.status
+config/stamp-h1: $(top_srcdir)/$(subdir)/config/coin-config.h.in $(top_builddir)/config.status
 	$(AM_V_at)$(MAKE) -C $(top_builddir) $(subdir)/$(@)
-$(top_srcdir)/$(subdir)/config/biblepay-config.h.in:  $(am__configure_deps)
-	$(AM_V_at)$(MAKE) -C $(top_srcdir) $(subdir)/config/biblepay-config.h.in
+$(top_srcdir)/$(subdir)/config/coin-config.h.in:  $(am__configure_deps)
+	$(AM_V_at)$(MAKE) -C $(top_srcdir) $(subdir)/config/coin-config.h.in
 
 clean-local:
 	-$(MAKE) -C secp256k1 clean

@@ -5,7 +5,7 @@
 #include "txmempool.h"
 #include "util.h"
 
-#include "test/test_biblepay.h"
+#include "test/test_coin.h"
 
 #include <boost/test/unit_test.hpp>
 #include <list>

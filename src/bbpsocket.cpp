@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core Developers, The BiblePay Developers
+// Copyright (c) 2014-2019 The Dash Core Developers, The DAC Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -29,7 +29,7 @@ using boost::lambda::_1;
 //
 // This class manages socket timeouts by subclassing a deadline timer.
 // Each asynchronous operation is given a deadline by which it must complete.
-// Deadlines are enforced by the check_deadline actor that persists for the lifetime of the bbpsocket object:
+// Deadlines are enforced by the check_deadline actor that persists for the lifetime of the socket object:
 //
 //  +----------------+
 //  |                |     
@@ -42,10 +42,10 @@ using boost::lambda::_1;
 // If the actor determines that the deadline has expired, the socket is closed
 // and any outstanding operations are consequently cancelled. The socket
 // operations themselves use boost::lambda function objects as completion
-// handlers. For a given socket operation, the bbpsocket object runs the
+// handlers. For a given socket operation, the socket object runs the
 // io_service to block thread execution until the actor completes.
 //
-// Written by Christopher M. Kohlhoff (Chris@Kohlhoff.com) and the BiblePay developers
+// Written by Christopher M. Kohlhoff (Chris@Kohlhoff.com) and the DAC developers
 
 
 class bbpsocket
@@ -165,7 +165,7 @@ std::string PrepareHTTPPost(bool bPost, std::string sPage, std::string sHostHead
     return s.str();
 }
 
-std::string BBPPost(std::string sHost, std::string sService, std::string sPage, std::string sPayload, int iTimeout)
+std::string DACPost(std::string sHost, std::string sService, std::string sPage, std::string sPayload, int iTimeout)
 {
 	std::string sData;
 	try
@@ -187,7 +187,7 @@ std::string BBPPost(std::string sHost, std::string sService, std::string sPage, 
   }
   catch (std::exception& e)
   {
-      std::string sErr = std::string("BBPPostException::") + e.what();
+      std::string sErr = std::string("DACPostException::") + e.what();
 	  return sErr;
   }
   return sData;

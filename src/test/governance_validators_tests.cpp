@@ -1,5 +1,4 @@
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
 
 #include "governance-validators.h"
 #include "utilstrencodings.h"
@@ -7,7 +6,7 @@
 #include "data/proposals_valid.json.h"
 #include "data/proposals_invalid.json.h"
 
-#include "test/test_biblepay.h"
+#include "test/test_coin.h"
 
 #include <iostream>
 #include <fstream>

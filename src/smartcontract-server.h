@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core Developers, The BiblePay Developers
+// Copyright (c) 2014-2019 The Dash Core Developers, The DAC Core Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,8 +30,8 @@ void GetTransactionPoints(CBlockIndex* pindex, CTransactionRef tx, double& nCoin
 bool ChainSynced(CBlockIndex* pindex);
 std::string WatchmanOnTheWall(bool fForce, std::string& sContract);
 void GetGovObjDataByPamHash(int nHeight, uint256 hPamHash, std::string& out_Data);
-BiblePayProposal GetProposalByHash(uint256 govObj, int nLastSuperblock);
-std::string DescribeProposal(BiblePayProposal bbpProposal);
+DACProposal GetProposalByHash(uint256 govObj, int nLastSuperblock);
+std::string DescribeProposal(DACProposal dacProposal);
 std::string GetTxCPK(CTransactionRef tx, std::string& sCampaignName);
 double CalculatePoints(std::string sCampaign, std::string sDiary, double nCoinAge, CAmount nDonation, std::string sCPK);
 double GetChildBalance(std::string sChildID, std::string sCharity);
@@ -39,7 +39,7 @@ double GetProminenceCap(std::string sCampaignName, double nPoints, double nPromi
 std::string GetCPIDByCPK(std::string sCPK);
 std::string GetCPIDElementByData(std::string sData, int iElement);
 double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID);
-double GetBBPPrice();
+double GetCoinPrice();
 bool VerifyChild(std::string childID, std::string sCharity);
 bool IsOverBudget(int nHeight, std::string sAmounts);
 std::string CheckGSCHealth();

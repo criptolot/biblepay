@@ -4,10 +4,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "amount.h"
-
+#include "validation.h"
 #include "tinyformat.h"
 
-const std::string CURRENCY_UNIT = "BIBLEPAY";
 
 CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_)
 {
@@ -39,5 +38,5 @@ CAmount CFeeRate::GetFee(size_t nBytes_) const
 
 std::string CFeeRate::ToString() const
 {
-    return strprintf("%d.%08d %s/kB", nSatoshisPerK / COIN, nSatoshisPerK % COIN, CURRENCY_UNIT);
+    return strprintf("%d.%08d %s/kB", nSatoshisPerK / COIN, nSatoshisPerK % COIN, CURRENCY_NAME);
 }

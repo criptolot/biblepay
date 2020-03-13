@@ -1,10 +1,9 @@
 // Copyright (c) 2018-2019 The Dash Core developers
-// Copyright (c) 2018-2019 The BiblePay Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_QUORUMS_UTILS_H
-#define BIBLEPAY_QUORUMS_UTILS_H
+#ifndef COIN_QUORUMS_UTILS_H
+#define COIN_QUORUMS_UTILS_H
 
 #include "consensus/params.h"
 #include "net.h"
@@ -70,4 +69,4 @@ public:
 
 }
 
-#endif//BIBLEPAY_QUORUMS_UTILS_H
+#endif//COIN_QUORUMS_UTILS_H

@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,7 +33,7 @@ static const int SPORK_17_QUORUM_DKG_ENABLED                            = 10016;
 static const int SPORK_19_CHAINLOCKS_ENABLED                            = 10018;
 static const int SPORK_20_INSTANTSEND_LLMQ_BASED                        = 10019;
 
-// BIBLEPAY - Start at 10090 to leave room for future Dash Sporks
+// DAC - Start at 10090 to leave room for future Dash Sporks
 static const int SPORK_30_QUANTITATIVE_TIGHTENING_ENABLED               = 10090;
 static const int SPORK_31_GSC_BUFFER                                    = 10091;
 
@@ -176,7 +176,7 @@ public:
         }
         // we don't serialize pubkey ids because pubkeys should be
         // hardcoded or be setted with cmdline or options, should
-        // not reuse pubkeys from previous biblepayd run
+        // not reuse pubkeys from previous dacd run
         READWRITE(mapSporksByHash);
         READWRITE(mapSporksActive);
         // we don't serialize private key to prevent its leakage

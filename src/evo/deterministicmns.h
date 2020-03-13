@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_DETERMINISTICMNS_H
-#define BIBLEPAY_DETERMINISTICMNS_H
+#ifndef COIN_DETERMINISTICMNS_H
+#define COIN_DETERMINISTICMNS_H
 
 #include "arith_uint256.h"
 #include "bls/bls.h"
@@ -669,4 +669,4 @@ private:
 
 extern CDeterministicMNManager* deterministicMNManager;
 
-#endif //BIBLEPAY_DETERMINISTICMNS_H
+#endif //COIN_DETERMINISTICMNS_H

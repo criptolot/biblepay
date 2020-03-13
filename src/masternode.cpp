@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 The BiblePay Core developers
+// Copyright (c) 2014-2017 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -236,7 +236,7 @@ void CMasternode::Check(bool fForce)
             return;
         }
 
-        // part 1: expire based on biblepayd ping
+        // part 1: expire based on dacd ping
         bool fSentinelPingActive = masternodeSync.IsSynced() && mnodeman.IsSentinelPingActive();
         bool fSentinelPingExpired = fSentinelPingActive && !IsPingedWithin(MASTERNODE_SENTINEL_PING_MAX_SECONDS);
 		if (fDebugSpam)
@@ -610,7 +610,7 @@ bool CMasternodeBroadcast::CheckOutpoint(int& nDos)
     }
 
     if (err == COLLATERAL_INVALID_AMOUNT) {
-        LogPrint("masternode", "CMasternodeBroadcast::CheckOutpoint -- Masternode UTXO should have SANCTUARY_COLLATERAL BIBLEPAY, masternode=%s\n", outpoint.ToStringShort());
+        LogPrint("masternode", "CMasternodeBroadcast::CheckOutpoint -- Masternode UTXO should have SANCTUARY_COLLATERAL, masternode=%s\n", outpoint.ToStringShort());
         nDos = 33;
         return false;
     }

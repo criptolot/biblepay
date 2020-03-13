@@ -1,6 +1,6 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -69,7 +69,7 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     connect(ui->checkBoxCoinControlChange, SIGNAL(stateChanged(int)), this, SLOT(coinControlChangeChecked(int)));
     connect(ui->lineEditCoinControlChange, SIGNAL(textEdited(const QString &)), this, SLOT(coinControlChangeEdited(const QString &)));
 
-    // Biblepay specific
+    // DAC specific
     QSettings settings;
     if (!settings.contains("bUseDarkSend"))
         settings.setValue("bUseDarkSend", false);
@@ -326,7 +326,7 @@ void SendCoinsDialog::send(QList<SendCoinsRecipient> recipients, QString strFee,
 
     prepareStatus = model->prepareTransaction(currentTransaction, &ctrl);
 
-	// BIBLEPAY - If this was a diary entry, dont send real BBP after the entry is stored.
+	// DAC - If this was a diary entry, dont send real Coins after the entry is stored.
 	if (prepareStatus.status == WalletModel::TransactionCommitFailed && prepareStatus.reasonCommitFailed == "GSC_SUCCESS")
 	{
 		clear();
@@ -909,7 +909,7 @@ void SendCoinsDialog::coinControlChangeEdited(const QString& text)
         }
         else if (!addr.IsValid()) // Invalid address
         {
-            ui->labelCoinControlChangeLabel->setText(tr("Warning: Invalid Biblepay address"));
+            ui->labelCoinControlChangeLabel->setText(tr("Warning: Invalid address"));
         }
         else // Valid address
         {

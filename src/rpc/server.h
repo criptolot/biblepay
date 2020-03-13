@@ -143,7 +143,7 @@ public:
 };
 
 /**
- * Biblepay RPC command dispatcher.
+ * RPC command dispatcher.
  */
 class CRPCTable
 {

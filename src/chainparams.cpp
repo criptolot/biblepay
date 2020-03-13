@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin Core developers
-// Copyright (c) 2014-2019 The BiblePay Core developers
+// Copyright (c) 2014-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -211,6 +211,7 @@ public:
 		consensus.F12000_CUTOVER_HEIGHT = 35110;
 		consensus.F13000_CUTOVER_HEIGHT = 57700; 
 		consensus.ANTI_GPU_HEIGHT = 170830;
+		consensus.RANDOMX_HEIGHT = 184675;
 		consensus.LAST_TITHE_BLOCK = 21565;
 		consensus.ABNHeight = 127000;
 		consensus.nSubsidyHalvingInterval = BLOCKS_PER_DAY * 365; // We produce approx 74,825 blocks per year (205 per day)
@@ -246,15 +247,15 @@ public:
 		consensus.LLMQHeight = 175000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
 		consensus.nSanctuaryPaymentsPhaseIIHeight = 166075; // Set this at the Go-Live height for .14 
 
-		consensus.QTHeight = 124000;  // Note to future forkers of BiblePay!  This height must be > (BLOCKS_PER_DAY * 32)!  Thank you for forking biblepay and thank you for your support!
+		consensus.QTHeight = 124000;  // Note to future forkers of DACs!  This height must be > (BLOCKS_PER_DAY * 32)!  Thank you for your support!
 		consensus.powLimit = uint256S("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); 
 		consensus.FoundationAddress = "BB2BwSbDCqCqNsfc7FgWFJn4sRgnUt4tsM";
 		consensus.FoundationPODSAddress = "BScSypUZVEEY4TMz1ehyyPcS5wrnMM7WPB";
 		consensus.FoundationQTAddress = "BDcNYc8tGXmwD7QmLXbR1rk1qteTDVEjUD";
 		consensus.BurnAddress = "B4T5ciTCkWauSqVAcVKy88ofjcSasUkSYU";
 
-		consensus.nPowTargetTimespan = 24 * 60 * 60; // Biblepay: 1 day
-		consensus.nPowTargetSpacing = 7 * 60; // Biblepay: 7 minutes
+		consensus.nPowTargetTimespan = 24 * 60 * 60; // DAC: 1 day
+		consensus.nPowTargetSpacing = 7 * 60; // DAC: 7 minutes
 		consensus.fPowAllowMinDifficultyBlocks = false;
 		consensus.fPowNoRetargeting = false;
 		consensus.nPowKGWHeight = 0;
@@ -322,22 +323,20 @@ public:
  
         assert(genesis.hashMerkleRoot == uint256S("0x02b05f3b8a7168bcf83b888e0092446b248b2641bd9844b5d12a45eaa2765725"));
 
-		vSeeds.push_back(CDNSSeedData("biblepay.org", "dnsseed.biblepay.org"));
-		vSeeds.push_back(CDNSSeedData("biblepay.org", "node.biblepay.org"));
-		vSeeds.push_back(CDNSSeedData("biblepay.org", "dnsseed.biblepay-explorer.org"));
+		vSeeds.push_back(CDNSSeedData(DOMAIN_NAME, "node." + DOMAIN_NAME));
 
-        // Biblepay addresses start with 'B'
+        // DAC addresses start with 'B'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 25);
-        // Biblepay script addresses start with '7'
+        // DAC script addresses start with '7'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 16);
-        // Biblepay private keys start with '7' or 'X'
+        // DAC private keys start with '7' or 'X'
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1, 182);
-        // Biblepay BIP32 pubkeys start with 'xpub' (Bitcoin defaults)
+        // DAC BIP32 pubkeys start with 'xpub' (Bitcoin defaults)
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x04)(0x88)(0xB2)(0x1E).convert_to_container<std::vector<unsigned char> >();
-        // Biblepay BIP32 prvkeys start with 'xprv' (Bitcoin defaults)
+        // DAC BIP32 prvkeys start with 'xprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();
 
-        // Biblepay BIP44 coin type is '5'
+        // DAC BIP44 coin type is '5'
         nExtCoinType = 10;
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
@@ -401,7 +400,8 @@ public:
 		consensus.F7000_CUTOVER_HEIGHT = 100;
 		consensus.F12000_CUTOVER_HEIGHT = 100;
 		consensus.F13000_CUTOVER_HEIGHT = 100; 
-		consensus.ANTI_GPU_HEIGHT = 28925;
+		consensus.ANTI_GPU_HEIGHT = 28010;
+		consensus.RANDOMX_HEIGHT = 28003;
 		consensus.ABNHeight = 5000;
 		int BLOCKS_PER_DAY = 205;
 		consensus.F9000_CUTOVER_HEIGHT= 100;
@@ -449,8 +449,8 @@ public:
 		consensus.nSanctuaryPaymentsPhaseIIHeight = 8400;
 
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); 
-        consensus.nPowTargetTimespan = 24 * 60 * 60; // Biblepay: 1 day
-        consensus.nPowTargetSpacing = 1 * 60; // Biblepay: 1 minutes
+        consensus.nPowTargetTimespan = 24 * 60 * 60; // DAC: 1 day
+        consensus.nPowTargetSpacing = 1 * 60; // DAC: 1 minutes
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nPowKGWHeight = 1; // nPowKGWHeight >= nPowDGWHeight means "no KGW"
@@ -519,21 +519,21 @@ public:
 
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.push_back(CDNSSeedData("biblepaydot.io",  "testnet-seed.biblepaydot.io"));
-        vSeeds.push_back(CDNSSeedData("masternode.io", "test.dnsseed.masternode.io"));
+        vSeeds.push_back(CDNSSeedData("dac.io",  "testnet-seed.dac.io"));
+        vSeeds.push_back(CDNSSeedData("dac.io", "test.dnsseed.masternode.io"));
 
-        // Testnet Biblepay addresses start with 'y'
+        // Testnet DAC addresses start with 'y'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,140);
-        // Testnet Biblepay script addresses start with '8' or '9'
+        // Testnet DAC script addresses start with '8' or '9'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,19);
         // Testnet private keys start with '9' or 'c' (Bitcoin defaults)
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
-        // Testnet Biblepay BIP32 pubkeys start with 'tpub' (Bitcoin defaults)
+        // Testnet DAC BIP32 pubkeys start with 'tpub' (Bitcoin defaults)
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x04)(0x35)(0x87)(0xCF).convert_to_container<std::vector<unsigned char> >();
-        // Testnet Biblepay BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
+        // Testnet DAC BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Testnet Biblepay BIP44 coin type is '1' (All coin's testnet default)
+        // Testnet DAC BIP44 coin type is '1' (All coin's testnet default)
         nExtCoinType = 1;
 
         // long living quorum params
@@ -615,8 +615,8 @@ public:
 		consensus.DIP0003Height = 2;
 
 		consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
-		consensus.nPowTargetTimespan = 24 * 60 * 60; // Biblepay: 1 day
-		consensus.nPowTargetSpacing = 2.5 * 60; // Biblepay: 2.5 minutes
+		consensus.nPowTargetTimespan = 24 * 60 * 60; // DAC: 1 day
+		consensus.nPowTargetSpacing = 2.5 * 60; // DAC: 2.5 minutes
 		consensus.fPowAllowMinDifficultyBlocks = true;
 		consensus.fPowNoRetargeting = false;
 		consensus.nPowKGWHeight = 1; // nPowKGWHeight >= nPowDGWHeight means "no KGW"
@@ -684,20 +684,19 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        //vSeeds.push_back(CDNSSeedData("biblepayevo.org",  "devnet-seed.biblepayevo.org"));
 
-        // Testnet Biblepay addresses start with 'y'
+        // Testnet DAC addresses start with 'y'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,140);
-        // Testnet Biblepay script addresses start with '8' or '9'
+        // Testnet DAC script addresses start with '8' or '9'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,19);
         // Testnet private keys start with '9' or 'c' (Bitcoin defaults)
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
-        // Testnet Biblepay BIP32 pubkeys start with 'tpub' (Bitcoin defaults)
+        // Testnet DAC BIP32 pubkeys start with 'tpub' (Bitcoin defaults)
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x04)(0x35)(0x87)(0xCF).convert_to_container<std::vector<unsigned char> >();
-        // Testnet Biblepay BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
+        // Testnet DAC BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Testnet Biblepay BIP44 coin type is '1' (All coin's testnet default)
+        // Testnet DAC BIP44 coin type is '1' (All coin's testnet default)
         nExtCoinType = 1;
 
         // long living quorum params
@@ -782,8 +781,8 @@ public:
         consensus.DIP0003EnforcementHeight = 500;
         consensus.DIP0003EnforcementHash = uint256();
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
-        consensus.nPowTargetTimespan = 24 * 60 * 60; // Biblepay: 1 day
-        consensus.nPowTargetSpacing = 2.5 * 60; // Biblepay: 2.5 minutes
+        consensus.nPowTargetTimespan = 24 * 60 * 60; // DAC: 1 day
+        consensus.nPowTargetSpacing = 2.5 * 60; // DAC: 2.5 minutes
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = true;
         consensus.nPowKGWHeight = 1; // same as mainnet
@@ -857,18 +856,18 @@ public:
             0
         };
 
-        // Regtest Biblepay addresses start with 'y'
+        // Regtest DAC addresses start with 'y'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,140);
-        // Regtest Biblepay script addresses start with '8' or '9'
+        // Regtest DAC script addresses start with '8' or '9'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,19);
-        // Regtest private keys start with '9' or 'c' (Bitcoin defaults)
+        // Regtest DAC keys start with '9' or 'c' (Bitcoin defaults)
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
-        // Regtest Biblepay BIP32 pubkeys start with 'tpub' (Bitcoin defaults)
+        // Regtest DAC BIP32 pubkeys start with 'tpub' (Bitcoin defaults)
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x04)(0x35)(0x87)(0xCF).convert_to_container<std::vector<unsigned char> >();
-        // Regtest Biblepay BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
+        // Regtest DAC BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Regtest Biblepay BIP44 coin type is '1' (All coin's testnet default)
+        // Regtest DAC BIP44 coin type is '1' (All coin's testnet default)
         nExtCoinType = 1;
 
         // long living quorum params

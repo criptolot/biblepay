@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The BiblePay Core developers
+// Copyright (c) 2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_CRYPTO_BLS_H
-#define BIBLEPAY_CRYPTO_BLS_H
+#ifndef DAC_CRYPTO_BLS_H
+#define DAC_CRYPTO_BLS_H
 
 #include "hash.h"
 #include "serialize.h"
@@ -475,4 +475,4 @@ typedef std::shared_ptr<BLSSignatureVector> BLSSignatureVectorPtr;
 
 bool BLSInit();
 
-#endif // BIBLEPAY_CRYPTO_BLS_H
+#endif // DAC_CRYPTO_BLS_H

@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -791,7 +791,7 @@ bool CGovernanceManager::MasternodeRateCheck(const CGovernanceObject& govobj, bo
     const COutPoint& masternodeOutpoint = govobj.GetMasternodeOutpoint();
     int64_t nTimestamp = govobj.GetCreationTime();
     int64_t nNow = GetAdjustedTime();
-	// BIBLEPAY - R ANDREWS - Adjust Receive Rate buffer for gobjects
+	// DAC - Adjust Receive Rate buffer for gobjects
     int64_t nSuperblockCycleSeconds = Params().GetConsensus().nDCCSuperblockCycle * Params().GetConsensus().nPowTargetSpacing;
 
     std::string strHash = govobj.GetHash().ToString();
@@ -819,7 +819,7 @@ bool CGovernanceManager::MasternodeRateCheck(const CGovernanceObject& govobj, bo
     // Allow 1 trigger per mn per cycle, with a small fudge factor
     double dMaxRate = 2 * 1.1 / double(nSuperblockCycleSeconds);
 
-	// BIBLEPAY - Allow more in TestNet since we only have a few Sancs; Allow more in Prod since we have daily GSC superblocks
+	// DAC - Allow more in TestNet since we only have a few Sancs; Allow more in Prod since we have daily GSC superblocks
 	int iFactor = fProd ? 5 : 20;
 	dMaxRate = dMaxRate * iFactor;
 

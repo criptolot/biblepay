@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core Developers, The BiblePay Developers
+// Copyright (c) 2014-2019 The Dash Core Developers, The DAC Core Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -64,13 +64,13 @@ double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID)
 	// We currently require RAC ^ 1.3 in coin-age
 	// Any CPIDs with RAC <= 250 are unbanked (they require 0 coin age).
 
-	// This poll: https://forum.biblepay.org/index.php?topic=476.0
-	// sets our model to require ^1.6 for GRC and ^1.3 for BBP
+	// This poll: https://forum.b i b l e pay.org/index.php?topic=476.0
+	// sets our model to require ^1.6 for GRC and ^1.3 for Bible Pay
 	double nExponent = 0;
 	double nConfiguration = GetSporkDouble("PODCTeamConfiguration", 0);
-	// 0 = BBP=1.3, All other teams are 1.6
-	// 1 = BBP=1.3, GRC = 1.6, All other teams not welcome
-	// 2 = BBP=1.3, All other teams not welcome
+	// Config 0 = Exp=1.3 for Bible-Pay, All non bible-pay teams are 1.6
+	// Config 1 = Exp=1.3 for Bible-Pay, GRC = 1.6, All other teams not welcome
+	// Config 2 = Exp=1.3 for Bible-Pay, All other teams not welcome
 	if (nConfiguration == 0)
 	{
 		if (nTeamID == 35006)
@@ -126,7 +126,7 @@ double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID)
 
 //////////////////////////////////////////////////////////////////////////////// Cameroon-One & Kairos  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-double GetBBPPrice()
+double GetCoinPrice()
 {
 	static int64_t nLastPriceCheck = 0;
 	int64_t nElapsed = GetAdjustedTime() - nLastPriceCheck;
@@ -170,8 +170,8 @@ double GetProminenceCap(std::string sCampaignName, double nPoints, double nPromi
 		return 0;
 	double nUSDSpent = nPoints / 1000;  // Amount user spent in one day on children
 	double nChildrenSponsored = nUSDSpent / nDailyCharges;
-	// Cap @ BBP Rate * Child Count
-	double nPrice = GetBBPPrice();
+	// Cap @ Coin Exchange Rate * Child Count
+	double nPrice = GetCoinPrice();
 	if (nPrice <= 0)
 	{
 		nPrice = .0004; // Guess
@@ -187,8 +187,8 @@ double GetProminenceCap(std::string sCampaignName, double nPoints, double nPromi
 	if (nRewardUSD > nUSDSpent)
 	{
 		// Cap is in effect, so reverse engineer the payment to the actual market value
-		double nProjectedBBP = nUSDSpent / nPrice;
-		double nProjectedProminence = nProjectedBBP / nPaymentsLimit;
+		double nProjectedAmount = nUSDSpent / nPrice;
+		double nProjectedProminence = nProjectedAmount / nPaymentsLimit;
 		if (fDebugSpam)
 			LogPrintf(" GetProminenceCap Exceeded - new prominence %f ", nProjectedProminence);
 		nProminence = nProjectedProminence;
@@ -208,7 +208,7 @@ std::string GetChildData(std::string sCharity)
 	}
 	std::string sURL = GetSporkValue(sCharity + "-domain");
 	std::string sRestfulURL = GetSporkValue(sCharity + "-childapi");
-	std::string sCache = BiblepayHTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 35, 50000, 1);
+	std::string sCache = HTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 35, 50000, 1);
 	WriteCache("child_data", sCharity, sCache, GetAdjustedTime());
 	WriteCacheDouble("child_data_timestamp_" + sCharity, GetAdjustedTime());
 	return sCache;
@@ -247,45 +247,45 @@ double GetChildBalance(std::string sChildID, std::string sCharity)
 
 
 //////////////////////////////////////////////////////////////////////////////// Watchman-On-The-Wall /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//											BiblePay's version of The Sentinel, written by the BiblePay Devs (March 31st, 2019)                                                                                      //
+//								                          			DAC's version of The Sentinel, March 31st, 2019                                                                                                  //
 //                                                                                                                                                                                                                   //
 
-BiblePayProposal GetProposalByHash(uint256 govObj, int nLastSuperblock)
+DACProposal GetProposalByHash(uint256 govObj, int nLastSuperblock)
 {
 	int nSancCount = deterministicMNManager->GetListAtChainTip().GetValidMNsCount();
 	int nMinPassing = nSancCount * .10;
 	if (nMinPassing < 1) nMinPassing = 1;
 	CGovernanceObject* myGov = governance.FindGovernanceObject(govObj);
 	UniValue obj = myGov->GetJSONObject();
-	BiblePayProposal bbpProposal;
-	bbpProposal.sName = obj["name"].getValStr();
-	bbpProposal.nStartEpoch = cdbl(obj["start_epoch"].getValStr(), 0);
-	bbpProposal.nEndEpoch = cdbl(obj["end_epoch"].getValStr(), 0);
-	bbpProposal.sURL = obj["url"].getValStr();
-	bbpProposal.sExpenseType = obj["expensetype"].getValStr();
-	bbpProposal.nAmount = cdbl(obj["payment_amount"].getValStr(), 2);
-	bbpProposal.sAddress = obj["payment_address"].getValStr();
-	bbpProposal.uHash = myGov->GetHash();
-	bbpProposal.nHeight = GetHeightByEpochTime(bbpProposal.nStartEpoch);
-	bbpProposal.nMinPassing = nMinPassing;
-	bbpProposal.nYesVotes = myGov->GetYesCount(VOTE_SIGNAL_FUNDING);
-	bbpProposal.nNoVotes = myGov->GetNoCount(VOTE_SIGNAL_FUNDING);
-	bbpProposal.nAbstainVotes = myGov->GetAbstainCount(VOTE_SIGNAL_FUNDING);
-	bbpProposal.nNetYesVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
-	bbpProposal.nLastSuperblock = nLastSuperblock;
-	bbpProposal.sProposalHRTime = TimestampToHRDate(bbpProposal.nStartEpoch);
-	bbpProposal.fPassing = bbpProposal.nNetYesVotes >= nMinPassing;
-	bbpProposal.fIsPaid = bbpProposal.nHeight < nLastSuperblock;
-	return bbpProposal;
+	DACProposal dacProposal;
+	dacProposal.sName = obj["name"].getValStr();
+	dacProposal.nStartEpoch = cdbl(obj["start_epoch"].getValStr(), 0);
+	dacProposal.nEndEpoch = cdbl(obj["end_epoch"].getValStr(), 0);
+	dacProposal.sURL = obj["url"].getValStr();
+	dacProposal.sExpenseType = obj["expensetype"].getValStr();
+	dacProposal.nAmount = cdbl(obj["payment_amount"].getValStr(), 2);
+	dacProposal.sAddress = obj["payment_address"].getValStr();
+	dacProposal.uHash = myGov->GetHash();
+	dacProposal.nHeight = GetHeightByEpochTime(dacProposal.nStartEpoch);
+	dacProposal.nMinPassing = nMinPassing;
+	dacProposal.nYesVotes = myGov->GetYesCount(VOTE_SIGNAL_FUNDING);
+	dacProposal.nNoVotes = myGov->GetNoCount(VOTE_SIGNAL_FUNDING);
+	dacProposal.nAbstainVotes = myGov->GetAbstainCount(VOTE_SIGNAL_FUNDING);
+	dacProposal.nNetYesVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
+	dacProposal.nLastSuperblock = nLastSuperblock;
+	dacProposal.sProposalHRTime = TimestampToHRDate(dacProposal.nStartEpoch);
+	dacProposal.fPassing = dacProposal.nNetYesVotes >= nMinPassing;
+	dacProposal.fIsPaid = dacProposal.nHeight < nLastSuperblock;
+	return dacProposal;
 }
 
-std::string DescribeProposal(BiblePayProposal bbpProposal)
+std::string DescribeProposal(DACProposal dacProposal)
 {
-	std::string sReport = "Proposal StartDate: " + bbpProposal.sProposalHRTime + ", Hash: " + bbpProposal.uHash.GetHex() + " for Amount: " + RoundToString(bbpProposal.nAmount, 2) + "BBP, Name: " 
-				+ bbpProposal.sName + ", ExpType: " + bbpProposal.sExpenseType + ", PAD: " + bbpProposal.sAddress 
-				+ ", Height: " + RoundToString(bbpProposal.nHeight, 0) 
-				+ ", Votes: " + RoundToString(bbpProposal.nNetYesVotes, 0) + ", LastSB: " 
-				+ RoundToString(bbpProposal.nLastSuperblock, 0);
+	std::string sReport = "Proposal StartDate: " + dacProposal.sProposalHRTime + ", Hash: " + dacProposal.uHash.GetHex() + " for Amount: " + RoundToString(dacProposal.nAmount, 2) + CURRENCY_NAME + ", Name: " 
+				+ dacProposal.sName + ", ExpType: " + dacProposal.sExpenseType + ", PAD: " + dacProposal.sAddress 
+				+ ", Height: " + RoundToString(dacProposal.nHeight, 0) 
+				+ ", Votes: " + RoundToString(dacProposal.nNetYesVotes, 0) + ", LastSB: " 
+				+ RoundToString(dacProposal.nLastSuperblock, 0);
 	return sReport;
 }
 
@@ -325,19 +325,19 @@ std::string WatchmanOnTheWall(bool fForce, std::string& sContract)
 	for (const CGovernanceObject* pGovObj : objs) 
     {
 		if (pGovObj->GetObjectType() != GOVERNANCE_OBJECT_PROPOSAL) continue;
-		BiblePayProposal bbpProposal = GetProposalByHash(pGovObj->GetHash(), nLastSuperblock);
+		DACProposal dacProposal = GetProposalByHash(pGovObj->GetHash(), nLastSuperblock);
 		// We need unpaid, passing that fit within the budget
-		sReport = DescribeProposal(bbpProposal);
-		if (!bbpProposal.fIsPaid)
+		sReport = DescribeProposal(dacProposal);
+		if (!dacProposal.fIsPaid)
 		{
-			if (bbpProposal.fPassing)
+			if (dacProposal.fPassing)
 			{
 				LogPrintf("\n Watchman::Inserting %s for NextSB: %f", sReport, (double)nNextSuperblock);
-				vProposalsSortedByVote.push_back(std::make_pair(bbpProposal.nNetYesVotes, bbpProposal.uHash));
+				vProposalsSortedByVote.push_back(std::make_pair(dacProposal.nNetYesVotes, dacProposal.uHash));
 			}
 			else
 			{
-				LogPrintf("\n Watchman (not inserting) %s because we have Votes %f (req votes %f)", sReport, bbpProposal.nNetYesVotes, bbpProposal.nMinPassing);
+				LogPrintf("\n Watchman (not inserting) %s because we have Votes %f (req votes %f)", sReport, dacProposal.nNetYesVotes, dacProposal.nMinPassing);
 			}
 		}
 		else
@@ -356,7 +356,7 @@ std::string WatchmanOnTheWall(bool fForce, std::string& sContract)
 	CAmount nSpent = 0;
 	for (auto item : vProposalsSortedByVote)
     {
-		BiblePayProposal p = GetProposalByHash(item.second, nLastSuperblock);
+		DACProposal p = GetProposalByHash(item.second, nLastSuperblock);
 		if (((p.nAmount * COIN) + nSpent) < nPaymentsLimit)
 		{
 			nSpent += (p.nAmount * COIN);
@@ -372,7 +372,7 @@ std::string WatchmanOnTheWall(bool fForce, std::string& sContract)
 	std::string sVotes;
 	for (auto item : vProposalsInBudget)
     {
-		BiblePayProposal p = GetProposalByHash(item.second, nLastSuperblock);
+		DACProposal p = GetProposalByHash(item.second, nLastSuperblock);
 		CBitcoinAddress cbaAddress(p.sAddress);
 		if (cbaAddress.IsValid() && p.nAmount > .01)
 		{
@@ -884,13 +884,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		double out_PriorPhase = 0;
 		double out_BTC = 0;
 		double dPrice = GetPBase(out_BTC);
-		double dPhase = GetQTPhase(true, dPrice, chainActive.Tip()->nHeight, out_PriorPrice, out_PriorPhase);
-		if (false && dPhase > 0 && !consensusParams.FoundationQTAddress.empty())
-		{
-			sAddresses += consensusParams.FoundationQTAddress + "|";
-			sPayments += RoundToString(dPhase / 100, 4) + "|";
-		}
-		QTData = "<QTDATA><PRICE>" + RoundToString(dPrice, 12) + "</PRICE><BTCPRICE>" + RoundToString(out_BTC, 2) + "</BTCPRICE><QTPHASE>" + RoundToString(dPhase, 0) + "</QTPHASE></QTDATA>";
+		QTData = "<QTDATA><PRICE>" + RoundToString(dPrice, 12) + "</PRICE><BTCPRICE>" + RoundToString(out_BTC, 2) + "</BTCPRICE></QTDATA>";
 
 		std::string DWSData;
 		// Dynamic Whale Staking - R Andrews - 11/11/2019
@@ -930,7 +924,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		}
 	}
 	sCPKList += "</CPKLIST>";
-	// The BiblePay Daily Export should also send a list of registered stratis nodes in this XML report.
+	// The Daily Export should also send a list of registered stratis nodes in this XML report.
 	std::string sStratisNodes = "<STRATISNODES>";
 	if (false)
 	{
@@ -1565,7 +1559,6 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 		std::string sWatchman = WatchmanOnTheWall(false, sContr);
 		if (fDebugSpam)
 			LogPrintf("WatchmanOnTheWall::Status %s Contract %s", sWatchman, sContr);
-		UpdateHealthInformation(0);
 	}
 	bool fStratisExport = (chainActive.Tip()->nHeight % BLOCKS_PER_DAY == 0) && fMasternodeMode;
 	if (fStratisExport)
@@ -1627,7 +1620,6 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 			LogPrintf("\n ExecuteGenericSmartContractQuorum::We have a pending superblock at height %f \n", (double)iNextSuperblock);
 		return "PENDING_SUPERBLOCK";
 	}
-	// R ANDREWS - BIBLEPAY - 4/2/2019
 	// If we are > halfway into daily GSC deadline, and have not received the gobject, emit a distress signal
 	int nBlocksLeft = iNextSuperblock - chainActive.Tip()->nHeight;
 	if (nBlocksLeft < BLOCKS_PER_DAY / 2)

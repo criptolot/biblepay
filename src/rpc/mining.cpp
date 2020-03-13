@@ -1,7 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2019 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -39,6 +39,7 @@
 #include <boost/shared_ptr.hpp>
 #include <univalue.h>
 extern std::unordered_map<std::string, std::string> mapArgs;  // setgenerate needs this map
+static std::mutex cs_mining;
 
 /**
  * Return average network hashes per second based on the last 'lookup' blocks,
@@ -107,54 +108,8 @@ UniValue getnetworkhashps(const JSONRPCRequest& request)
 #if ENABLE_MINER
 UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, uint64_t nMaxTries, bool keepScript)
 {
-    static const int nInnerLoopCount = 0x10000;
-    int nHeightStart = 0;
-    int nHeightEnd = 0;
-    int nHeight = 0;
-
-    {   // Don't keep cs_main locked
-        LOCK(cs_main);
-        nHeightStart = chainActive.Height();
-        nHeight = nHeightStart;
-        nHeightEnd = nHeightStart+nGenerate;
-    }
-    unsigned int nExtraNonce = 0;
-    UniValue blockHashes(UniValue::VARR);
-    while (nHeight < nHeightEnd)
-    {
-		std::string sPMPK;
-		int iThreadID = 0;
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, sPMPK, "", iThreadID));
-        if (!pblocktemplate.get())
-            throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
-        CBlock *pblock = &pblocktemplate->block;
-        {
-            LOCK(cs_main);
-            IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
-        }
-        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetHash(), pblock->nBits, Params().GetConsensus(), 0, 0, 0, 0, NULL, false)) {
-            ++pblock->nNonce;
-            --nMaxTries;
-        }
-        if (nMaxTries == 0) {
-            break;
-        }
-        if (pblock->nNonce == nInnerLoopCount) {
-            continue;
-        }
-        std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
-        if (!ProcessNewBlock(Params(), shared_pblock, true, NULL))
-            throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
-        ++nHeight;
-        blockHashes.push_back(pblock->GetHash().GetHex());
-
-        //mark script as important because it was used at least for one coinbase output if the script came from the wallet
-        if (keepScript)
-        {
-            coinbaseScript->KeepScript();
-        }
-    }
-    return blockHashes;
+   UniValue obj(UniValue::VOBJ);
+   return obj;
 }
 
 UniValue generate(const JSONRPCRequest& request)
@@ -201,7 +156,7 @@ UniValue generatetoaddress(const JSONRPCRequest& request)
             "\nMine blocks immediately to a specified address (before the RPC call returns)\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
-            "2. address      (string, required) The address to send the newly generated Biblepay to.\n"
+            "2. address      (string, required) The address to send the newly generated coins to.\n"
             "3. maxtries     (numeric, optional) How many iterations to try (default = 1000000).\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
@@ -245,7 +200,7 @@ UniValue getgenerate(const JSONRPCRequest& request)
         throw std::runtime_error(
             "getgenerate\n"
             "\nReturn if the server is set to generate coins or not. The default is false.\n"
-            "It is set with the command line argument -gen (or " + std::string(BITCOIN_CONF_FILENAME) + " setting gen)\n"
+            "It is set with the command line argument -gen (or " + std::string(GetConfFileName()) + " setting gen)\n"
             "It can also be set with the setgenerate call.\n"
             "\nResult\n"
             "true|false      (boolean) If the server is set to generate coins or not\n"
@@ -270,10 +225,10 @@ UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"currentblocksize\": nnn,   (numeric) The last block size\n"
             "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
-            "  \"errors\": \"...\"            (string) Current errors\n"
+            "  \"errors\": \"...\"          (string) Current errors\n"
             "  \"networkhashps\": nnn,      (numeric) The network hashes per second\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
-            "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
+            "  \"chain\": \"xxxx\",         (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "}\n"
 		    "\nExamples:\n"
             + HelpExampleCli("getmininginfo", "")
@@ -297,7 +252,7 @@ UniValue getmininginfo(const JSONRPCRequest& request)
 	obj.push_back(Pair("hashcounter",      nHashCounter));
 	obj.push_back(Pair("pooledtx",         (uint64_t)mempool.size()));
 	obj.push_back(Pair("chain",            Params().NetworkIDString()));
-	obj.push_back(Pair("biblepay-generate",getgenerate(request)));
+	obj.push_back(Pair("dac-generate",getgenerate(request)));
 	return obj;
 }
 
@@ -361,20 +316,29 @@ std::string gbt_vb_name(const Consensus::DeploymentPos pos) {
 
 UniValue getblockforstratum(const JSONRPCRequest& request)
 {
+	std::unique_lock<std::mutex> lock(cs_mining);
+
 	if (request.fHelp)
-		throw std::runtime_error("getblockforstratum::Generates a block for p2pool/stratum with or without ABN support.  Returns block hex.  Returns 'ERROR' populated with an error.");
+		throw std::runtime_error("getblockforstratum::Generates a block for p2pool/stratum with or without ABN support.  Returns block hex.  Pass getblockforstratum receiveaddress, randomxkey, randomxheader as hex.  Returns 'ERROR' populated with an error.");
 	std::string sError;
 	std::string sHexDifficulty;
 	int nBits = 0;
 	std::string sAddress;
+	std::string sKey;
+	std::string sHeader;
 	if (request.params.size() > 0)
-    {
         sAddress = request.params[0].get_str();
-	}
+	if (request.params.size() > 1)
+		sKey = request.params[1].get_str();
+	if (request.params.size() > 2)
+		sHeader = request.params[2].get_str();
+	std::vector<unsigned char> vHeader = ParseHex(sHeader);
+	std::string sRevKey = ReverseHex(sKey);
+	uint256 uKey = uint256S("0x" + sRevKey);
 	UniValue results(UniValue::VOBJ);
 	CBlock blockX;
 
-	bool fCreated = CreateBlockForStratum(sAddress, sError, blockX);
+	bool fCreated = CreateBlockForStratum(sAddress, uKey, vHeader, sError, blockX);
 	if (!fCreated)
 	{
 		results.push_back(Pair("error1", sError));
@@ -401,9 +365,16 @@ UniValue getblockforstratum(const JSONRPCRequest& request)
 				results.push_back(Pair("warning", "inconclusive-prevblk"));  
 			results.push_back(Pair("prevblocktime", pindexPrev->GetBlockTime()));
 		}
+		results.push_back(Pair("prevblockhash", chainActive.Tip()->GetBlockHash().GetHex()));
 	}
 	results.push_back(Pair("bits", strprintf("%08x", blockX.nBits)));
    	results.push_back(Pair("merkleroot", blockX.hashMerkleRoot.GetHex()));
+	results.push_back(Pair("key", blockX.RandomXKey.GetHex()));
+	
+	std::string rxHeader = ExtractXML(blockX.RandomXData, "<rxheader>", "</rxheader>");
+		
+	results.push_back(Pair("header", rxHeader));
+
 	results.push_back(Pair("error1", sError));
 	return results;
 }
@@ -578,10 +549,10 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
 
     if (Params().MiningRequiresPeers()) {
         if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)
-            throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "BiblePay Core is not connected!");
+            throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Core is not connected!");
 
         if (IsInitialBlockDownload())
-            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BiblePay Core is downloading blocks...");
+            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Core is downloading blocks...");
     }
 
     // Get expected MN/superblock payees. The call to GetBlockTxOuts might fail on regtest/devnet or when
@@ -593,7 +564,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     if (sporkManager.IsSporkActive(SPORK_9_SUPERBLOCKS_ENABLED)
         && !masternodeSync.IsSynced()
         && CSuperblock::IsValidBlockHeight(chainActive.Height() + 1))
-            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BiblePay Core is syncing with network...");
+            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Core is syncing with network...");
 
     static unsigned int nTransactionsUpdatedLast;
 
@@ -660,7 +631,10 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, "", "", 0);
+		uint256 uRXKey = uint256S("0x01");
+		std::vector<unsigned char> vchRXHeader = ParseHex("00");
+		
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, "", uRXKey, vchRXHeader);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
@@ -870,6 +844,7 @@ UniValue submitblock(const JSONRPCRequest& request)
             + HelpExampleRpc("submitblock", "\"mydata\"")
         );
     }
+	std::unique_lock<std::mutex> lock(cs_mining);
 
     std::shared_ptr<CBlock> blockptr = std::make_shared<CBlock>();
     CBlock& block = *blockptr;
@@ -961,7 +936,7 @@ UniValue estimatesmartfee(const JSONRPCRequest& request)
             "1. nblocks     (numeric)\n"
             "\nResult:\n"
             "{\n"
-            "  \"feerate\" : x.x,     (numeric) estimate fee-per-kilobyte (in " + CURRENCY_UNIT + ")\n"
+            "  \"feerate\" : x.x,     (numeric) estimate fee-per-kilobyte (in " + CURRENCY_NAME + ")\n"
             "  \"blocks\" : n         (numeric) block number where estimate was found\n"
             "}\n"
             "\n"
@@ -1019,7 +994,7 @@ UniValue setgenerate(const JSONRPCRequest& request)
     }
     mapArgs["-gen"] = (fGenerate ? "1" : "0");
     mapArgs ["-genproclimit"] = itostr(nGenProcLimit);
-    GenerateBBP(fGenerate, nGenProcLimit, Params());
+    GenerateCoins(fGenerate, nGenProcLimit, Params());
     return NullUniValue;
 }
 

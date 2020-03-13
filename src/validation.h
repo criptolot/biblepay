@@ -1,7 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2018 The Dash Core developers
-// Copyright (c) 2017-2019 The BiblePay Core developers
+// Copyright (c) 2017-2019 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,7 @@
 #define BITCOIN_VALIDATION_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/biblepay-config.h"
+#include "config/coin-config.h"
 #endif
 
 #include "amount.h"
@@ -121,7 +121,7 @@ static const unsigned int AVG_ADDRESS_BROADCAST_INTERVAL = 30;
 static const unsigned int INVENTORY_BROADCAST_INTERVAL = 5;
 /** Maximum number of inventory items to send per transmission.
  *  Limits the impact of low-fee transaction floods.
- *  We have 4 times smaller block times in Biblepay, so we need to push 4 times more invs per 1MB. */
+ *  We have 4 times smaller block times in DAC, so we need to push 4 times more invs per 1MB. */
 static const unsigned int INVENTORY_BROADCAST_MAX_PER_1MB_BLOCK = 4 * 7 * INVENTORY_BROADCAST_INTERVAL;
 /** Block download timeout base, expressed in millionths of the block interval (i.e. 2.5 min) */
 static const int64_t BLOCK_DOWNLOAD_TIMEOUT_BASE = 1000000;
@@ -135,13 +135,13 @@ static const int64_t DEFAULT_MAX_TIP_AGE = 24 * 60 * 60; // ~144 blocks behind -
 /** Maximum age of our tip in seconds for us to be considered current for fee estimation */
 static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
 
-/** BiblePay extern functions **/
+/** DAC extern functions **/
 void SetOverviewStatus();
 void KillBlockchainFiles();
 bool LateBlock(const CBlock& block, const CBlockIndex* pindexPrev, int iMinutes);
 int64_t LateBlockIndex(const CBlockIndex* pindexPrev, int iMinutes);
 
-/** Biblepay-Classic Settings **/
+
 static const std::string BUSINESS_OBJECTS = "BUSINESS_OBJECTS";
 static const int MINIMUM_EMAIL_LENGTH = 5; 
 static const int BLOCKS_PER_DAY = 205;
@@ -193,7 +193,7 @@ extern int nProposalModulus;
 extern uint256 uTxIdFee;
 extern std::string msProposalResult;
 
-// End of BiblePay Classic Settings
+// End of DAC Classic Settings
 
 
 /** Default for -permitbaremultisig */
@@ -387,7 +387,7 @@ double GuessVerificationProgress(const ChainTxData& data, CBlockIndex* pindex);
  */
 void FindFilesToPrune(std::set<int>& setFilesToPrune, uint64_t nPruneAfterHeight);
 
-// BiblePay - Make it hard on GPUs
+// DAC - Make it hard on GPUs
 bool AntiGPU(const CBlock& block, const CBlockIndex* pindexPrev);
 
 /**
@@ -559,8 +559,8 @@ bool GetAddressUnspent(uint160 addressHash, int type,
 
 /** Functions for disk access for blocks */
 bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart);
-bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams);
-bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams);
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams, bool fCheckPOW = false);
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams, bool fCheckPOW = false);
 
 /** Functions for validating blocks and updating the block tree */
 

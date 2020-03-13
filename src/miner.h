@@ -25,8 +25,8 @@ namespace Consensus { struct Params; };
 
 static const bool DEFAULT_PRINTPRIORITY = false;
 
-void GenerateBBP(bool fGenerate, int nThreads, const CChainParams& chainparams);
-bool CreateBlockForStratum(std::string sAddress, std::string& sError, CBlock& blockX);
+void GenerateCoins(bool fGenerate, int nThreads, const CChainParams& chainparams);
+bool CreateBlockForStratum(std::string sAddress, uint256 uRandomXKey, std::vector<unsigned char> vRandomXHeader, std::string& sError, CBlock& blockX);
 
 struct CBlockTemplate
 {
@@ -172,7 +172,7 @@ public:
     BlockAssembler(const CChainParams& params, const Options& options);
 
     /** Construct a new block template with coinbase to scriptPubKeyIn */
-	std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn, std::string sPoolMiningPublicKey, std::string sMinerGuid, int iThreadId);
+	std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn, std::string sPoolMiningPublicKey, uint256 uRandomXKey, std::vector<unsigned char> vRandomXHeader);
   
 private:
     // utility functions

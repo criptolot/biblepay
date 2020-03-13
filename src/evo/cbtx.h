@@ -1,9 +1,9 @@
-// Copyright (c) 2017-2018 The BiblePay Core developers
+// Copyright (c) 2017-2018 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BIBLEPAY_CBTX_H
-#define BIBLEPAY_CBTX_H
+#ifndef DAC_CBTX_H
+#define DAC_CBTX_H
 
 #include "consensus/validation.h"
 #include "primitives/transaction.h"
@@ -49,4 +49,4 @@ bool CheckCbTxMerkleRoots(const CBlock& block, const CBlockIndex* pindex, CValid
 bool CalcCbTxMerkleRootMNList(const CBlock& block, const CBlockIndex* pindexPrev, uint256& merkleRootRet, CValidationState& state);
 bool CalcCbTxMerkleRootQuorums(const CBlock& block, const CBlockIndex* pindexPrev, uint256& merkleRootRet, CValidationState& state);
 
-#endif //BIBLEPAY_CBTX_H
+#endif //DAC_CBTX_H

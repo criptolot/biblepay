@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The BiblePay Core developers
+// Copyright (c) 2014-2017 The DAC Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -32,7 +32,7 @@
 #include "validationinterface.h"
 #include "smartcontract-client.h"
 #include "governance-classes.h" // For superblock Height
-#include "rpcpodc.h"  // For strReplace
+#include "rpcpodc.h"
 
 #include "evo/specialtx.h"
 #include "evo/cbtx.h"
@@ -50,7 +50,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// BiblepayMiner
+// Solo Miner (POBH)
 //
 
 //
@@ -138,8 +138,8 @@ void BlockAssembler::resetBlock()
 }
 
 BlockAssembler::BlockAssembler(const CChainParams& params) : BlockAssembler(params, DefaultOptions(params)) {}
-
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, std::string sPoolMiningPublicKey, std::string sMinerGuid, int iThreadId)
+		
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, std::string sPoolMiningPublicKey, uint256 uRandomXKey, std::vector<unsigned char> vRandomXHeader)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -169,6 +169,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         pblock->nVersion = GetArg("-blockversion", pblock->nVersion);
 
     pblock->nTime = GetAdjustedTime();
+	// RandomX Support
+	if (nHeight >= chainparams.GetConsensus().RANDOMX_HEIGHT)
+	{
+		pblock->RandomXKey  = uRandomXKey;
+		pblock->RandomXData = "<rxheader>" + HexStr(vRandomXHeader.begin(), vRandomXHeader.end()) + "</rxheader>";
+	}
+
+	// End of RandomX Support
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
@@ -207,7 +215,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout.resize(1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
 
-	// BiblePay - Add Pool Support
+	// RandomX Pool Support
 	if (!sPoolMiningPublicKey.empty())
 	{
 		CBitcoinAddress cbaPoolAddress(sPoolMiningPublicKey);
@@ -250,12 +258,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         SetTxPayload(coinbaseTx, cbTx);
     }
 
-	// Add BiblePay version to the subsidy tx message
+	// Add core version to the subsidy tx message
 	std::string sVersion = FormatFullVersion();
 	coinbaseTx.vout[0].sTxOutMessage += "<VER>" + sVersion + "</VER>" + sABNLocator;
-	if (!sMinerGuid.empty())
-		coinbaseTx.vout[0].sTxOutMessage += "<MINERGUID>" + sMinerGuid + "</MINERGUID>";
-
+	
     // Update coinbase transaction with additional info about masternode and governance payments,
     // get some info back to pass to getblocktemplate
     FillBlockPayments(coinbaseTx, nHeight, blockReward, pblocktemplate->voutMasternodePayments, pblocktemplate->voutSuperblockPayments);
@@ -558,7 +564,7 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
 //////////////////////////////////////////////////////////////////////////////
 //                                                                          //
-//  BiblePay Proof-of-Bible-Hash (POBH) Internal miner - March 12th, 2019   //
+//  Proof-of-Bible-Hash (POBH) Internal miner - March 12th, 2019            //
 //                                                                          //
 //                                                                          //
 //////////////////////////////////////////////////////////////////////////////
@@ -586,15 +592,14 @@ bool LateBlock(CBlock block, CBlockIndex* pindexPrev, int iMinutes)
 	return (nAgeTip > (60 * iMinutes)) ? true : false;
 }
 
-bool CreateBlockForStratum(std::string sAddress, std::string& sError, CBlock& blockX)
+bool CreateBlockForStratum(std::string sAddress, uint256 uRandomXKey, std::vector<unsigned char> vRandomXHeader, std::string& sError, CBlock& blockX)
 {
 	// Create Evo block
 	std::string sMinerGuid;
 	int iThreadID = 0;
 	boost::shared_ptr<CReserveScript> coinbaseScript;
     GetMainSignals().ScriptForMining(coinbaseScript);
-	std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, 
-		sAddress, sMinerGuid, iThreadID));
+	std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, sAddress, uRandomXKey, vRandomXHeader));
 	if (!pblocktemplate.get())
     {
 		LogPrint("miner", "CreateBlockForStratum::No block to mine %f", iThreadID);
@@ -623,7 +628,7 @@ void static BibleMiner(const CChainParams& chainparams, int iThreadID, int iFeat
 	double dMinerSleep = cdbl(GetArg("-minersleep", "325"), 0);
 	// The jackrabbit start option forces the miner to start regardless of rules (like not having peers, not being synced etc).
 	double dJackrabbitStart = cdbl(GetArg("-jackrabbitstart", "0"), 0);
-    RenameThread("biblepay-miner");
+    RenameThread("dac-miner");
 				
     boost::shared_ptr<CReserveScript> coinbaseScript;
     GetMainSignals().ScriptForMining(coinbaseScript);
@@ -631,8 +636,7 @@ void static BibleMiner(const CChainParams& chainparams, int iThreadID, int iFeat
 	MilliSleep(iStart);
 
 recover:
-	arith_uint256 hashTargetPool = UintToArith256(uint256S("0x0"));
-
+	
     try {
         // Throw an error if no script was provided.  This can happen
         // due to some internal error but also if the keypool is empty.
@@ -640,17 +644,18 @@ recover:
         if (!coinbaseScript || coinbaseScript->reserveScript.empty())
             throw std::runtime_error("No coinbase script available (mining requires a wallet)");
 
-		arith_uint256 hashTargetPool = UintToArith256(uint256S("0x0"));
-
+		
         while (true) 
 		{
-            if (chainparams.MiningRequiresPeers() || fReindex)
+			bool fChainEmpty = (chainActive.Tip() == NULL || chainActive.Tip()->nHeight < 100);
+
+            if (chainparams.MiningRequiresPeers() || fReindex || fChainEmpty)
 			{
                 // Busy-wait for the network to come online so we don't waste time mining
                 // on an obsolete chain. In regtest mode we expect to fly solo.
                 while(true)
 				{
-		            if (PeersExist() && !IsInitialBlockDownload() && masternodeSync.IsSynced() && !fReindex)
+		            if (PeersExist() && !IsInitialBlockDownload() && masternodeSync.IsSynced() && !fReindex && !fChainEmpty)
 						break;
 					if (dJackrabbitStart == 1) 
 						break;
@@ -658,21 +663,24 @@ recover:
                     MilliSleep(1000);
                 } 
             }
+			
 
             //
             // Create new block
             //
-
             unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
             CBlockIndex* pindexPrev = chainActive.Tip();
             if(!pindexPrev) break;
+			bool fRandomX = (pindexPrev->nHeight >= chainparams.GetConsensus().RANDOMX_HEIGHT);
 
 			if (!fProd && mempool.size() == 0 && GetSporkDouble("SLEEP_DURING_EMPTY_BLOCKS", 0) == 1)
                 MilliSleep(1000 * 60 * 7);
            
 			// Create Evo block
-
-			std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, "", "", iThreadID));
+			uint256 uRXKey = uint256S("0x01");
+			std::vector<unsigned char> vchRXHeader = ParseHex("00");
+	
+			std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, "", uRXKey, vchRXHeader));
 			if (!pblocktemplate.get())
             {
 				MilliSleep(15000);
@@ -689,7 +697,7 @@ recover:
 			nHashesDone++;
 			UpdateHashesPerSec(nHashesDone);
 			if (fDebugSpam)
-				LogPrint("miner", "BiblepayMiner -- Running miner with %u transactions in block (%u bytes)\n", 
+				LogPrint("miner", "SoloMiner -- Running miner with %u transactions in block (%u bytes)\n", 
 				     pblock->vtx.size(), ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 		    //
             // Search
@@ -702,18 +710,18 @@ recover:
 			bool fTitheBlocksActive;
 			GetMiningParams(pindexPrev->nHeight, f7000, f8000, f9000, fTitheBlocksActive);
 			const Consensus::Params& consensusParams = Params().GetConsensus();
+			
 			while (true)
 			{
 				while (true)
 				{
-					// BiblePay: Proof of BibleHash requires the blockHash to not only be less than the Hash Target, but also,
-					// the BibleHash of the blockhash must be less than the target.
-					// The BibleHash is generated from chained bible verses, AES encryption, MD5, X11, and the custom biblepay.c hash
+					// Use RandomX after the RandomX cutover height:
 					uint256 x11_hash = pblock->GetHash();
-					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight);
-
+					uint256 hash = BibleHashV2(x11_hash, pblock->GetBlockTime(), pindexPrev->nTime, true, pindexPrev->nHeight, pblock->RandomXData, pblock->RandomXKey, pindexPrev->GetBlockHash(), iThreadID + 1);
+					
 					nHashesDone += 1;
-					if (UintToArith256(hash) <= hashTarget)
+
+					if (UintToArith256(ComputeRandomXTarget(hash, pindexPrev->nTime, pblock->GetBlockTime())) <= hashTarget)
 					{
 						bool fNonce = CheckNonce(f9000, pblock->nNonce, pindexPrev->nHeight, pindexPrev->nTime, pblock->GetBlockTime(), consensusParams);
 						if (fNonce)
@@ -736,8 +744,14 @@ recover:
 					}
 						
 					pblock->nNonce += 1;
-			
-					if ((pblock->nNonce & 0xFFF) == 0)
+					// If RandomX 
+					if (fRandomX)
+					{
+						uint256 rxHeader = uint256S("0x" + RoundToString(GetAdjustedTime(), 0) + RoundToString(iThreadID, 0) + RoundToString(pblock->nNonce, 0));
+						pblock->RandomXData = "<rxheader>" + msSessionID + rxHeader.GetHex() + "</rxheader>";
+					}
+
+					if ((pblock->nNonce & 0xFF) == 0)
 					{
 						boost::this_thread::interruption_point();
             			if (dMinerSleep > 0) 
@@ -798,13 +812,13 @@ recover:
     }
     catch (const boost::thread_interrupted&)
     {
-        LogPrint("miner", "\r\nBiblepayMiner -- terminated\n %f", iThreadID);
+        LogPrint("miner", "\r\nSoloMiner -- terminated\n %f", iThreadID);
 		dHashesPerSec = 0;
         throw;
     }
     catch (const std::runtime_error &e)
     {
-        LogPrint("miner", "\r\nBiblepayMiner -- runtime error: %s\n", e.what());
+        LogPrint("miner", "\r\nSoloMiner -- runtime error: %s\n", e.what());
 		dHashesPerSec = 0;
 		// This happens occasionally when TestBlockValidity fails; I suppose the best thing to do for now is start the thread over.
 		nThreadStart = GetTimeMillis();
@@ -814,7 +828,7 @@ recover:
     }
 }
 
-void GenerateBBP(bool fGenerate, int nThreads, const CChainParams& chainparams)
+void GenerateCoins(bool fGenerate, int nThreads, const CChainParams& chainparams)
 {
     static boost::thread_group* minerThreads = NULL;
 
@@ -824,8 +838,15 @@ void GenerateBBP(bool fGenerate, int nThreads, const CChainParams& chainparams)
     if (minerThreads != NULL)
     {
         minerThreads->interrupt_all();
+		LogPrintf("Destroying all miner threads %f", GetAdjustedTime());
+
+		minerThreads->join_all();
         delete minerThreads;
         minerThreads = NULL;
+		LogPrintf("Destroyed all miner threads %f", GetAdjustedTime());
+
+		// We must be very careful here with RandomX, as we have one VM running per mining thread, so we need to let these threads exit
+
     }
 
     if (nThreads == 0 || !fGenerate)

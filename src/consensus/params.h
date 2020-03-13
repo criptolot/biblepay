@@ -53,7 +53,7 @@ enum LLMQType : uint8_t
 };
 
 // Configures a LLMQ and its DKG
-// See https://github.com/biblepay/dips/blob/master/dip-0006.md for more details
+// See https://github.com/bible[pay]/dips/blob/master/dip-0006.md for more details
 struct LLMQParams {
     LLMQType type;
 
@@ -139,7 +139,7 @@ struct Params {
     int nGovernanceFilterElements;
     int nMasternodeMinimumConfirmations;
 	
-	// BiblePay Settings
+	// Bible Pay Settings
 	std::string FoundationAddress;
 	std::string FoundationPODSAddress;
 	std::string FoundationQTAddress;
@@ -152,6 +152,7 @@ struct Params {
 	int F8000_CUTOVER_HEIGHT;
 	int F9000_CUTOVER_HEIGHT;
 	int ANTI_GPU_HEIGHT;
+	int RANDOMX_HEIGHT;
 	int F11000_CUTOVER_HEIGHT;
 	int F12000_CUTOVER_HEIGHT;
 	int F13000_CUTOVER_HEIGHT;
@@ -162,7 +163,7 @@ struct Params {
 	int PODC2_CUTOVER_HEIGHT;
 	int LAST_TITHE_BLOCK;
 	int PODC_LAST_BLOCK;
-	// End of BiblePay Settings
+	// End of Bible Pay Settings
 
     /** Block height and hash at which BIP34 becomes active */
     int BIP34Height;

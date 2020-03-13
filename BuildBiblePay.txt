@@ -27,9 +27,18 @@ sudo add-apt-repository ppa:bitcoin/bitcoin
 sudo apt-get update
 sudo apt-get install libdb4.8-dev libdb4.8++-dev
 
+** These instructions have been updated for RandomX!  Please see below: **
 
 ** Building Daemon and QT: **
 git clone http://github.com/biblepay/biblepay-evolution
+
+# RandomX Part
+cd biblepay-evolution/src/crypto/RandomX
+mkdir build && cd build
+cmake -DARCH=native ..
+make
+cd ../../../../..
+# end of RandomX Part
 prefix=x86_64-pc-linux-gnu
 cd biblepay-evolution/depends
 make -j 4 # Choose a good -j value, depending on the number of CPU cores available

@@ -78,6 +78,8 @@ static int AppInitRPC(int argc, char* argv[])
     //
     // Parameters
     //
+	SetCurrencyName(argv[0]);
+
     ParseParameters(argc, argv);
     if (argc<2 || IsArgSet("-?") || IsArgSet("-h") || IsArgSet("-help") || IsArgSet("-version")) {
         std::string strUsage = strprintf(_("%s RPC client version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n";

@@ -3866,6 +3866,18 @@ std::string SearchChain(int nBlocks, std::string sDest)
 	return sData;
 }
 
+std::string GenerateFaucetCode()
+{
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	std::string s1 = RoundToString(((double)(pwalletMain->GetBalance() / COIN) / 1000), 0);
+	std::string sXML = "<cpk>" + sCPK + "</cpk><s1>" + s1 + "</s1>";
+	DACResult b = DSQL_ReadOnlyQuery("BMS/FaucetID", sXML);
+	std::string sResponse = ExtractXML(b.Response, "<response>", "</response>");
+	if (sResponse.empty())
+		sResponse = "N/A";
+	return sResponse;
+}
+
 uint256 ComputeRandomXTarget(uint256 dac_hash, int64_t nPrevBlockTime, int64_t nBlockTime)
 {
 	static int MAX_AGE = 60 * 30;

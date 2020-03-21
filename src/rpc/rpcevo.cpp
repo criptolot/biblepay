@@ -1483,6 +1483,17 @@ UniValue cancelsponsorship(const JSONRPCRequest& request)
 	return results;
 }
 
+UniValue faucetcode(const JSONRPCRequest& request)
+{
+	if (request.fHelp)
+		throw std::runtime_error(
+		"faucetcode\nProvides a code to allow you to claim a faucet reward.");
+
+	std::string sCode = GenerateFaucetCode();
+	UniValue results(UniValue::VOBJ);
+	results.push_back(Pair("Code", sCode));
+	return results;
+}
 
 UniValue sponsorchild(const JSONRPCRequest& request)
 {
@@ -1922,6 +1933,7 @@ static const CRPCCommand commands[] =
 	{ "evo",                "getpobhhash",                  &getpobhhash,                   false, {}  },
     { "evo",                "bls",                          &_bls,                          false, {}  },
     { "evo",                "protx",                        &protx,                         false, {}  },
+	{ "evo",                "faucetcode",                   &faucetcode,                    false, {}  },
 	{ "evo",                "createnonfinancialtransaction",&createnonfinancialtransaction, false, {}  },
 	{ "evo",                "nonfinancialtxtojson",         &nonfinancialtxtojson,          false, {}  },
 	{ "evo",                "sponsorchild",                 &sponsorchild,                  false, {}  },

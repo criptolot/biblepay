@@ -302,5 +302,6 @@ int GetWCGIdByCPID(std::string sSearch);
 uint256 ComputeRandomXTarget(uint256 hash, int64_t nPrevBlockTime, int64_t nBlockTime);
 std::string ReverseHex(std::string const & src);
 uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID);
+std::string GenerateFaucetCode();
 
 #endif

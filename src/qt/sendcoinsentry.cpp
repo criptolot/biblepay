@@ -12,9 +12,12 @@
 #include "optionsmodel.h"
 #include "platformstyle.h"
 #include "walletmodel.h"
+#include "rpcpog.h"
+#include "rpcpodc.h"
 
 #include <QApplication>
 #include <QClipboard>
+#include <QUrl>
 
 SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *parent) :
     QStackedWidget(parent),
@@ -54,7 +57,15 @@ SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *par
     connect(ui->deleteButton_s, SIGNAL(clicked()), this, SLOT(deleteClicked()));
 	connect(ui->chkDonate, SIGNAL(toggled(bool)), this, SLOT(updateFoundationAddress()));
 	connect(ui->chkDiary, SIGNAL(toggled(bool)), this, SLOT(diaryEntry()));
-
+	// Anti-Censorship Features (ACF)
+	connect(ui->btnAttach, SIGNAL(clicked()), this, SLOT(attachFile()));
+	if (true)
+	{
+		ui->btnAttach->setVisible(false);
+		ui->lblIPFSFee->setVisible(false);
+		ui->txtFile->setVisible(false);
+		ui->lblatt->setVisible(false);
+	}
 }
 
 void SendCoinsEntry::diaryEntry()
@@ -272,6 +283,25 @@ bool SendCoinsEntry::isClear()
 void SendCoinsEntry::setFocus()
 {
     ui->payTo->setFocus();
+}
+
+void SendCoinsEntry::attachFile()
+{
+    QString filename = GUIUtil::getOpenFileName(this, tr("Select a file to attach to this transaction"), "", "", NULL);
+    if(filename.isEmpty()) return;
+    QUrl fileUri = QUrl::fromLocalFile(filename);
+	std::string sFN = GUIUtil::FROMQS(fileUri.toString());
+	bool bFromWindows = Contains(sFN, "file:///C:") || Contains(sFN, "file:///D:") || Contains(sFN, "file:///E:");
+	if (!bFromWindows)
+	{
+		sFN = strReplace(sFN, "file://", "");  // This leaves the full unix path
+	}
+	else
+	{
+		sFN = strReplace(sFN, "file:///", "");  // This leaves the windows drive letter
+	}
+	
+    ui->txtFile->setText(GUIUtil::TOQS(sFN));
 }
 
 void SendCoinsEntry::updateDisplayUnit()

@@ -13,12 +13,12 @@
  * for both dacd and dac-qt, to make it harder for attackers to
  * target servers or GUI users specifically.
  */
-const std::string CLIENT_NAME("DAC Core");
+const std::string CLIENT_NAME("BiblePay Core");
 
 const int BIBLEPAY_VERSION_MAJOR = 1;
 const int BIBLEPAY_VERSION_MINOR = 5;
-const int BIBLEPAY_VERSION_REVISION = 0;
-const int BIBLEPAY_VERSION_BUILD = 5;
+const int BIBLEPAY_VERSION_REVISION = 1;
+const int BIBLEPAY_VERSION_BUILD = 0;
 
 
 const int BIBLE_VERSION =  1000000 * BIBLEPAY_VERSION_MAJOR

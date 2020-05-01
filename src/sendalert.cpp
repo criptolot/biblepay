@@ -50,7 +50,7 @@ void ThreadSendAlert(CConnman& connman)
 
     // These versions are protocol versions
     alert.nMinVer       = 70000;
-    alert.nMaxVer       = 70103;
+    alert.nMaxVer       = 70755;
 
     //
     //  1000 for Misc warnings like out of disk space and clock is wrong
@@ -66,7 +66,7 @@ void ThreadSendAlert(CConnman& connman)
     // Sign
     if(!alert.Sign())
     {
-        LogPrintf("ThreadSendAlert() : could not sign alert\n");
+        LogPrintf("\nThreadSendAlert() : could not sign alert\n");
         return;
     }
 
@@ -75,7 +75,7 @@ void ThreadSendAlert(CConnman& connman)
     sBuffer << alert;
     CAlert alert2;
     sBuffer >> alert2;
-    if (!alert2.CheckSignature(Params().AlertKey()))
+    if (!alert2.CheckSignature())
     {
         printf("ThreadSendAlert() : CheckSignature failed\n");
         return;

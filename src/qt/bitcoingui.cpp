@@ -396,8 +396,8 @@ void BitcoinGUI::createActions()
 	tabGroup->addAction(orphanAction);
 	connect(orphanAction, SIGNAL(triggered()), this, SLOT(showAccountability()));
 
-	webAction = new QAction(QIcon(":/icons/" + theme + "/account32"), tr("Decentralized &Web"), this);
-	webAction->setStatusTip(tr("Navigate the Decentralized Web"));
+	webAction = new QAction(QIcon(":/icons/" + theme + "/account32"), tr("&Web"), this);
+	webAction->setStatusTip(tr("Web"));
 	webAction->setToolTip(webAction->statusTip());
 	webAction->setCheckable(true);
 	tabGroup->addAction(webAction);
@@ -1015,7 +1015,7 @@ void BitcoinGUI::showDecentralizedWeb()
 
 void BitcoinGUI::showAccountability()
 {
-	std::string sURL = "http://accountability." + DOMAIN_NAME + "/";
+	std::string sURL = "https://web.biblepay.org/Accountability";
 	QDesktopServices::openUrl(QUrl(GUIUtil::TOQS(sURL)));
 }
 
@@ -1649,6 +1649,7 @@ void BitcoinGUI::toggleHidden()
     showNormalIfMinimized(true);
 }
 
+static int64_t nProposalModulus = 0;
 void BitcoinGUI::detectShutdown()
 {
     if (ShutdownRequested())
@@ -1660,38 +1661,41 @@ void BitcoinGUI::detectShutdown()
 
 	// Governance - Check to see if we should submit a proposal
     nProposalModulus++;
-    if (nProposalModulus % 15 == 0 && !fLoadingIndex)
+    if (nProposalModulus % 30 == 0 && !fLoadingIndex)
     {
         nProposalModulus = 0;
+		// Opening a web resource
 		if (!msURL.empty())
 		{
 			QString qNav = GUIUtil::TOQS(msURL);
 			msURL = std::string();
 			QDesktopServices::openUrl(QUrl(qNav));
 		}
-        if (fProposalNeedsSubmitted)
-        {
-            nProposalModulus = 0;
-            if(masternodeSync.IsSynced() && chainActive.Tip() && chainActive.Tip()->nHeight > (nProposalPrepareHeight + 6))
-            {
-                fProposalNeedsSubmitted = false;
-                std::string sError;
-                std::string sGovObj;
-                bool fSubmitted = SubmitProposalToNetwork(uTxIdFee, nProposalStartTime, msProposalHex, sError, sGovObj);
-				if (!sError.empty())
-				{
-					LogPrintf("Proposal Submission Problem: %s ", sError);
+		// Proposals
+		for (int i = 0; i < mvQueuedProposals.size(); i++)
+		{
+			QueuedProposal q = mvQueuedProposals[i];
+			if (q.Submitted == false && !q.Hex.empty())
+			{
+				int nGFC = 3;  // ToDO: Import GOVERNANCE_FEE_CONFIRMATIONS
+		        if(masternodeSync.IsSynced() && chainActive.Tip() && chainActive.Tip()->nHeight > (q.PrepareHeight + nGFC + q.SubmissionCount))
+			    {
+					std::string sError;
+					std::string sGovObj;
+					bool fSubmitted = SubmitProposalToNetwork(q.TXID, q.StartTime, q.Hex, sError, sGovObj);
+					q.SubmissionCount++;
+					if (q.SubmissionCount > 4)
+						q.Submitted = true;
+					if (!sGovObj.empty())
+						q.Submitted = true;
+					q.Error = sError;
+					q.GovObj = uint256S(sGovObj);
+					mvQueuedProposals[i] = q;		
+					LogPrintf("\nProposal Submission %s = %s", q.TXID.GetHex(), q.Error);
 				}
-                msProposalResult = fSubmitted ? "Submitted Proposal Successfully <br>( " + sGovObj + " )" : sError;
-                LogPrintf(" Proposal Submission Result:  %s  \n", msProposalResult.c_str());
             }
-            else
-            {
-                msProposalResult = "Waiting for block " + RoundToString(nProposalPrepareHeight + 6, 0) + " to submit pending proposal. ";
-            }
-        }
+		}
     }
-
 }
 
 void BitcoinGUI::showProgress(const QString &title, int nProgress)

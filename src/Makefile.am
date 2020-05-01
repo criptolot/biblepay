@@ -166,6 +166,8 @@ BITCOIN_CORE_H = \
   indirectmap.h \
   kjv.h \
   cnv.h \
+  rst.h \
+  uto.h \
   rpcpog.h \
   rpcpodc.h \
   bbpsocket.h \
@@ -293,6 +295,8 @@ libbiblepay_server_a_SOURCES = \
   httpserver.cpp \
   kjv.cpp \
   cnv.cpp \
+  rst.cpp \
+  uto.cpp \
   rpcpog.cpp \
   rpcpodc.cpp \
   bbpsocket.cpp \

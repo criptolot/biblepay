@@ -51,6 +51,18 @@ struct DACResult
 	std::string ErrorCode;
 };
 
+struct QueuedProposal
+{
+	bool Submitted = false;
+	std::string Hex;
+	uint64_t StartTime = 0;
+	int PrepareHeight = 0;
+	std::string Error;
+	uint256 TXID = uint256S("0x0");
+	uint256 GovObj = uint256S("0x0");
+	int SubmissionCount = 0;
+};
+
 struct Researcher
 {
 	std::string nickname;
@@ -302,5 +314,7 @@ int GetWCGIdByCPID(std::string sSearch);
 uint256 ComputeRandomXTarget(uint256 hash, int64_t nPrevBlockTime, int64_t nBlockTime);
 std::string ReverseHex(std::string const & src);
 uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID);
+std::string GenerateFaucetCode();
+void WriteBinaryToFile(char const* filename, std::vector<char> data);
 
 #endif

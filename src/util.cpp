@@ -272,7 +272,8 @@ void SetCurrencyName(std::string sEXE)
 		GITHUB_URL = "https://github.com/biblepay/biblepay";
 		CURRENCY_TICKER = "BBP";
 	}
-	printf(" CURRENCY_NAME=%s, DOMAIN=%s, TICKER=%s\n ", CURRENCY_NAME.c_str(), DOMAIN_NAME.c_str(), CURRENCY_TICKER.c_str());
+	if (false)
+		printf(" CURRENCY_NAME=%s, DOMAIN=%s, TICKER=%s\n ", CURRENCY_NAME.c_str(), DOMAIN_NAME.c_str(), CURRENCY_TICKER.c_str());
 }
 
 
@@ -644,7 +645,7 @@ boost::filesystem::path GetDefaultDataDir()
     // Unix: ~/.coinname
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "BiblepayEvolution";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "Biblepay";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -654,10 +655,10 @@ boost::filesystem::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/BiblepayEvolution";
+    return pathRet / "Library/Application Support/Biblepay";
 #else
     // Unix
-    return pathRet / ".biblepayevolution";
+    return pathRet / ".biblepay";
 #endif
 #endif
 }

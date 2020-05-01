@@ -130,25 +130,17 @@ int PRAYER_MODULUS = 0;
 int miGlobalPrayerIndex = 0;
 int miGlobalDiaryIndex = 0;
 int iMinerThreadCount = 0;
-int nProposalPrepareHeight = 0;
 double nHashCounter = 0;
-int nProposalModulus = 0;
 int64_t nLastDCContractSubmitted = 0;
 int64_t nHPSTimerStart = 0;
 int64_t nBibleMinerPulse = 0;
-int64_t nProposalStartTime = 0;
 double nHashPerSecondCalibration = 7500;
 double dHashesPerSec = 0;
 uint256 uTxIdFee = uint256S("0x0");
 
-bool fPoolMiningMode = false;
-bool fPoolMiningUseSSL = false;
-bool fCommunicatingWithPool = false;
-bool fProposalNeedsSubmitted= false;
-
-std::string msProposalResult;
+std::vector<QueuedProposal> mvQueuedProposals;
+	
 std::string sGlobalPoolURL;
-std::string msProposalHex;
 std::string msGlobalStatus;
 std::string msGlobalStatus2;
 std::string msGlobalStatus3;
@@ -1351,9 +1343,14 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 	// Sanctuaries receive half of the POW-POBH reward in Phase 1 (July 2017 through December 2019)
 
 	// In phase 2: https://forum.bible[pay].org/index.php?topic=435.0 : Sanctuaries receive 64% of the net block value (35% of the gross block reward)
+	// In POOM-phaseout, sanctuaries receive 57% (32.5% of the gross block reward)
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	CAmount ret = 0;
-	if (nHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight) 
+	if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT)
+	{
+		ret = .57 * blockValue;
+	}
+	else if (nHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight && nHeight <= consensusParams.POOM_PHASEOUT_HEIGHT) 
 	{
 		ret = .64 * blockValue;
 	}
@@ -3714,7 +3711,7 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-type", false, "coinbase is not a CbTx");
         }
     }
-	//////////////////////////////////////////////////////////  DAC //// //////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////  DAC  //////////////////////////////////////////////////////////////////////////////
 	//                               Additional Checks for GSC (Generic-Smart-Contracts) and for ABN (Anti-Bot-Net) rules                        //
 	//                                                                                                                                           //
 
@@ -3727,10 +3724,10 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 		{
 			double nDiff = GetDifficulty(pindexPrev);
 			double nMinRXDiff = GetSporkDouble("MIN_RX_DIFF", 50);
-			if (nHeight > consensusParams.RANDOMX_HEIGHT && nDiff > nMinRXDiff && nMinRXDiff > 0 && !LateBlock(block, pindexPrev, (60 * 30)))
+			if (nHeight > consensusParams.RANDOMX_HEIGHT && nDiff > nMinRXDiff && nMinRXDiff > 0 && !LateBlock(block, pindexPrev, 30))
 			{
 				// Must be solved by a pool (this prevents miners from circumventing the 10% tithe to orphan-charity)
-				std::string sPoolList = GetSporkValue("RX_POOLS");
+				std::string sPoolList = GetSporkValue("RX_POOLS_LIST");
 				if (!sPoolList.empty())
 				{
 					std::string sRecip = PubKeyToAddress(block.vtx[0]->vout[0].scriptPubKey);

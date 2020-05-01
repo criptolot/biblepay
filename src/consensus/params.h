@@ -163,6 +163,7 @@ struct Params {
 	int PODC2_CUTOVER_HEIGHT;
 	int LAST_TITHE_BLOCK;
 	int PODC_LAST_BLOCK;
+	int POOM_PHASEOUT_HEIGHT;
 	// End of Bible Pay Settings
 
     /** Block height and hash at which BIP34 becomes active */

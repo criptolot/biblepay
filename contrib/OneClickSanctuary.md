@@ -1,12 +1,12 @@
-***** BIBLEPAY EVOLUTION  --  ONE-CLICK SANCTUARY INSTALLATION SCRIPT FOR VMS OR HOME USE ****** 
+***** BIBLEPAY -- ONE-CLICK SANCTUARY INSTALLATION SCRIPT FOR VMS OR HOME USE ****** 
 
 
 URL:
-https://raw.githubusercontent.com/biblepay/biblepay-evolution/master/contrib/masternode-install.sh
+https://raw.githubusercontent.com/biblepay/biblepay/master/contrib/masternode-install.sh
 
 Command line script options
 
--u  Run unattended with defaults (upgrade if .biblepayevolution found, clean install if not)
+-u  Run unattended with defaults (upgrade if .biblepay found, clean install if not)
 -n  Don't run apt-get update/upgrade/dist-upgrade/remove 
 -s  Swap size (1G by default). Size values not validated.
 

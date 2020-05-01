@@ -355,12 +355,12 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
     //
     // Debug view
     //
-	bool fEvolutionView = true;
+	bool fShowAdvView = true;
 	int nDepth = wtx.GetDepthInMainChain();
     std::string sStripped;
 	std::string sObjType;
 	const CBlockIndex* pindexTxList;
-    if (fDebug || fEvolutionView)
+    if (fShowAdvView)
     {
 		// In Network Messages or Prayers
 

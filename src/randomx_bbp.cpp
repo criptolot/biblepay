@@ -5,8 +5,6 @@
 
 #include "randomx_bbp.h"
 #include "hash.h"
-//#include <boost/thread/thread.hpp>
-//#include <boost/date_time/posix_time/posix_time.hpp>
 
 static std::map<int, randomx_cache*> rxcache;
 static std::map<int, randomx_vm*> myvm;
@@ -33,16 +31,8 @@ void destroy(int iThreadID)
 	fBusy[iThreadID] = false;
 }
 
-void BusyWaitGuard(int iThreadID)
-{
-	// Todo: Remove in next version - problem solved with mutex in rpcpog.cpp
-	return;
-}
-
 uint256 RandomX_Hash(uint256 hash, uint256 uKey, int iThreadID)
 {
-		BusyWaitGuard(iThreadID);
-						
 		if (fInitialized[iThreadID] && msGlobalKey[iThreadID] != uKey)
 		{
 			destroy(iThreadID);
@@ -64,8 +54,6 @@ uint256 RandomX_Hash(uint256 hash, uint256 uKey, int iThreadID)
 
 uint256 RandomX_Hash(std::vector<unsigned char> data0, uint256 uKey, int iThreadID)
 {
-		BusyWaitGuard(iThreadID);
-						
 		if (fInitialized[iThreadID] && msGlobalKey[iThreadID] != uKey)
 		{
 			destroy(iThreadID);

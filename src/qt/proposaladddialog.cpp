@@ -28,6 +28,7 @@
 #include <QMessageBox>
 #include <QScrollBar>
 #include <QTextDocument>
+#include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 
 ProposalAddDialog::ProposalAddDialog(const PlatformStyle *platformStyle, QWidget *parent) :
     QDialog(parent),
@@ -49,6 +50,8 @@ ProposalAddDialog::ProposalAddDialog(const PlatformStyle *platformStyle, QWidget
 	ui->cmbExpenseType->addItem("PR");
 	ui->cmbExpenseType->addItem("P2P");
 	ui->cmbExpenseType->addItem("IT");
+	connect(ui->btnAttach, SIGNAL(clicked()), this, SLOT(attachFile()));
+
  }
 
 
@@ -56,20 +59,75 @@ void ProposalAddDialog::UpdateDisplay()
 {
 	int nNextHeight = GetNextSuperblock();
 
-	std::string sInfo = "Note: Proposal Cost is 2500 " + CURRENCY_NAME + ".  Next Superblock at height: " + RoundToString(nNextHeight, 0) + "<br>Warning: You must unlock the wallet before submitting the proposal.";
+	std::string sInfo = "Note: Proposal Cost is 2500 " + CURRENCY_NAME + ".  Next Superblock at height: " + RoundToString(nNextHeight, 0);
 
-	if (fProposalNeedsSubmitted)
+	std::string sNarr;
+	for (int i = 0; i < mvQueuedProposals.size(); i++)
 	{
-		sInfo += "<br>NOTE: You have a proposal waiting to be submitted.  <br>Status: " + msProposalResult;
+		QueuedProposal q = mvQueuedProposals[i];
+		if (q.PrepareHeight > chainActive.Tip()->nHeight - 100)
+		{
+			std::string sSubmitted = q.Submitted ? "Submitted " + q.GovObj.GetHex() : "Waiting";
+			std::string sErrNarr = q.Error.empty() ? "" : " (Error: " + q.Error + ")";
+			sNarr += q.TXID.GetHex().substr(0, 10) + "=[height " + RoundToString(q.PrepareHeight, 0) + "] :: " + sSubmitted + " <br>" + sErrNarr + ";<br>";
+		}
 	}
-	else if (!msProposalResult.empty())
-	{
-		sInfo = "<br>NOTE: Your last proposal has been submitted.  <br>Status: " + msProposalResult;
-	}
+	if (sNarr.length() > 5)
+		sNarr = sNarr.substr(0, sNarr.length() - 5);
 
+	sInfo += "<br>" + sNarr;
 	ui->txtInfo->setText(GUIUtil::TOQS(sInfo));
 }
 
+void ProposalAddDialog::attachFile()
+{
+    QString filename = GUIUtil::getOpenFileName(this, tr("Select a file to attach to this proposal"), "", "", NULL);
+    if(filename.isEmpty()) return;
+    
+	QUrl fileUri = QUrl::fromLocalFile(filename);
+	std::string sFN = GUIUtil::FROMQS(fileUri.toString());
+	bool bFromWindows = Contains(sFN, "file:///C:") || Contains(sFN, "file:///D:") || Contains(sFN, "file:///E:");
+	if (!bFromWindows)
+	{
+		sFN = strReplace(sFN, "file://", "");  // This leaves the full unix path
+	}
+	else
+	{
+		sFN = strReplace(sFN, "file:///", "");  // This leaves the windows drive letter
+	}
+	if (sFN.empty())
+		return;
+
+	if (sFN.length() < 5)
+		return;
+
+	std::string sExt = sFN.substr(sFN.length() - 3, 3);
+	boost::to_lower(sExt);
+	if (sExt != "pdf")
+	{
+		std::string sNarr = "Sorry, The only files supported are pdfs.";
+		LogPrintf("Unable to add to a proposal %s::", sFN);
+	 	QMessageBox::warning(this, tr("Proposal Add File Attachment Result"), GUIUtil::TOQS(sNarr), QMessageBox::Ok, QMessageBox::Ok);
+		return;
+	}
+	// Check the size
+	std::vector<char> v = ReadBytesAll(sFN.c_str());
+	if (v.size() < 1)
+	{
+		std::string sNarr = "Sorry, the file is too small.  We only support up to 256K files currently.  We may increase this in the future, after we verify stability. ";
+		QMessageBox::warning(this, tr("Proposal Add Attachment Failed"), GUIUtil::TOQS(sNarr), QMessageBox::Ok, QMessageBox::Ok);
+		return;
+	}
+
+	std::string sVHex = HexStr(v.begin(), v.end());
+	if (sVHex.length() > 256000 || sVHex.length() < 1)
+	{
+		std::string sNarr = "Sorry, the file is too big.  We only support up to 256K files currently.  We may increase this in the future, after we verify stability. ";
+		QMessageBox::warning(this, tr("Proposal Add Attachment Failed"), GUIUtil::TOQS(sNarr), QMessageBox::Ok, QMessageBox::Ok);
+		return;
+	}
+    ui->txtAttach->setText(GUIUtil::TOQS(sFN));
+}
 
 void ProposalAddDialog::setModel(WalletModel *model)
 {
@@ -92,6 +150,7 @@ void ProposalAddDialog::clear()
     ui->txtURL->setText("");
 	ui->txtAmount->setText("");
 	ui->txtAddress->setText("");
+	ui->txtAttach->setText("");
 }
 
 
@@ -104,24 +163,26 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 	std::string sAmount = GUIUtil::FROMQS(ui->txtAmount->text());
 	std::string sURL = GUIUtil::FROMQS(ui->txtURL->text());
 	std::string sError;
-	if (sName.length() < 3) sError += "Proposal Name must be populated. ";
+	if (sName.length() < 3)
+		sError += "Proposal Name must be populated. ";
 	CBitcoinAddress address(sAddress);
-	if (!address.IsValid()) sError += "Proposal Funding Address is invalid. ";
-	if (cdbl(sAmount,0) < 100) sError += "Proposal Amount is too low. ";
-	if (sURL.length() < 10) sError += "You must enter a discussion URL. ";
+	if (!address.IsValid()) 
+		sError += "Proposal Funding Address is invalid. ";
+	if (cdbl(sAmount,0) < 100) 
+		sError += "Proposal Amount is too low. ";
+	if (sURL.length() < 10) 
+		sError += "You must enter a discussion URL. ";
 	std::string sExpenseType = GUIUtil::FROMQS(ui->cmbExpenseType->currentText());
-	if (sExpenseType.empty()) sError += "Expense Type must be chosen. ";
+	if (sExpenseType.empty()) 
+		sError += "Expense Type must be chosen. ";
 	CAmount nBalance = GetRPCBalance();
 
-	if (fProposalNeedsSubmitted) 
-	{
-		sError += "There is a proposal already being submitted (" + msProposalResult + ").  Please wait until this proposal is sent before creating a new one. ";
-	}
-	else
-	{
-		if (nBalance < (2501*COIN)) sError += "Sorry balance too low to create proposal collateral. ";
-	}
+	if (nBalance < (2501*COIN)) 
+		sError += "Sorry balance too low to create proposal collateral. ";
 
+	 if (model->getEncryptionStatus() == WalletModel::Locked)
+		 sError += "Sorry, wallet must be unlocked. ";
+       
 	std::string sPrepareTxId;
 	std::string sHex;
 	int64_t unixStartTimestamp = GetAdjustedTime();
@@ -142,6 +203,43 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 		sJson += GJE("payment_amount", sAmount, true, false);
 		sJson += GJE("type", sType, true, false);
 		sJson += GJE("expensetype", sExpenseType, true, true);
+
+		// Anti-Censorship Features (ACF)
+		std::string sPDFFilename = GUIUtil::FROMQS(ui->txtAttach->text());
+		CAmount nStorageFee = 0;
+
+		if (!sPDFFilename.empty())
+		{
+			std::string sExt = sPDFFilename.substr(sPDFFilename.length() - 3, 3);
+			boost::to_lower(sExt);
+			if (sExt != "pdf")
+				sError += "Invalid extension (only PDFs are supported).";
+
+			std::vector<char> v = ReadBytesAll(sPDFFilename.c_str());
+			if (v.size() > 1)
+			{
+				std::string sVHex = HexStr(v.begin(), v.end());
+				if (sVHex.length() < 256000)
+				{
+					sJson += GJE("pdf", sVHex, true, true);
+					boost::filesystem::path p(sPDFFilename);
+					std::string sBaseName = p.filename().string();
+					sJson += GJE("attachment_name", sBaseName, true, true);
+					nStorageFee += (sVHex.length() * COIN);  // 1 bbp per byte per year?  I guess we need to poll this.
+				}
+				else
+				{
+					sError += "File too big.";
+				}
+
+			}
+			else
+			{
+				sError += "File too small";
+			}
+		}
+		// End of ACF
+
 		sJson += GJE("url", sURL, false, true);
 		sJson += "}]]";
 		// make into hex
@@ -154,7 +252,7 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 		CGovernanceObject govobj(hashParent, nRevision, unixStartTimestamp, uint256(), sHex);
 		if((govobj.GetObjectType() == GOVERNANCE_OBJECT_TRIGGER) || (govobj.GetObjectType() == GOVERNANCE_OBJECT_WATCHDOG)) 
 		{
-			sError = "Trigger and watchdog objects cannot be created from the UI yet.";
+			sError += "Trigger and watchdog objects cannot be created from the UI yet.";
 		}
 		if (sError.empty())
 		{
@@ -164,9 +262,24 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 				 sError += "Governance object is not valid - " + govobj.GetHash().ToString();
 			}
 
+			if (nStorageFee > 0)
+			{
+				// Warn the user that we will charge them a storage fee.  
+				double nTotalFee = (nStorageFee + govobj.GetMinCollateralFee()) / COIN;
+				double nTimeLength = 1; // ToDo:  Make storage duration dynamic
+				std::string sNarr = "A storage fee of " + RoundToString(nTotalFee, 2) + " applies to this object.  This allows biblepay to store the file for " 
+					+ RoundToString(nTimeLength, 0) + " month(s).  Do you approve this fee?";
+			    int ret = QMessageBox::warning(this, tr("Pay Storage Fee?"), GUIUtil::TOQS(sNarr), QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok);
+				if (ret != QMessageBox::Ok)
+				{
+					sError = "User refused to pay the fee.";
+				}
+			}
+
+			// For ACFs with PDF, increase the collateral fee to cover the cost of storage
 			if (sError.empty())
 			{
-				sPrepareTxId = CreateGovernanceCollateral(govobj.GetHash(), govobj.GetMinCollateralFee(), sError);
+				sPrepareTxId = CreateGovernanceCollateral(govobj.GetHash(), govobj.GetMinCollateralFee() + nStorageFee, sError);
 			}
 		}
 	}
@@ -177,12 +290,13 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 	if (sError.empty())
 	{
 		// Set the proposal up to be submitted after 6 confirms using our Governance Service:
-		nProposalPrepareHeight = chainActive.Tip()->nHeight;
-		msProposalResult = "Submitting Proposal at height " + RoundToString(nProposalPrepareHeight + 6, 0) + "...";
-		uTxIdFee = uint256S(sPrepareTxId);
-		nProposalStartTime = unixStartTimestamp;
-		msProposalHex = sHex;
-		fProposalNeedsSubmitted = true;
+		QueuedProposal q;
+		q.PrepareHeight = chainActive.Tip()->nHeight;
+		q.TXID = uint256S(sPrepareTxId);
+		q.StartTime = unixStartTimestamp;
+		q.Hex = sHex;
+		q.Submitted = false;
+		mvQueuedProposals.push_back(q);
 		clear();
 	}
  	QMessageBox::warning(this, tr("Proposal Add Result"), GUIUtil::TOQS(sNarr), QMessageBox::Ok, QMessageBox::Ok);

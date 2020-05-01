@@ -38,7 +38,8 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     setWindowFlags(Qt::FramelessWindowHint);
 
     // set reference point, paddings
-    int paddingLeft             = 60;
+	bool nOffset = CURRENCY_NAME == "DAC" ? 35 : 0;
+    int paddingLeft             = 25 + nOffset;
     int paddingTop              = 470;
     int titleVersionVSpace      = 19;
     int titleCopyrightVSpace    = 25;
@@ -46,7 +47,6 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     float fontFactor            = 1.25;
 
     // define text to place (String(tr(PACKAGE_NAME));
-	printf(" CURRENCY_NAME %s", CURRENCY_NAME.c_str());
     QString titleText       = GUIUtil::TOQS(CURRENCY_NAME + " Core");
     QString versionText     = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
     QString copyrightText   = QString::fromUtf8(CopyrightHolders("\xc2\xA9", 2020, COPYRIGHT_YEAR).c_str());

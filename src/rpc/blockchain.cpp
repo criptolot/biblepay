@@ -118,7 +118,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 	result.push_back(Pair("randomx_header", ExtractXML(blockindex->RandomXData, "<rxheader>", "</rxheader>")));
 	if (true)
 	{
-		uint256 uRX = GetRandomXHash(blockindex->RandomXData, blockindex->RandomXKey, blockindex->pprev->GetBlockHash(), 0);
+		uint256 uRX = GetRandomXHash2(blockindex->RandomXData, blockindex->RandomXKey, blockindex->pprev->GetBlockHash(), 0);
 		result.push_back(Pair("RandomX_Hash", uRX.GetHex()));
 	}
     if (blockindex->pprev)

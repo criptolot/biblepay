@@ -3036,10 +3036,11 @@ UniValue exec(const JSONRPCRequest& request)
 			std::string sKey = request.params[2].get_str();
 			std::vector<unsigned char> v = ParseHex(sHeader);
 			std::vector<unsigned char> vKey = ParseHex(sKey);
+
 			std::string sRevKey = ReverseHex(sKey);
 			uint256 uKey = uint256S("0x" + sRevKey);
-
 			uint256 uRXMined = RandomX_Hash(v, uKey, 90);
+
 			std::vector<unsigned char> vch(160);
 			CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 			ss << chainActive.Tip()->GetBlockHash() << uRXMined;
@@ -3047,6 +3048,11 @@ UniValue exec(const JSONRPCRequest& request)
 
 			results.push_back(Pair("RX", h.GetHex()));
 			results.push_back(Pair("RX_root", uRXMined.GetHex()));
+
+			//uint256 h3 = GetRandomXHash2(sHeader, uKey, uKey, 1);
+			//results.push_back(Pair("h3", h3.GetHex()));
+
+
 		}
 	}
 	else if (sItem == "randomx")

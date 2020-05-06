@@ -3747,8 +3747,9 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 					bool fFound = Contains(sPoolList, sRecip);
 					if (!fFound)
 					{
-						LogPrintf("\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
-							nHeight, nDiff, nMinRXDiff, sRecip, sPoolList);
+						if (fDebugSpam)
+							LogPrintf("\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
+									nHeight, nDiff, nMinRXDiff, sRecip, sPoolList);
 						return false; 
 					}
 				}

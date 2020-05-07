@@ -912,6 +912,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 	sProminenceExport += "</PROMINENCE>";
 	
 	std::string QTData;
+	std::string sSporks;
 	if (fCreatingContract)
 	{
 		// Add the QT Phase
@@ -945,7 +946,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 
 		// Sanctuary Spork Voting
 		// For each winning Sanctuary Spork proposal
-		std::string sSporks = "<SPORKS>";
+		sSporks = "<SPORKS>";
 		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
 		std::vector<DACProposal> vSporks = GetWinningSanctuarySporkProposals();
 		if (vSporks.size() > 0)

@@ -788,7 +788,7 @@ std::string GetActiveProposals()
     std::vector<const CGovernanceObject*> objs = governance.GetAllNewerThan(nStartTime);
 	std::string sXML;
 	int id = 0;
-	std::string sDelim = "|";
+	std::string sDelim = "~";
 	std::string sZero = "\0";
 	int nLastSuperblock = 0;
 	int nNextSuperblock = 0;

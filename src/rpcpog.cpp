@@ -1180,16 +1180,15 @@ bool SubmitProposalToNetwork(uint256 txidFee, int64_t nStartTime, std::string sH
 
     std::string strHash = govobj.GetHash().ToString();
 
-	// Mission Critical TODO:  4-28-2020
 	bool fAlwaysCheck = true;
 	if (fAlwaysCheck)
 	{
-    if(!govobj.IsValidLocally(sError, true)) 
-	{
-		sError += "Object submission rejected because object is not valid.";
-		LogPrintf("\n OBJECT REJECTED:\n gobject submit 0 1 %f %s %s \n", (double)nStartTime, sHex.c_str(), txidFee.GetHex().c_str());
-		return false;
-    }
+		if(!govobj.IsValidLocally(sError, true)) 
+		{
+			sError += "Object submission rejected because object is not valid.";
+			LogPrintf("\n OBJECT REJECTED:\n gobject submit 0 1 %f %s %s \n", (double)nStartTime, sHex.c_str(), txidFee.GetHex().c_str());
+			return false;
+		}
 	}
     // RELAY THIS OBJECT - Reject if rate check fails but don't update buffer
 

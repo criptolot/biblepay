@@ -3049,10 +3049,6 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("RX", h.GetHex()));
 			results.push_back(Pair("RX_root", uRXMined.GetHex()));
 
-			//uint256 h3 = GetRandomXHash2(sHeader, uKey, uKey, 1);
-			//results.push_back(Pair("h3", h3.GetHex()));
-
-
 		}
 	}
 	else if (sItem == "randomx")

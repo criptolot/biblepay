@@ -713,8 +713,8 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
 
 			std::string sDataString = pGovObj->GetDataAsPlainString();
 
-			std::string sPDF = ExtractXML(sDataString, "\"pdf\"", "\"");
-			boost::replace_all(sDataString, sPDF, "");
+			//std::string sPDF = ExtractXML(sDataString, "\"pdf\"", "\"");
+			//boost::replace_all(sDataString, sPDF, "");
 
 			bObj.push_back(Pair("DataString", sDataString));
 

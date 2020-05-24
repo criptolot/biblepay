@@ -273,6 +273,7 @@ UniValue CallRPC(const std::string& strMethod, const UniValue& params)
 int CommandLineRPC(int argc, char *argv[])
 {
     std::string strPrint;
+
     int nRet = 0;
     try {
         // Skip switches

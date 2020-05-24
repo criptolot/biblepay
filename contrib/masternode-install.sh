@@ -12,15 +12,15 @@ MAX=10
 CURRSTEP=0
 
 COINDOWNLOADFILE=biblepay-aarch64-linux-gnu.tar.gz
-COINREPO=https://github.com/biblepay/biblepay-evolution.git
+COINREPO=https://github.com/biblepay/biblepay.git
 COINRPCPORT=9998
 COINPORT=40000
 COINDAEMON=biblepayd
 COINCLIENT=biblepay-cli
 COINTX=biblepay-tx
-COINCORE=.biblepayevolution
+COINCORE=.biblepay
 COINCONFIG=biblepay.conf
-COINDOWNLOADDIR=biblepay-evolution
+COINDOWNLOADDIR=biblepay
 
 archname=""
 update=""
@@ -53,7 +53,7 @@ done
 
 purgeOldInstallation() {
     echo "Searching old masternode files"
-    if [ -d ~/.biblepayevolution ]; then
+    if [ -d ~/.biblepay ]; then
         if [[ "$UNATTENDED" != "Y" ]]; then
             echo -e "${BOLD}"
             read -p "An existing setup was detected. Do you want to upgrade (y) or clean install (n)? (y/n)?" existing
@@ -76,7 +76,7 @@ purgeOldInstallation() {
             sudo ufw delete allow COINRPCPORT/tcp > /dev/null 2>&1
             sudo ufw delete allow COINPORT/tcp > /dev/null 2>&1
             #remove old files
-            sudo rm -rf ~/.biblepayevolution > /dev/null 2>&1
+            sudo rm -rf ~/.biblepay > /dev/null 2>&1
             #remove binaries and biblepay utilities
             cd /usr/local/bin && sudo rm biblepay-cli biblepay-tx biblepayd biblepay-qt> /dev/null 2>&1 
             cd ~
@@ -297,13 +297,13 @@ echo -e "|             ´--:::--.´ ´-+syy´    ´yyso/:.´.-:::-:-´          
 echo -e "|                .-:-:::::-....´´´´´´....-::--:::-.                 |"
 echo -e "|                   ´.-::::::--:::::::---::::-.´                    |"
 echo -e "|                                                                   |"
-echo -e "|            Biblepay Evolution Masternode Installer                |"
+echo -e "|            Biblepay Masternode Installer                          |"
 echo -e "|                                                                   |"
 echo -e "--------------------------------------------------------------------"
 
 if [[ "$UNATTENDED" != "Y" ]]; then
     echo -e "${BOLD}"
-    read -p "This script will setup your Biblepay Evolution Masternode. Continue? (y/n)?" response
+    read -p "This script will setup your Biblepay Masternode. Continue? (y/n)?" response
     echo -e "${NONE}"
 else 
     response="y"

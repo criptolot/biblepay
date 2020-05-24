@@ -45,10 +45,10 @@ public:
 
     void setModel(WalletModel *model);
 	void UpdateDisplay();
-
+	
 public Q_SLOTS:
     void clear();
-
+	
 protected:
    
 

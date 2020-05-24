@@ -788,7 +788,7 @@ std::string GetActiveProposals()
     std::vector<const CGovernanceObject*> objs = governance.GetAllNewerThan(nStartTime);
 	std::string sXML;
 	int id = 0;
-	std::string sDelim = "|";
+	std::string sDelim = "~";
 	std::string sZero = "\0";
 	int nLastSuperblock = 0;
 	int nNextSuperblock = 0;
@@ -1179,12 +1179,17 @@ bool SubmitProposalToNetwork(uint256 txidFee, int64_t nStartTime, std::string sH
              << endl; );
 
     std::string strHash = govobj.GetHash().ToString();
-    if(!govobj.IsValidLocally(sError, true)) 
+
+	bool fAlwaysCheck = true;
+	if (fAlwaysCheck)
 	{
-		sError += "Object submission rejected because object is not valid.";
-		LogPrintf("\n OBJECT REJECTED:\n gobject submit 0 1 %f %s %s \n", (double)nStartTime, sHex.c_str(), txidFee.GetHex().c_str());
-		return false;
-    }
+		if(!govobj.IsValidLocally(sError, true)) 
+		{
+			sError += "Object submission rejected because object is not valid.";
+			LogPrintf("\n OBJECT REJECTED:\n gobject submit 0 1 %f %s %s \n", (double)nStartTime, sHex.c_str(), txidFee.GetHex().c_str());
+			return false;
+		}
+	}
     // RELAY THIS OBJECT - Reject if rate check fails but don't update buffer
 
 	bool fRateCheckBypassed = false;
@@ -1203,12 +1208,27 @@ bool SubmitProposalToNetwork(uint256 txidFee, int64_t nStartTime, std::string sH
 
 std::vector<char> ReadBytesAll(char const* filename)
 {
+	int iFileSize = GetFileSize(filename);
+	if (iFileSize < 1)
+	{
+		std::vector<char> z(0);
+		return z;
+	}
+	
     std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
     std::ifstream::pos_type pos = ifs.tellg();
     std::vector<char>  result(pos);
     ifs.seekg(0, std::ios::beg);
     ifs.read(&result[0], pos);
     return result;
+}
+
+void WriteBinaryToFile(char const* filename, std::vector<char> data)
+{
+	std::ofstream OutFile;
+	OutFile.open(filename, std::ios::out | std::ios::binary);
+	OutFile.write(&data[0], data.size());
+	OutFile.close();
 }
 
 
@@ -1581,17 +1601,49 @@ TxMessage GetTxMessage(std::string sMessage, int64_t nTime, int iPosition, std::
 	t.dAmount      = dAmount;
     boost::to_upper(t.sMessageType);
 	boost::to_upper(t.sMessageKey);
+	bool fGSC = CSuperblock::IsSmartContract(nHeight);
+
 	t.sTimestamp = TimestampToHRDate((double)nTime + iPosition);
 	t.fNonceValid = (!(t.nNonce > (nTime+(60 * 60)) || t.nNonce < (nTime-(60 * 60))));
 	t.nAge = GetAdjustedTime() - nTime;
 	t.fPrayersMustBeSigned = (GetSporkDouble("prayersmustbesigned", 0) == 1);
 
 	if (t.sMessageType == "PRAYER" && (!(Contains(t.sMessageKey, "(") ))) t.sMessageKey += " (" + t.sTimestamp + ")";
-	if (t.sMessageType == "SPORK")
+	// The following area allows us to be a true decentralized autonomous charity (DAC):
+	if (t.sMessageType == "SPORK2" && fGSC)
+	{
+		t.fSporkSigValid = true;
+		t.fPassedSecurityCheck = true;
+		std::vector<std::string> vInput = Split(sMessage.c_str(), "<SPORK>");
+		for (int i = 0; i < (int)vInput.size(); i++)
+		{
+			std::string sKey = ExtractXML(vInput[i], "<SPORKKEY>", "</SPORKKEY>");
+			std::string sValue = ExtractXML(vInput[i], "<SPORKVAL>", "</SPORKVAL>");
+			if (!sKey.empty() && !sValue.empty())
+			{
+				WriteCache("spork", sKey, sValue, t.nTime);
+				// If this is the Delete action, physically delete the PDF from the SAN:
+				if (sKey == "REMOVAL" && Contains(sValue, "pdf"))
+				{
+					WriteCache("REMOVAL", sValue, "1", t.nTime);
+					std::string sPath = GetSANDirectory2() + sValue;
+					if (boost::filesystem::exists(sPath))
+						 boost::filesystem::remove(sPath);
+	   
+				}
+			}
+		}
+		t.sMessageValue = "";
+	}
+	else if (t.sMessageType == "SPORK")
 	{
 		t.fSporkSigValid = CheckSporkSig(t);                                                                                                                                                                                                                 
 		if (!t.fSporkSigValid) t.sMessageValue  = "";
 		t.fPassedSecurityCheck = t.fSporkSigValid;
+	}
+	else if (t.sMessageType == "REMOVAL")
+	{
+		t.fPassedSecurityCheck = false;
 	}
 	else if (t.sMessageType == "DWS-BURN")
 	{
@@ -2167,8 +2219,13 @@ std::string HTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, s
   return sRead;
 }
 
+static std::string msVersionAlert;
 std::string GetVersionAlert()
 {
+	if (!msVersionAlert.empty())
+	{
+		return msVersionAlert;
+	}
 	if (msGithubVersion.empty()) 
 	{
 		msGithubVersion = GetGithubVersion();
@@ -2191,6 +2248,7 @@ std::string GetVersionAlert()
 	if (bDevBranch)
 		return std::string();
 	if (dCurrentVersion < dGithubVersion && fProd) sNarr = "<br>** Client Out of Date (v=" + sCurrentVersion + "/v=" + sGithubVersion + ") **";
+	msVersionAlert = sNarr;
 	return sNarr;
 }
 
@@ -2909,7 +2967,7 @@ std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath)
 
 std::string DSQL_Ansi92Query(std::string sSQL)
 {
-	std::string sURL = "https://web." + DOMAIN_NAME;
+	std::string sURL = "https://" + GetSporkValue("bms");
 	std::string sRestfulURL = "BMS/JsonSqlQuery";
 	int iTimeout = 30;
 	std::string sResponse = HTTPSPost(false, 0, "", "", sSQL, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
@@ -2918,7 +2976,7 @@ std::string DSQL_Ansi92Query(std::string sSQL)
 
 DACResult DSQL_ReadOnlyQuery(std::string sXMLSource)
 {
-	std::string sDomain = "https://web." + DOMAIN_NAME;
+	std::string sDomain = "https://" + GetSporkValue("bms");
 	int iTimeout = 30000;
 	int iSize = 24000000;
 	DACResult b;
@@ -2928,7 +2986,7 @@ DACResult DSQL_ReadOnlyQuery(std::string sXMLSource)
 
 DACResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML)
 {
-	std::string sDomain = "https://web." + DOMAIN_NAME;
+	std::string sDomain = "https://" + GetSporkValue("bms");
 	int iTimeout = 30;
 	int iSize = 24000000;
 	DACResult b;
@@ -2947,62 +3005,14 @@ std::string Path_Combine(std::string sPath, std::string sFileName)
 	return sFullPath;
 }
 
-/*
-void UpdateHealthInformation(int iType)
-{
-	// This is an optional feature where we will display your sanctuaries health information in the pool.
-	// This allows you to see your sancs health even if you host with one of our turnkey providers (such as Apollon).
-	// Health information currently includes:  Best BlockHash, Best Chain Height, Sanctuary Vote - Popular Contract - Vote Level, Sanctuary Public IP
-	// The primary benefit to doing this is this allows a user to know a sanc needs resynced, and to ensure our blockhashes as a community.
-	// For example, if we receive a post on the forum claiming a home users node is forked, we can run this report and assess the network situation globally.
-	// Additionally this will allow us as a community to see that the entire GSC health vote levels match (this ensure gobject propagation integrity).
-	// To enable the feature, set the key:  healthupdate=1 (this is the default for a sanctuary), or healthupdate=0 (to disable this on your sanctuary).
-	// Note: This code only works on sanctuaries (it does not work on home distributions).
-	// Assess GSC Health
-
-	double nNetEnabled = GetSporkDouble("ENABLE_SANC_HEALTH_CHECKUPS", 0);
-		
-	double iEnabled = cdbl(GetArg("-healthupdate", "1"), 0);
-	if (iEnabled == 0 || nNetEnabled == 0)
-	{
-		if (iType != 1)
-			return;
-	}
-
- 	int iNextSuperblock = 0;
-	int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
-	
-	std::string sAddresses;
-	std::string sAmounts;
-	int iVotes = 0;
-	uint256 uGovObjHash = uint256S("0x0");
-	uint256 uPAMHash = uint256S("0x0");
-	const CChainParams& chainparams = Params();
-	
-	GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
-	std::string sXML;
-	uint256 hPam = GetPAMHash(sAddresses, sAmounts);
-	sXML = "<GSCVOTES>" + RoundToString(iVotes, 0) + "</GSCVOTES><PAMHASH>" + hPam.GetHex() + "</PAMHASH>";
-	sXML += "<BLOCKS>" + RoundToString(chainActive.Tip()->nHeight, 0) + "</BLOCKS>";
-	sXML += "<HASH>" + chainActive.Tip()->GetBlockHash().GetHex() + "</HASH>";
-	sXML += "<AGENT>" + FormatFullVersion() + "</AGENT><NETWORKID>" + chainparams.NetworkIDString() + "</NETWORKID>";
-	// Post the Health information
-	int SSL_PORT = 443;
-	int TRANSMISSION_TIMEOUT = 30000;
-	int CONNECTION_TIMEOUT = 15;
-	std::string sResponse;
-	std::string sHost = "https://web.bible pay.org";
-	std::string sHealthPage = "BMS/SANCTUARY_HEALTH_REQUEST?solution=" + sXML;
-	sResponse = HTTPSPost(true, 0, "POST", "", "", sHost, sHealthPage, SSL_PORT, sXML, CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, 0);
-	std::string sError = ExtractXML(sResponse,"<ERROR>","</ERROR>");
-	std::string sResponseInner = ExtractXML(sResponse,"<RESPONSE>","</RESPONSE>");
-	if (fDebugSpam)
-		LogPrintf("UpdateHealthInformation %s %s", sError, sResponseInner);
-}
-*/
-
 DACResult GetDecentralizedURL()
 {
+
+	DACResult b;
+	b.Response = "https://" + GetSporkValue("bms");
+	return b;
+
+	/*
 	// ** This function is for DSQL (Christian Spaces) **
 	// Bible Pay - Purchase Plug-In API for web purchases
 	// The users Public-Funding-Address keypair contains the user funds they will purchase with (send test funds here)
@@ -3052,14 +3062,15 @@ DACResult GetDecentralizedURL()
 	}
 	const CChainParams& chainparams = Params();
 	std::string sNetwork = chainparams.NetworkIDString();
-	std::string sDestinationURL = "https://web." + DOMAIN_NAME;
+	std::string sDestinationURL = "https://" + GetSporkValue("bms");
 	std::string sData = sCPK + "|" + sNonce + "|" + sSignature + "|" + sPFA + "|" + sPFA_PrivKey + "|" + sDestinationURL + "|" + sNetwork;
 	std::string sEncData = EncodeBase64(sData);
-	// Web.b i b l e pay.org will determine if the user is in TestNet or MainNet (by reading the mapRequestHeaders["networkid"] from chainparams)
 	std::string sURL = "https://web." + DOMAIN_NAME + "/wwwroot/" + GetLcaseCoinName() + "_electrum.htm?data=" + sEncData;
 	b.fError = false;
 	b.Response = sURL;
 	return b;
+	*/
+
 }
 
 std::string BIPFS_Payment(CAmount nAmount, std::string sTXID1, std::string sXML1)
@@ -3145,8 +3156,10 @@ int LoadResearchers()
 	if (fDebug)
 		LogPrintf("LoadResearchers End %f", GetAdjustedTime());
 
-	if (fDebugSpam)
-		LogPrintf("Researchers %s ", b.Response);
+	if (fDebugSpam && false)
+	{
+		LogPrintf("Researchers sz %f, %s ", b.Response.size(), b.Response);
+	}
 
 	std::vector<std::string> vResearchers = Split(b.Response, "</user>");
 	mvResearchers.clear();
@@ -3462,10 +3475,14 @@ CAmount GetAnnualDWSReward(int nHeight)
 	{
 		nDWS = nTotal * .10;
 	}
-	else if (nHeight >= consensusParams.ANTI_GPU_HEIGHT)
+	else if (nHeight >= consensusParams.ANTI_GPU_HEIGHT && nHeight <= consensusParams.POOM_PHASEOUT_HEIGHT)
 	{
 		// Per https://wiki.bible[pay].org/Emission_Schedule, DWS should emit 4.3MM per month in the first year, deflating at 20.04% per year
 		nDWS = nTotal * .325;
+	}
+	else if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT)
+	{
+		nDWS = nTotal * .64;
 	}
 	if (fDebugSpam)
 		LogPrintf("Annual Emission %f, DWS %f", (double)nTotal/COIN, (double)nDWS/COIN);
@@ -3866,18 +3883,6 @@ std::string SearchChain(int nBlocks, std::string sDest)
 	return sData;
 }
 
-std::string GenerateFaucetCode()
-{
-	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
-	std::string s1 = RoundToString(((double)(pwalletMain->GetBalance() / COIN) / 1000), 0);
-	std::string sXML = "<cpk>" + sCPK + "</cpk><s1>" + s1 + "</s1>";
-	DACResult b = DSQL_ReadOnlyQuery("BMS/FaucetID", sXML);
-	std::string sResponse = ExtractXML(b.Response, "<response>", "</response>");
-	if (sResponse.empty())
-		sResponse = "N/A";
-	return sResponse;
-}
-
 uint256 ComputeRandomXTarget(uint256 dac_hash, int64_t nPrevBlockTime, int64_t nBlockTime)
 {
 	static int MAX_AGE = 60 * 30;
@@ -3915,6 +3920,18 @@ uint256 ComputeRandomXTarget(uint256 dac_hash, int64_t nPrevBlockTime, int64_t n
 	return dac_hash;
 }
 
+std::string GenerateFaucetCode()
+{
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	std::string s1 = RoundToString(((double)(pwalletMain->GetBalance() / COIN) / 1000), 0);
+	std::string sXML = "<cpk>" + sCPK + "</cpk><s1>" + s1 + "</s1>";
+	DACResult b = DSQL_ReadOnlyQuery("BMS/FaucetID", sXML);
+	std::string sResponse = ExtractXML(b.Response, "<response>", "</response>");
+	if (sResponse.empty())
+		sResponse = "N/A";
+	return sResponse;
+}
+
 std::string ReverseHex(std::string const & src)
 {
     if (src.size() % 2 != 0)
@@ -3946,4 +3963,14 @@ uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBloc
 	uint256 uRXMined = RandomX_Hash(data0, key, iThreadID);
 	ss << hashPrevBlock << uRXMined;
 	return HashBlake((const char *)vch.data(), (const char *)vch.data() + vch.size());
+}
+
+uint256 GetRandomXHash2(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID)
+{
+	// *****************************************                      RandomX - Hash Only                          ************************************************************************
+	std::unique_lock<std::mutex> lock(cs_rxhash[iThreadID]);
+	std::string randomXBlockHeader = ExtractXML(sHeaderHex, "<rxheader>", "</rxheader>");
+	std::vector<unsigned char> data0 = ParseHex(randomXBlockHeader);
+	uint256 uRXMined = RandomX_Hash(data0, key, iThreadID);
+	return uRXMined;
 }

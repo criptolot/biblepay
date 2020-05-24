@@ -289,6 +289,32 @@ std::string DescribeProposal(DACProposal dacProposal)
 	return sReport;
 }
 
+std::vector<DACProposal> GetWinningSanctuarySporkProposals()
+{
+	int nStartTime = GetAdjustedTime() - (86400 * 7);
+	// NOTE: Sanctuary sporks occur every week, and expire 7 days after creation.  They should be voted on regularly.
+	int nLastSuperblock = 0;
+	int nNextSuperblock = 0;
+	GetGovSuperblockHeights(nNextSuperblock, nLastSuperblock);
+    LOCK2(cs_main, governance.cs);
+    std::vector<const CGovernanceObject*> objs = governance.GetAllNewerThan(nStartTime);
+	std::vector<DACProposal> vSporks;
+	for (const CGovernanceObject* pGovObj : objs) 
+    {
+		if (pGovObj->GetObjectType() != GOVERNANCE_OBJECT_PROPOSAL) continue;
+		DACProposal dacProposal = GetProposalByHash(pGovObj->GetHash(), nLastSuperblock);
+		// We need proposals that are sporks, that are older than 48 hours that are not expired
+		int64_t nAge = GetAdjustedTime() - dacProposal.nStartEpoch;
+		if (dacProposal.sExpenseType == "SPORK" &&  nAge > (60*60*24*1) && dacProposal.fPassing)
+		{
+			// spork elements are contained in dacProposal.sName, and URL in .sURL
+			vSporks.push_back(dacProposal);
+			LogPrintf("\nSporkProposal Detected %s ", dacProposal.sName);
+		}
+	}
+	return vSporks;
+}
+
 std::string WatchmanOnTheWall(bool fForce, std::string& sContract)
 {
 	if (!fMasternodeMode && !fForce)   
@@ -588,6 +614,15 @@ std::string GetCPIDElementByData(std::string sData, int iElement)
 	return vP[iElement];
 }
 
+std::string GetStringElement(std::string sData, std::string sDelimiter, int iElement)
+{
+	std::vector<std::string> vP = Split(sData.c_str(), sDelimiter);
+	if ((iElement+1) > sData.size())
+		return std::string();
+	return vP[iElement];
+}
+		
+
 std::string AssessBlocks(int nHeight, bool fCreatingContract)
 {
 	CAmount nPaymentsLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
@@ -877,6 +912,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 	sProminenceExport += "</PROMINENCE>";
 	
 	std::string QTData;
+	std::string sSporks;
 	if (fCreatingContract)
 	{
 		// Add the QT Phase
@@ -907,6 +943,32 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		QTData += DWSData;
 		LogPrintf("\nCreating GSC Contract with Whale Payments=%f over %f recs.", dTotalWhalePayments, dws.size());
 		// End of Dynamic Whale Staking 
+
+		// Sanctuary Spork Voting
+		// For each winning Sanctuary Spork proposal
+		sSporks = "<SPORKS>";
+		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+		std::vector<DACProposal> vSporks = GetWinningSanctuarySporkProposals();
+		if (vSporks.size() > 0)
+		{
+			sSporks += "<MT>SPORK2</MT><MK></MK><MV></MV><MS>" + sCPK + "</MS>";
+
+			for (int i = 0; i < vSporks.size(); i++)
+			{
+				// Mutate the winning Spork Proposal into superblock transaction data so the spork can be loaded globally in a synchronized way as the GSC contract block passes 
+				// spork elements are contained in dacProposal.sName, and URL in .sURL, the startDate is in .nStartEpoch, and the .sExpenseType == "SPORK", and this spork is already winning
+				// Spork Format:  proposal.name = SporkElement [Key] | SporkElement [Value]
+				std::string sKey = GetStringElement(vSporks[i].sName, "|", 0);
+				std::string sValue = GetStringElement(vSporks[i].sName, "|", 1);
+				if (!sKey.empty() && !sValue.empty())
+				{
+					std::string sSpork = "<SPORK><SPORKKEY>" + sKey + "</SPORKKEY><SPORKVAL>" + sValue + "</SPORKVAL><NONCE>" + RoundToString(i, 0) + "</NONCE></SPORK>";
+					sSporks += sSpork;
+				}
+			}
+		}
+		sSporks += "</SPORKS>";
+		// End of Sanctuary Spork Voting
 	}
 	
 	if (sPayments.length() > 1) 
@@ -941,7 +1003,7 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 	sData = "<PAYMENTS>" + sPayments + "</PAYMENTS><ADDRESSES>" + sAddresses + "</ADDRESSES><DATA>" + sGenData + "</DATA><LIMIT>" 
 		+ RoundToString(nPaymentsLimit/COIN, 4) + "</LIMIT><TOTALPROMINENCE>" + RoundToString(nTotalProminence, 2) + "</TOTALPROMINENCE><TOTALPAYOUT>" + RoundToString(nTotalPayments, 2) 
 		+ "</TOTALPAYOUT><TOTALPOINTS>" + RoundToString(nTotalPoints, 2) + "</TOTALPOINTS><DIARIES>" 
-		+ sDiaries + "</DIARIES><DETAILS>" + sDetails + "</DETAILS>" + QTData + sProminenceExport + sCPKList + sStratisNodes;
+		+ sDiaries + "</DIARIES><DETAILS>" + sDetails + "</DETAILS>" + sSporks + QTData + sProminenceExport + sCPKList + sStratisNodes;
 	if (dDebugLevel == 1)
 		LogPrintf("XML %s", sData);
 	return sData;
@@ -1336,6 +1398,8 @@ std::string SerializeSanctuaryQuorumTrigger(int iContractAssessmentHeight, int n
 	if (!bStatus) 
 		return std::string();
 	std::string sVoteData = ExtractXML(sContract, "<VOTEDATA>", "</VOTEDATA>");
+	std::string sSporkData = ExtractXML(sContract, "<SPORKS>", "</SPORKS>");
+
 	std::string sProposalHashes = GetPAMHashByContract(sContract).GetHex();
 	if (!sHashes.empty())
 		sProposalHashes = sHashes;
@@ -1349,6 +1413,11 @@ std::string SerializeSanctuaryQuorumTrigger(int iContractAssessmentHeight, int n
 	sJson += GJE("proposal_hashes",   sProposalHashes,    true, true);
 	if (!sVoteData.empty())
 		sJson += GJE("vote_data", sVoteData, true, true);
+
+	if (!sSporkData.empty())
+		sJson += GJE("spork_data", sSporkData, true, true);
+	
+
 	if (!sQTData.empty())
 	{
 		sJson += GJE("price", ExtractXML(sQTData, "<PRICE>", "</PRICE>"), true, true);

@@ -463,6 +463,7 @@ bool CGovernanceObject::IsValidLocally(std::string& strError, bool& fMissingMast
     fMissingConfirmations = false;
 
     if (fUnparsable) {
+		LogPrintf(" IVL::Unparsable %f", 700);
         strError = "Object data unparseable";
         return false;
     }

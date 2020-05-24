@@ -5,6 +5,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "amount.h"
+#include "alert.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "checkpoints.h"
@@ -117,7 +118,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 	result.push_back(Pair("randomx_header", ExtractXML(blockindex->RandomXData, "<rxheader>", "</rxheader>")));
 	if (true)
 	{
-		uint256 uRX = GetRandomXHash(blockindex->RandomXData, blockindex->RandomXKey, blockindex->pprev->GetBlockHash(), 0);
+		uint256 uRX = GetRandomXHash2(blockindex->RandomXData, blockindex->RandomXKey, blockindex->pprev->GetBlockHash(), 0);
 		result.push_back(Pair("RandomX_Hash", uRX.GetHex()));
 	}
     if (blockindex->pprev)
@@ -1768,8 +1769,9 @@ void BoincHelpfulHint(UniValue& e)
 	e.push_back(Pair("Step 2", "Click Settings | My Profile.  Record your 'Username' and 'Verification Code' and your 'CPID' (Cross-Project-ID)."));
 	e.push_back(Pair("Step 3", "Click Settings | Data Sharing.  Ensure the 'Display my Data' radio button is selected.  Click Save. "));
 	e.push_back(Pair("Step 4", "Click My Contribution | My Team.  If you are not part of Team 'BIBLE PAY' click Join Team | Search | Bible Pay | Select Bible Pay | Click Join Team | Save."));
-	e.push_back(Pair("Step 5", "NOTE: After choosing your team, and starting your research, please give WCG 24 hours for the CPID to propagate into " + CURRENCY_TICKER + ".  In the mean time you can start Boinc research - and ensure the computer is performing WCG tasks. "));
-	e.push_back(Pair("Step 6", "From our RPC console, type, exec associate your_username your_verification_code"));
+	e.push_back(Pair("Step 5", "NOTE: After choosing your team, and starting your research, please give WCG 24 hours for the CPID to propagate into " 
+		+ CURRENCY_TICKER + ".  In the mean time you can start Boinc research - and ensure the computer is performing WCG tasks. "));
+	e.push_back(Pair("Step 6", "From our RPC console, type, exec associate YourWorldCommunityGridUserName YourWorldCommunityGridVerificationCode"));
 	e.push_back(Pair("Step 7", "Wait for 5 blocks to pass.  Then type 'exec rac' again, and see if you are linked!  "));
 	e.push_back(Pair("Step 8", "Once you are linked you will receive daily rewards.  Please read about our minimum stake requirements per RAC here: wiki." + DOMAIN_NAME + "/PODC"));
 }
@@ -1830,46 +1832,60 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("pinfo", nMN));
 		results.push_back(Pair("elapsed", nElapsed));
 	}
-	else if (sItem == "poom_payments")
+	else if (sItem == "sendalert")
 	{
-		if (request.params.size() != 3)
-			throw std::runtime_error("You must specify poom_payments charity_name type [XML/Auto].");
-		std::string sCharity = request.params[1].get_str();
-		std::string sType = request.params[2].get_str();
-		std::string sDest = GetSporkValue(sCharity + "-RECEIVE-ADDRESS");
-		if (sDest.empty())
-			throw std::runtime_error("Unable to find charity " + sCharity);
-
-		std::string CP = SearchChain(BLOCKS_PER_DAY * 31, sDest);
-		int payment_id = 0;
-		if (sType == "XML")
+		// This command allows BiblePay devs to send out a network alert (or an upgrade notification etc).
+		// We are able to fine tune this alert to reach only certain protocol version ranges.
+		// The alert no longer puts the client in safe mode, so this is a safe process now.
+		if (request.params.size() != 2) 
+			throw std::runtime_error("You must specify the alert in quotes");
+		std::string sAlert = request.params[1].get_str();
+	    // Alerts are relayed around the network until nRelayUntil, flood filling to every node.
+		// After the relay time is past, new nodes are told about alerts when they connect to peers, until either nExpiration or
+		// the alert is cancelled by a newer alert.   Nodes never save alerts to disk, they are in-memory-only.
+		CAlert alert;
+		alert.nRelayUntil   = GetAdjustedTime() + 15 * 60;
+		alert.nExpiration   = GetAdjustedTime() + 30 * 60 * 60;
+		alert.nID           = 1;  // keep track of alert IDs somewhere
+		alert.nCancel       = 0;   // cancels previous messages up to this ID number
+		// These versions are protocol versions
+		alert.nMinVer       = 70000;
+		alert.nMaxVer       = 70755;
+		//  1000 for Misc warnings like out of disk space and clock is wrong
+		//  2000 for longer invalid proof-of-work chain
+		//  Higher numbers mean higher priority
+		alert.nPriority     = 5000;
+		alert.strComment    = "";
+		alert.strStatusBar  = sAlert;
+		// Set specific client version/versions here. If setSubVer is empty, no filtering on subver is done:
+		// alert.setSubVer.insert(std::string("/Core:0.12.0.58/"));
+		// Sign
+		if(!alert.Sign())
+			throw std::runtime_error("Unable to sign.");
+		CDataStream sBuffer(SER_NETWORK, CLIENT_VERSION);
+		sBuffer << alert;
+		CAlert alert2;
+		sBuffer >> alert2;
+		if (!alert2.CheckSignature())
+			throw std::runtime_error("CheckSignature failed");
+		assert(alert2.vchMsg == alert.vchMsg);
+		assert(alert2.vchSig == alert.vchSig);
+		alert.SetNull();
+		results.push_back(Pair("hash", alert2.GetHash().ToString()));
+		results.push_back(Pair("msg", HexStr(alert2.vchMsg)));
+		results.push_back(Pair("sig", HexStr(alert2.vchSig)));
+		// Send
+		int nSent = 0;
 		{
-			results.push_back(Pair("payments", CP));
+			g_connman->ForEachNode([&alert2, &nSent](CNode* pnode) {
+			if (alert2.RelayTo(pnode, *g_connman))
+			  {
+					printf("ThreadSendAlert() : Sent alert to %s\n", pnode->addr.ToString().c_str());
+					nSent++;
+			  }
+			});
 		}
-		else
-		{
-			std::vector<std::string> vRows = Split(CP.c_str(), "<row>");
-			for (int i = 0; i < vRows.size(); i++)
-			{
-				std::string sCPK = ExtractXML(vRows[i], "<cpk>", "</cpk>");
-				std::string sChildID = ExtractXML(vRows[i], "<childid>", "</childid>");
-				std::string sAmount = ExtractXML(vRows[i], "<amount>", "</amount>");
-				std::string sUSD = ExtractXML(vRows[i], "<amount_usd>", "</amount_usd>");
-				std::string sBlock = ExtractXML(vRows[i], "<block>", "</block>");
-				std::string sTXID = ExtractXML(vRows[i], "<txid>", "</txid>");
-				if (!sChildID.empty())
-				{
-					payment_id++;
-					results.push_back(Pair("Payment #", payment_id));
-					results.push_back(Pair("CPK", sCPK));
-					results.push_back(Pair("childid", sChildID));
-					results.push_back(Pair("Amount", sAmount));
-					results.push_back(Pair("Amount_USD", sUSD));
-					results.push_back(Pair("Block #", sBlock));
-					results.push_back(Pair("TXID", sTXID));
-				}
-			}
-		}
+	   	results.push_back(Pair("relayed", nSent));
 	}
 	else if (sItem == "versioncheck")
 	{
@@ -2433,7 +2449,7 @@ UniValue exec(const JSONRPCRequest& request)
 	else if (sItem == "associate")
 	{
 		if (request.params.size() != 2 && request.params.size() != 3 && request.params.size() != 4)
-			throw std::runtime_error("Associate v1.2: You must specify exec associate wcg_username wcg_verificationcode.  (WCG | LogIn | My Profile | Copy down your 'Username' AND 'VERIFICATION CODE').");
+			throw std::runtime_error("Associate v1.2: You must specify exec associate WorldCommunityGridUserName WorldCommunityGridVerificationCode.  (WCG | LogIn | My Profile | Copy down your 'Username' AND 'VERIFICATION CODE').");
 
 		std::string sUserName;
 		std::string sVerificationCode;
@@ -2700,12 +2716,17 @@ UniValue exec(const JSONRPCRequest& request)
 		double dDacPrice = GetCryptoPrice("bbp"); // For now, we must force the ticker to be BBP, otherwise we will not have a leaderboard consensus (for cameroon-one and Kairos etc).
 		double dBTC = GetCryptoPrice("btc");
 		double dDASH = GetCryptoPrice("dash");
+		double dXMR = GetCryptoPrice("xmr");
 		results.push_back(Pair(CURRENCY_TICKER + "/BTC", RoundToString(dDacPrice, 12)));
 		results.push_back(Pair("DASH/BTC", RoundToString(dDASH, 12)));
+		results.push_back(Pair("XMR/BTC", dXMR));
 		results.push_back(Pair("BTC/USD", dBTC));
+		
 		double nPrice = GetCoinPrice();
 		double nDashPriceUSD = dBTC * dDASH;
+		double nXMRPriceUSD = dBTC * dXMR;
 		results.push_back(Pair("DASH/USD", nDashPriceUSD));
+		results.push_back(Pair("XMR/USD", nXMRPriceUSD));
 		results.push_back(Pair(CURRENCY_TICKER + "/USD", nPrice));
 	}
 	else if (sItem == "sentgsc")
@@ -2731,7 +2752,7 @@ UniValue exec(const JSONRPCRequest& request)
 		std::string sExtraHelp = "NOTE:  If you do not have a deterministic.conf file, you can still revive your sanctuary this way: protx update_service proreg_txID sanctuaryIP:Port sanctuary_blsPrivateKey\n\n NOTE: You can right click on the sanctuary in the Sanctuaries Tab in QT and obtain the proreg_txID, and, you can write the IP down from the list.  You still need to find your sanctuaryBLSPrivKey.\n";
 
 		if (request.params.size() != 2)
-			throw std::runtime_error("You must specify exec revivesanc sanctuary_name (where the sanctuary_name matches the name in the deterministic.conf file).\n\n" + sExtraHelp);
+			throw std::runtime_error("revivesanc v1.1: You must specify exec revivesanc sanctuary_name (where the sanctuary_name matches the name in the deterministic.conf file).\n\n" + sExtraHelp);
 		std::string sSearch = request.params[1].get_str();
 		std::string sSanc = ScanDeterministicConfigFile(sSearch);
 		if (sSanc.empty())
@@ -2760,6 +2781,10 @@ UniValue exec(const JSONRPCRequest& request)
 		newRequest.params.push_back(sProRegTxId);
 		newRequest.params.push_back(sSancIP);
 		newRequest.params.push_back(sBLSPrivKey);
+		// Fee source address
+		newRequest.params.push_back("");
+		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+		newRequest.params.push_back(sCPK);
 		
 		UniValue rProReg = protx(newRequest);
 		results.push_back(rProReg);
@@ -3011,10 +3036,11 @@ UniValue exec(const JSONRPCRequest& request)
 			std::string sKey = request.params[2].get_str();
 			std::vector<unsigned char> v = ParseHex(sHeader);
 			std::vector<unsigned char> vKey = ParseHex(sKey);
+
 			std::string sRevKey = ReverseHex(sKey);
 			uint256 uKey = uint256S("0x" + sRevKey);
-
 			uint256 uRXMined = RandomX_Hash(v, uKey, 90);
+
 			std::vector<unsigned char> vch(160);
 			CVectorWriter ss(SER_NETWORK, PROTOCOL_VERSION, vch, 0);
 			ss << chainActive.Tip()->GetBlockHash() << uRXMined;
@@ -3022,6 +3048,7 @@ UniValue exec(const JSONRPCRequest& request)
 
 			results.push_back(Pair("RX", h.GetHex()));
 			results.push_back(Pair("RX_root", uRXMined.GetHex()));
+
 		}
 	}
 	else if (sItem == "randomx")
@@ -3356,7 +3383,7 @@ UniValue exec(const JSONRPCRequest& request)
 	else if (sItem == "getwcgmemberid")
 	{
 		if (request.params.size() < 3) 
-			throw std::runtime_error("Please specify exec wcg_user_name wcg_verification_code.");
+			throw std::runtime_error("Please specify exec WorldCommunityGridUserName VerificationCode.");
 		std::string sUN = request.params[1].get_str();
 		std::string sVC = request.params[2].get_str();
 		double nPoints = 0;

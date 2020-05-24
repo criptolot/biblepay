@@ -272,7 +272,8 @@ void SetCurrencyName(std::string sEXE)
 		GITHUB_URL = "https://github.com/biblepay/biblepay";
 		CURRENCY_TICKER = "BBP";
 	}
-	// printf(" CURRENCY_NAME=%s, DOMAIN=%s, TICKER=%s\n ", CURRENCY_NAME.c_str(), DOMAIN_NAME.c_str(), CURRENCY_TICKER.c_str());
+	if (false)
+		printf(" CURRENCY_NAME=%s, DOMAIN=%s, TICKER=%s\n ", CURRENCY_NAME.c_str(), DOMAIN_NAME.c_str(), CURRENCY_TICKER.c_str());
 }
 
 

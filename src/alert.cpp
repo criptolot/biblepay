@@ -156,7 +156,7 @@ bool CAlert::Sign()
         return false;
     }
     CKey key = vchSecret.GetKey();
-    if (!key.Sign(Hash(vchMsg.begin(), vchMsg.end()), vchSig))
+	if (!key.SignCompact(Hash(vchMsg.begin(), vchMsg.end()), vchSig))
     {
         printf("CAlert::SignAlert() : key.Sign failed\n");
         return false;
@@ -165,16 +165,38 @@ bool CAlert::Sign()
     return true;
 }
 
-bool CAlert::CheckSignature(const std::vector<unsigned char>& alertKey) const
-{
-    CPubKey key(alertKey);
-    if (!key.Verify(Hash(vchMsg.begin(), vchMsg.end()), vchSig))
-        return error("CAlert::CheckSignature(): verify signature failed");
 
-    // Now unserialize the data
-    CDataStream sMsg(vchMsg, SER_NETWORK, PROTOCOL_VERSION);
+bool CAlert::CheckSignature() const
+{
+
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+	CBitcoinAddress addrAlertPubAddress(consensusParams.FoundationAddress);
+
+	if (!addrAlertPubAddress.IsValid()) 
+	{
+		LogPrintf("Invalid alert address. %f", 700);
+		return false;
+	}
+
+	CKeyID keyID2;
+	if (!addrAlertPubAddress.GetKeyID(keyID2)) 
+	{
+		LogPrintf("Address does not refer to key %f", 701);
+		return false;
+	}
+
+	bool fInvalid = false;
+
+	CDataStream sMsg(vchMsg, SER_NETWORK, CLIENT_VERSION);
     sMsg >> *(CUnsignedAlert*)this;
-    return true;
+
+	CPubKey pubkey2;
+    if (!pubkey2.RecoverCompact(Hash(vchMsg.begin(), vchMsg.end()), vchSig)) 
+	{
+		LogPrintf("Unable to recover public key. %f", 702);
+		return false;
+	}
+	return (pubkey2.GetID() == keyID2);
 }
 
 CAlert CAlert::getAlertByHash(const uint256 &hash)
@@ -191,7 +213,7 @@ CAlert CAlert::getAlertByHash(const uint256 &hash)
 
 bool CAlert::ProcessAlert(const std::vector<unsigned char>& alertKey, bool fThread) const
 {
-    if (!CheckSignature(alertKey))
+    if (!CheckSignature())
         return false;
     if (!IsInEffect())
         return false;

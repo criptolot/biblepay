@@ -130,25 +130,17 @@ int PRAYER_MODULUS = 0;
 int miGlobalPrayerIndex = 0;
 int miGlobalDiaryIndex = 0;
 int iMinerThreadCount = 0;
-int nProposalPrepareHeight = 0;
 double nHashCounter = 0;
-int nProposalModulus = 0;
 int64_t nLastDCContractSubmitted = 0;
 int64_t nHPSTimerStart = 0;
 int64_t nBibleMinerPulse = 0;
-int64_t nProposalStartTime = 0;
 double nHashPerSecondCalibration = 7500;
 double dHashesPerSec = 0;
 uint256 uTxIdFee = uint256S("0x0");
 
-bool fPoolMiningMode = false;
-bool fPoolMiningUseSSL = false;
-bool fCommunicatingWithPool = false;
-bool fProposalNeedsSubmitted= false;
-
-std::string msProposalResult;
+std::vector<QueuedProposal> mvQueuedProposals;
+	
 std::string sGlobalPoolURL;
-std::string msProposalHex;
 std::string msGlobalStatus;
 std::string msGlobalStatus2;
 std::string msGlobalStatus3;
@@ -933,45 +925,6 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 				return false;
 			}
 		}
-			/*
-
-			std::string sRecipient = PubKeyToAddress(tx.vout[0].scriptPubKey);
-			CAmount nTitheAmount = GetTitheTotal(tx);
-			CAmount nNonTitheAmount = GetNonTitheTotal(tx);
-			double dTithe = (double)nTitheAmount / COIN;
-			if (nNonTitheAmount > 0)
-			{
-				LogPrintf("AcceptToMemPool::TitheRejected_NonTithe_InvalidAmount; Recip %s, Amount %f ", sRecipient, (double)dTithe);
-				return false;
-			}
-
-			if (nTitheAmount > 0)
-			{
-				std::string sTithe = RoundToString(dTithe, 12);
-				sTithe = strReplace(sTithe, ".", "");
-				bool f666 = Contains(sTithe, "666");
-				double dLow = GetSporkDouble("lowtithe1", 0);
-				double dHigh = GetSporkDouble("hightithe1", 0);
-				if (dTithe >= dLow && dTithe <= dHigh)
-					f666 = true;
-				if (f666)
-				{	
-					LogPrintf("AcceptToMemPool::TitheRejected_InvalidAmount; Amount %f ", (double)dTithe);
-					return false;
-				}
-				bool fChecked = CheckAntiBotNetSignature(tx1, "gsc", "");
-				ProcessBLSCommand(tx1);
-				double dTithesMustBeSigned = GetSporkDouble("tithesmustbesigned", 0);
-				double dTitheCutoff = GetSporkDouble("tithecutoff", 50000);
-				if (dTithesMustBeSigned == 1 && !fChecked && dTithe < dTitheCutoff)
-				{
-					LogPrintf("AccptToMemPool::TitheRejected_NotSigned; Amount %f ", (double)dTithe);
-					return false;
-				}
-			}
-		}
-
-		*/
 		
         // If we aren't going to actually accept it but just we're verifying it, we are fine already
         if(fDryRun) return true;
@@ -1259,6 +1212,45 @@ double ConvertBitsToDouble(unsigned int nBits)
     return dDiff;
 }
 
+double GetBiblePayUnchainedPercentage(int nHeight)
+{
+	// Returns a double from .25 to 1.0 representing the chain speed over the last 24 hours.
+	// When the chain speed is normal (within 99.9% slow and up to 10% fast), this function return 1.0.
+	// However, if the chain is more than 10% fast, the speed factor is calculated, resulting in a double less than 1.0.
+	// If the double is < .25, we set a min floor of .25.
+	// We use the resulting speed indicator to shave off subsidy rewards when BiblePay Unchained is active.
+	// (BiblePay Unchained allows up to 1000 Transactions Per Second (TPS) on our chain and results in 20 second confirmations and therefore more blocks per minute until the load declines).
+
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+	double nDPLThreshhold = .90;
+	double nMinPayLevel = .25;
+	double nBPLHeight = GetSporkDouble("BPL", 0);
+	
+	if (nHeight > nBPLHeight && chainActive.Tip()->nHeight > nBPLHeight)
+	{
+		int nMinHeight = nHeight - BLOCKS_PER_DAY - 10;
+		int nMaxHeight = nHeight - 10;
+
+		CBlockIndex* pindexMin = FindBlockByHeight(nMinHeight);
+		CBlockIndex* pindexMax = FindBlockByHeight(nMaxHeight);
+
+		if (pindexMin && pindexMax)
+		{
+			int64_t nElapsed = pindexMax->GetBlockTime() - pindexMin->GetBlockTime();
+			int64_t nNormal = BLOCKS_PER_DAY * 7;
+			int64_t nPayLevel = nElapsed / nNormal;
+			if (nPayLevel < nDPLThreshhold && nPayLevel > nMinPayLevel)
+			{
+				return nPayLevel;
+			}
+			else if (nPayLevel < nDPLThreshhold)
+			{
+				return nMinPayLevel;
+			}
+		}
+	}
+	return 1;
+}
 
 /*
 NOTE:   unlike bitcoin we are using PREVIOUS block height here,
@@ -1315,10 +1307,15 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 		{
 			iDeflationRate = .0167; // 1.67% per month, 20.04% annual
 		}
-		else if (i >= consensusParams.ANTI_GPU_HEIGHT)
+		else if (i >= consensusParams.ANTI_GPU_HEIGHT && i <= consensusParams.POOM_PHASEOUT_HEIGHT)
 		{
 			// As of Jan 18th, 2020, we have emitted 187 million too many coins for the current date, so we need to pull the horns in - with a target of meeting 2,334,900,554 emitted coins as of 12-9-2020 (see our schedule here: http://wiki.bible[pay].org/Emission_Schedule)
 			iDeflationRate = .0216; // 25.92% annually
+		}
+		else if (i > consensusParams.POOM_PHASEOUT_HEIGHT)
+		{
+			// To pay for the DWS increase, we have increased our deflation rate to .025 (30% annually).  https://forum.biblepay.org/index.php?topic=532.msg7389#msg7389
+			iDeflationRate = .025; 
 		}
     }
 
@@ -1339,8 +1336,16 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 		dGovernancePercent = .485;
 	}
 
+	double nBPLHeight = GetSporkDouble("BPL", 0);
+	if (nBPLHeight > 0 && nPrevHeight > nBPLHeight)
+	{
+		double nChainSpeedFactor = GetBiblePayUnchainedPercentage(nPrevHeight);
+		nSubsidy = nSubsidy * nChainSpeedFactor;
+	}
+
 	CAmount nSuperblockPart = (nPrevHeight > consensusParams.nBudgetPaymentsStartBlock) ? nSubsidy * dGovernancePercent : 0;
 	CAmount nNetSubsidy = nSubsidy - nSuperblockPart;
+
 	return fSuperblockPartOnly ? nSuperblockPart : nNetSubsidy;
 }
 
@@ -1351,9 +1356,14 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 	// Sanctuaries receive half of the POW-POBH reward in Phase 1 (July 2017 through December 2019)
 
 	// In phase 2: https://forum.bible[pay].org/index.php?topic=435.0 : Sanctuaries receive 64% of the net block value (35% of the gross block reward)
+	// In POOM-phaseout, sanctuaries receive 57% (32.5% of the gross block reward)
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	CAmount ret = 0;
-	if (nHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight) 
+	if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT)
+	{
+		ret = .57 * blockValue;
+	}
+	else if (nHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight && nHeight <= consensusParams.POOM_PHASEOUT_HEIGHT) 
 	{
 		ret = .64 * blockValue;
 	}
@@ -3737,8 +3747,9 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 					bool fFound = Contains(sPoolList, sRecip);
 					if (!fFound)
 					{
-						LogPrintf("\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
-							nHeight, nDiff, nMinRXDiff, sRecip, sPoolList);
+						if (fDebugSpam)
+							LogPrintf("\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
+									nHeight, nDiff, nMinRXDiff, sRecip, sPoolList);
 						return false; 
 					}
 				}

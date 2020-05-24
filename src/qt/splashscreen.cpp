@@ -47,7 +47,7 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     float fontFactor            = 1.25;
 
     // define text to place (String(tr(PACKAGE_NAME));
-	QString titleText       = GUIUtil::TOQS(CURRENCY_NAME + " Core");
+    QString titleText       = GUIUtil::TOQS(CURRENCY_NAME + " Core");
     QString versionText     = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
     QString copyrightText   = QString::fromUtf8(CopyrightHolders("\xc2\xA9", 2020, COPYRIGHT_YEAR).c_str());
     QString titleAddText    = networkStyle->getTitleAddText();

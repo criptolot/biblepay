@@ -1427,6 +1427,7 @@ UniValue dashpay(const JSONRPCRequest& request)
 	return results;
 }
 
+/*
 UniValue cancelsponsorship(const JSONRPCRequest& request)
 {
 	// Cancel a sponsorship
@@ -1483,17 +1484,6 @@ UniValue cancelsponsorship(const JSONRPCRequest& request)
 	return results;
 }
 
-UniValue faucetcode(const JSONRPCRequest& request)
-{
-	if (request.fHelp)
-		throw std::runtime_error(
-		"faucetcode\nProvides a code to allow you to claim a faucet reward.");
-
-	std::string sCode = GenerateFaucetCode();
-	UniValue results(UniValue::VOBJ);
-	results.push_back(Pair("Code", sCode));
-	return results;
-}
 
 UniValue sponsorchild(const JSONRPCRequest& request)
 {
@@ -1501,7 +1491,7 @@ UniValue sponsorchild(const JSONRPCRequest& request)
 	if (request.fHelp)
 		throw std::runtime_error(
 		"sponsorchild charityname authorize"
-		"\nSponsors a new child through one of our POOM charities.  You may have more than one child per CPK (Currently we do not have a limit).  \n"
+		"\nSponsors a new child through one of our  charities.  You may have more than one child per CPK (Currently we do not have a limit).  \n"
 		"Note:  We will send 50,000 " + CURRENCY_NAME + " to the foundation as a donation each time you sponsor a child (this is to prevent abuse). \n "
 		"You must specify true to authorize the 50,000 " + CURRENCY_NAME + " tithe.  Example:  sponsorchild kairos authorize.");
 
@@ -1545,11 +1535,11 @@ UniValue sponsorchild(const JSONRPCRequest& request)
 	}
 	else
 	{
-		std::string sNarr = "Thank you for sponsoring a child through POOM. "
-			"\nYour new child ID is: " + sChildId + "\nNOTE: You will not receive rewards for this child until our POOM charity posts a credit to your account for this child.  "
+		std::string sNarr = "Thank you for sponsoring a child through . "
+			"\nYour new child ID is: " + sChildId + "\nNOTE: You will not receive rewards for this child until our  charity posts a credit to your account for this child.  "
 			"\nIt can take 7-14 days to provision a new child, receive and post your payment, so please, be patient. "
 			"\nTo check the status of your child, type 'listchildren' into the RPC."
-			"\nPlease read this wiki page to know how to make a payment for your child:  https://wiki.bible[pay].org/Paying_For_a_POOM_Sponsored_Child"
+			"\nPlease read this wiki page to know how to make a payment for your child:  https://wiki.bible[pay].org/Paying_For_a__Sponsored_Child"
 			"\n";
 
 		std::vector<std::string> vNarr = Split(sNarr.c_str(), "\n");
@@ -1558,6 +1548,67 @@ UniValue sponsorchild(const JSONRPCRequest& request)
 			results.push_back(Pair("Notes " + RoundToString(i,0), vNarr[i]));
 		}
 	}
+	return results;
+}
+
+UniValue getchildbalance(const JSONRPCRequest& request)
+{
+	if (request.fHelp || request.params.size() != 2)	
+	{
+		throw std::runtime_error("getchildbalance:  Shows the balance in USD for a given child.  IE: getchildbalance childid charity.");
+	}
+    UniValue results(UniValue::VOBJ);
+	std::string sChildID = request.params[0].get_str();
+	std::string sCharity = request.params[1].get_str();
+	double dBal = GetChildBalance(sChildID, sCharity);	
+	results.push_back(Pair("Balance", dBal));
+	return results;
+}
+
+UniValue listchildren(const JSONRPCRequest& request)
+{
+	// List sponsored children by the User's CPK
+	if (request.fHelp)
+		throw std::runtime_error(
+		"listchildren"
+		"\nReturns a list of children sponsored by the users CPK."
+		"\nSpecify listchildren all to see all sponsored children."
+		"\nOtherwise, specify listchildren to see your sponsored children");
+	if (request.params.size() > 1)
+			throw std::runtime_error("You must specify listchildren or listchildren [optional=all]. ");
+	bool fAll = false;
+	if (request.params.size() > 0)
+		fAll = request.params[0].getValStr() == "true" || request.params[0].getValStr() == "all";
+
+    UniValue results(UniValue::VOBJ);
+	results.push_back(Pair("List Of", " Children"));
+	std::string sMyCPK = DefaultRecAddress("Christian-Public-Key");
+	std::string sCharity = "cameroon-one";
+	std::map<std::string, CPK> cp1 = GetChildMap("cpk|" + sCharity);
+	for (std::pair<std::string, CPK> a : cp1)
+	{
+		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
+	}
+	sCharity = "kairos";
+	cp1 = GetChildMap("cpk|" + sCharity);
+	for (std::pair<std::string, CPK> a : cp1)
+	{
+		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
+	}
+	return results;
+}
+
+*/
+
+UniValue faucetcode(const JSONRPCRequest& request)
+{
+	if (request.fHelp)
+		throw std::runtime_error(
+		"faucetcode\nProvides a code to allow you to claim a faucet reward.");
+
+	std::string sCode = GenerateFaucetCode();
+	UniValue results(UniValue::VOBJ);
+	results.push_back(Pair("Code", sCode));
 	return results;
 }
 
@@ -1631,19 +1682,6 @@ UniValue sendgscc(const JSONRPCRequest& request)
  	return results;
 }
 
-UniValue getchildbalance(const JSONRPCRequest& request)
-{
-	if (request.fHelp || request.params.size() != 2)	
-	{
-		throw std::runtime_error("getchildbalance:  Shows the balance in USD for a given child.  IE: getchildbalance childid charity.");
-	}
-    UniValue results(UniValue::VOBJ);
-	std::string sChildID = request.params[0].get_str();
-	std::string sCharity = request.params[1].get_str();
-	double dBal = GetChildBalance(sChildID, sCharity);	
-	results.push_back(Pair("Balance", dBal));
-	return results;
-}
 
 UniValue datalist(const JSONRPCRequest& request)
 {
@@ -1754,38 +1792,6 @@ void EmitChild(CPK c, std::string sCharity, bool fAll, std::string sMyCPK, UniVa
 	}
 }
 
-UniValue listchildren(const JSONRPCRequest& request)
-{
-	// List sponsored children by the User's CPK
-	if (request.fHelp)
-		throw std::runtime_error(
-		"listchildren"
-		"\nReturns a list of children sponsored by the users CPK."
-		"\nSpecify listchildren all to see all sponsored children."
-		"\nOtherwise, specify listchildren to see your sponsored children");
-	if (request.params.size() > 1)
-			throw std::runtime_error("You must specify listchildren or listchildren [optional=all]. ");
-	bool fAll = false;
-	if (request.params.size() > 0)
-		fAll = request.params[0].getValStr() == "true" || request.params[0].getValStr() == "all";
-
-    UniValue results(UniValue::VOBJ);
-	results.push_back(Pair("List Of", "POOM Children"));
-	std::string sMyCPK = DefaultRecAddress("Christian-Public-Key");
-	std::string sCharity = "cameroon-one";
-	std::map<std::string, CPK> cp1 = GetChildMap("cpk|" + sCharity);
-	for (std::pair<std::string, CPK> a : cp1)
-	{
-		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
-	}
-	sCharity = "kairos";
-	cp1 = GetChildMap("cpk|" + sCharity);
-	for (std::pair<std::string, CPK> a : cp1)
-	{
-		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
-	}
-	return results;
-}
 
 UniValue protx(const JSONRPCRequest& request)
 {
@@ -1925,19 +1931,15 @@ static const CRPCCommand commands[] =
   //  --------------------- ------------------------  -----------------------  ----------
 	{ "evo",                "bookname",                     &bookname,                      false, {}  },
 	{ "evo",                "books",                        &books,                         false, {}  },
-	{ "evo",                "cancelsponsorship",            &cancelsponsorship,             false, {}  },
 	{ "evo",                "datalist",                     &datalist,                      false, {}  },
 	{ "evo",                "dashpay",                      &dashpay,                       false, {}  },
-	{ "evo",                "getchildbalance",              &getchildbalance,               false, {}  },
 	{ "evo",                "hexblocktocoinbase",           &hexblocktocoinbase,            false, {}  },
 	{ "evo",                "getpobhhash",                  &getpobhhash,                   false, {}  },
     { "evo",                "bls",                          &_bls,                          false, {}  },
     { "evo",                "protx",                        &protx,                         false, {}  },
-	{ "evo",                "faucetcode",                   &faucetcode,                    false, {}  },
 	{ "evo",                "createnonfinancialtransaction",&createnonfinancialtransaction, false, {}  },
 	{ "evo",                "nonfinancialtxtojson",         &nonfinancialtxtojson,          false, {}  },
-	{ "evo",                "sponsorchild",                 &sponsorchild,                  false, {}  },
-	{ "evo",                "listchildren",                 &listchildren,                  false, {}  },
+	{ "evo",                "faucetcode",                   &faucetcode,                    false, {}  },
 	{ "evo",                "trackdashpay",                 &trackdashpay,                  false, {}  },
 	{ "evo",                "sendgscc",                     &sendgscc,                      false, {}  },
 	{ "evo",                "versionreport",                &versionreport,                 false, {}  },

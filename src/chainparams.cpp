@@ -199,6 +199,9 @@ public:
     CMainParams() {
         strNetworkID = "main";
 
+		consensus.POOM_PHASEOUT_HEIGHT = 199000;  // GO LIVE HEIGHT - JUNE 2020 MANDATORY UPGRADE
+		consensus.LLMQHeight = 199000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
+
 		consensus.FPOG_CUTOVER_HEIGHT = 100001;   // Feb 7th, 2019 (100,001)
 		consensus.PODC2_CUTOVER_HEIGHT = 166075;  // Go live height for PODC 2.0, DWS (Christmas 2019) (166050=monthly superblock, 166070=daily GSC)
 		consensus.PODC_LAST_BLOCK = 107000; // March 13th, 2019
@@ -239,12 +242,12 @@ public:
 		consensus.BIP65Height = 123200; // 00000000000076d8fcea02ec0963de4abfd01e771fec0863f960c2c64fe6f357
 		consensus.BIP66Height = 123200; // 00000000000b1fa2dfa312863570e13fae9ca7b5566cb27e55422620b469aefa
 
-		consensus.DIP0001Height = 220000;
+		consensus.DIP0001Height = 280000;
 		// The correct DIP3 height in PROD
 		consensus.DIP0003Height = 133891;
 		consensus.DIP0003EnforcementHeight = 133891;
 		consensus.DIP0003HeightPhase2 = 133891;
-		consensus.LLMQHeight = 175000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
+		
 		consensus.nSanctuaryPaymentsPhaseIIHeight = 166075; // Set this at the Go-Live height for .14 
 
 		consensus.QTHeight = 124000;  // Note to future forkers of DACs!  This height must be > (BLOCKS_PER_DAY * 32)!  Thank you for your support!
@@ -341,12 +344,12 @@ public:
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
         // long living quorum params
+	    consensus.llmqs[Consensus::LLMQ_5_60] = llmq5_60;
         consensus.llmqs[Consensus::LLMQ_50_60] = llmq50_60;
-        consensus.llmqs[Consensus::LLMQ_400_60] = llmq400_60;
-        consensus.llmqs[Consensus::LLMQ_400_85] = llmq400_85;
-        consensus.llmqChainLocks = Consensus::LLMQ_400_60;
-        consensus.llmqForInstantSend = Consensus::LLMQ_50_60;
 
+		consensus.llmqChainLocks = Consensus::LLMQ_50_60;
+        consensus.llmqForInstantSend = Consensus::LLMQ_50_60;
+		
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
@@ -394,6 +397,7 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
+		consensus.POOM_PHASEOUT_HEIGHT = 38000; 
 
 		consensus.PODC_LAST_BLOCK = 100; // March 13th, 2019
 		consensus.PODC2_CUTOVER_HEIGHT = 21000;  // Go live height for PODC 2.0, DWS (Christmas 2019)
@@ -504,7 +508,7 @@ public:
         pchMessageStart[1] = 0xe2;
         pchMessageStart[2] = 0xca;
         pchMessageStart[3] = 0xff;
-        vAlertPubKey = ParseHex("0x0432cb0fcd551eb206e80fa59cc7fd4038923ef3416f3e132637b8e9a4bcd2f8c9e6c4ee9f01c6f3cea7fb5d85b65b7c18ba30e6c133242bf0de488dd839c36001");
+        vAlertPubKey = ParseHex("0x03239f430d6025348e971896d6f2ab6226e04a56ab798ae8b5efe3c5cf056d0609");
         nDefaultPort = 40001;
         nPruneAfterHeight = 100000;
 

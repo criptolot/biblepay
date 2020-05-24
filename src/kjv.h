@@ -7,6 +7,8 @@
 
 #include "chain.h"
 #include "cnv.h"
+#include "rst.h"
+#include "uto.h"
 
 void initkjv();
 uint256 BibleHashClassic(uint256 hash, int64_t nBlockTime, int64_t nPrevBlockTime, bool bMining, int nPrevHeight, const CBlockIndex* pindexLast, bool bRequireTxIndex, 

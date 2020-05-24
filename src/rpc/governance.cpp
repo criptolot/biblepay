@@ -12,6 +12,7 @@
 #include "init.h"
 #include "rpcpog.h"
 #include "smartcontract-server.h"
+#include "rpcpodc.h"
 #include "validation.h"
 #include "masternode-sync.h"
 #include "messagesigner.h"
@@ -20,6 +21,8 @@
 #include "utilmoneystr.h"
 #include "wallet/rpcwallet.h" 
 #include "validation.h"
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
@@ -195,7 +198,7 @@ UniValue gobject_prepare(const JSONRPCRequest& request)
 
     std::string strError = "";
     if (!govobj.IsValidLocally(strError, false))
-        throw JSONRPCError(RPC_INTERNAL_ERROR, "Governance object is not valid - " + govobj.GetHash().ToString() + " - " + strError);
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Governance object is not valid - " + strError + " - " + govobj.GetHash().ToString() + " - " + strError);
 
     // If specified, spend this outpoint as the proposal fee
     COutPoint outpoint;
@@ -521,6 +524,7 @@ void gobject_vote_many_help(CWallet* const pwallet)
                 "1. governance-hash   (string, required) hash of the governance object\n"
                 "2. vote              (string, required) vote, possible values: [funding|valid|delete|endorsed]\n"
                 "3. vote-outcome      (string, required) vote outcome, possible values: [yes|no|abstain]\n"
+				"4. percentage        (number, not-required) a percentage of sanctuaries that should participate in the vote\n"
                 );
 }
 
@@ -636,20 +640,44 @@ UniValue gobject_vote_alias(const JSONRPCRequest& request)
 }
 #endif
 
-UniValue ListObjects(const std::string& strCachedSignal, const std::string& strType, int nStartTime, std::string sWildCard, double nMinVotes)
+
+bool DeserializeToFile(std::string sFileName, std::string sPDFData)
+{
+	bool fBlacklisted = ReadCache("removal", sFileName) == "1";
+	if (fBlacklisted) 
+		return false;
+	if (sFileName.empty() || sFileName.length() < 4)
+		return false;
+
+	std::string sExt = sFileName.substr(sFileName.length() - 3, 3);
+	boost::to_lower(sExt);
+	if (sExt != "pdf")
+		return false;
+
+	std::string sPath = GetSANDirectory2() + sFileName;
+	std::vector<unsigned char> v = ParseHex(sPDFData);
+	std::vector<char> uData(v.begin(), v.end());
+	WriteBinaryToFile(sPath.c_str(), uData);
+}
+
+UniValue ListObjects(const std::string& strCachedSignal, const std::string& strType, int nStartTime, std::string sWildCard, double nMinVotes, bool fFullDump = false)
 {
     UniValue objResult(UniValue::VOBJ);
 
     // GET MATCHING GOVERNANCE OBJECTS
+	std::vector<const CGovernanceObject*> objs;
 
     LOCK2(cs_main, governance.cs);
-
-    std::vector<const CGovernanceObject*> objs = governance.GetAllNewerThan(nStartTime);
-    governance.UpdateLastDiffTime(GetTime());
+	{
+		objs = governance.GetAllNewerThan(nStartTime);
+		governance.UpdateLastDiffTime(GetTime());
+	}
 
     // CREATE RESULTS FOR USER
-
+	int i  = 0;
     for (const auto& pGovObj : objs) {
+
+
         if (strCachedSignal == "valid" && !pGovObj->IsSetCachedValid()) continue;
         if (strCachedSignal == "funding" && !pGovObj->IsSetCachedFunding()) continue;
         if (strCachedSignal == "delete" && !pGovObj->IsSetCachedDelete()) continue;
@@ -659,6 +687,9 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
         if (strType == "triggers" && pGovObj->GetObjectType() != GOVERNANCE_OBJECT_TRIGGER) continue;
 
 		bool bFound = true;
+		i++;
+		LogPrintf("Type %f %s %s", i, strCachedSignal, pGovObj->GetObjectType());
+
 		if (!sWildCard.empty())
 		{
 			bFound = false;
@@ -676,8 +707,31 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
 		if (bFound)
 		{
 			UniValue bObj(UniValue::VOBJ);
-			bObj.push_back(Pair("DataHex",  pGovObj->GetDataAsHexString()));
-			bObj.push_back(Pair("DataString",  pGovObj->GetDataAsPlainString()));
+
+			if (fFullDump)
+				bObj.push_back(Pair("DataHex",  pGovObj->GetDataAsHexString()));
+
+			std::string sDataString = pGovObj->GetDataAsPlainString();
+
+			//std::string sPDF = ExtractXML(sDataString, "\"pdf\"", "\"");
+			//boost::replace_all(sDataString, sPDF, "");
+
+			bObj.push_back(Pair("DataString", sDataString));
+
+			CGovernanceObject* myGov = governance.FindGovernanceObject(pGovObj->GetHash());
+	    	UniValue obj = myGov->GetJSONObject();
+
+			/*
+			std::string sPDFData = obj["pdf"].getValStr();
+			if (!sPDFData.empty())
+			{
+				// If the file is not blacklisted..  replicate
+				std::string sFileName = obj["attachment_name"].getValStr();
+				DeserializeToFile(sFileName, sPDFData);
+			}
+			*/
+
+
 			bObj.push_back(Pair("Hash",  pGovObj->GetHash().ToString()));
 			bObj.push_back(Pair("CollateralHash",  pGovObj->GetCollateralHash().ToString()));
 			bObj.push_back(Pair("ObjectType", pGovObj->GetObjectType()));

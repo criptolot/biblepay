@@ -415,8 +415,9 @@ std::string GetQTPhaseXML(uint256 gObj)
 			std::string sPrice = obj["price"].getValStr();
 			std::string sQTPhase = obj["qtphase"].getValStr();
 			std::string sBTC = obj["btcprice"].getValStr();
-			// This is just for informational purposes when auditing txoutinfo
+			std::string sSporkData = obj["spork_data"].getValStr();
 			std::string sXML = "<price>" + sPrice + "</price><qtphase>" + sQTPhase + "</qtphase><btcprice>" + sBTC + "</btcprice>";
+			sXML += sSporkData;
 			return sXML;
 		}
 	}
@@ -678,8 +679,7 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 	{
 		// Active - Monthly
 		nSuperblockCycle = consensusParams.nSuperblockCycle;
-		double nAdjFactor = .05;  // This brings our budget down to the actual seamless budget deflation level as of March 2019 while accounting for all prior budgets
-		nBudgetFactor = .35 - nAdjFactor;
+		nBudgetFactor = .30;
 		nType = 0;
 	}
 	else if (IsDCCSuperblock(nBlockHeight))
@@ -694,7 +694,7 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 	{
 		// Active - Daily
 		nSuperblockCycle = consensusParams.nDCCSuperblockCycle;
- 		nBudgetFactor = .65;
+		nBudgetFactor  = nBlockHeight > consensusParams.POOM_PHASEOUT_HEIGHT ? .42 : .65;
 		nType = 2;
 		// LogPrintf(" AssessmentHeight %f, BlockHeight %f, 24HrAvgBits %f \n", (double)nAssessmentHeight, (double)nBlockHeight, (double)nBits);
 	}

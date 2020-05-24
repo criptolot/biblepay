@@ -174,24 +174,19 @@ extern std::string msGlobalStatus;
 extern std::string msGlobalStatus2;
 extern std::string msGlobalStatus3;
 extern std::string sGlobalPoolURL;
-extern std::string msProposalHex;
+
+struct QueuedProposal;
+extern std::vector<QueuedProposal> mvQueuedProposals;
+
 extern std::string msURL;
 extern int64_t nBibleMinerPulse;
 extern int iMinerThreadCount;
-extern bool fPoolMiningMode;
-extern bool fPoolMiningUseSSL;
-extern bool fCommunicatingWithPool;
 extern int64_t nLastDCContractSubmitted;
 extern int64_t nHPSTimerStart;
-extern int64_t nProposalStartTime;
 extern double nHashCounter;
 extern double dHashesPerSec;
 extern double nHashPerSecondCalibration;
 extern bool fProposalNeedsSubmitted;
-extern int nProposalPrepareHeight;
-extern int nProposalModulus;
-extern uint256 uTxIdFee;
-extern std::string msProposalResult;
 
 // End of DAC Classic Settings
 

@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(AlertApplies)
 
     for (const auto& alert : alerts)
     {
-        BOOST_CHECK(alert.CheckSignature(alertKey));
+        BOOST_CHECK(alert.CheckSignature());
     }
 
     BOOST_CHECK(alerts.size() >= 3);

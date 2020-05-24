@@ -89,6 +89,9 @@ HelpMessageDialog::HelpMessageDialog(QWidget *parent, HelpMode helpMode, int iPr
  		// Load the Languages
 		ui->comboLanguages->addItem("English");
 		ui->comboLanguages->addItem("Chinese");
+		ui->comboLanguages->addItem("Russian");
+		ui->comboLanguages->addItem("Ukrainian");
+
 		// Load the books of the bible in
 		for (int i = 0; i <= BIBLE_BOOKS_COUNT; i++)
 		{
@@ -300,6 +303,14 @@ void HelpMessageDialog::on_comboLanguagesClicked(int iClick)
 	else if (sLang == "Chinese")
 	{
 		msLanguage = "CN";
+	}
+	else if (sLang == "Russian")
+	{
+		msLanguage = "RU";
+	}
+	else if (sLang == "Ukrainian")
+	{
+		msLanguage = "UA";
 	}
 	LogPrintf("Language changed to %s from %s.", msLanguage, sLang);
 	on_comboChapterClicked(0);

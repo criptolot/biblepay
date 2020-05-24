@@ -199,8 +199,8 @@ public:
     CMainParams() {
         strNetworkID = "main";
 
-		consensus.POOM_PHASEOUT_HEIGHT = 200000;  // CRITICAL TODO: GO LIVE HEIGHT HERE JUNE 2020 MANDATORY UPGRADE
-		consensus.LLMQHeight = 200000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
+		consensus.POOM_PHASEOUT_HEIGHT = 199000;  // GO LIVE HEIGHT - JUNE 2020 MANDATORY UPGRADE
+		consensus.LLMQHeight = 199000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
 
 		consensus.FPOG_CUTOVER_HEIGHT = 100001;   // Feb 7th, 2019 (100,001)
 		consensus.PODC2_CUTOVER_HEIGHT = 166075;  // Go live height for PODC 2.0, DWS (Christmas 2019) (166050=monthly superblock, 166070=daily GSC)
@@ -242,7 +242,7 @@ public:
 		consensus.BIP65Height = 123200; // 00000000000076d8fcea02ec0963de4abfd01e771fec0863f960c2c64fe6f357
 		consensus.BIP66Height = 123200; // 00000000000b1fa2dfa312863570e13fae9ca7b5566cb27e55422620b469aefa
 
-		consensus.DIP0001Height = 220000;
+		consensus.DIP0001Height = 280000;
 		// The correct DIP3 height in PROD
 		consensus.DIP0003Height = 133891;
 		consensus.DIP0003EnforcementHeight = 133891;

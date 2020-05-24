@@ -11,7 +11,7 @@
 
 #include <algorithm>
 
-const size_t MAX_DATA_SIZE = 1000000;
+const size_t MAX_DATA_SIZE = 512;
 const size_t MAX_NAME_SIZE = 40;
 
 CProposalValidator::CProposalValidator(const std::string& strHexData, bool fAllowLegacyFormat) :

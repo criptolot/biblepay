@@ -1633,7 +1633,6 @@ TxMessage GetTxMessage(std::string sMessage, int64_t nTime, int iPosition, std::
 	   
 				}
 			}
-			
 		}
 		t.sMessageValue = "";
 	}

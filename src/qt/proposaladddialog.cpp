@@ -51,9 +51,6 @@ ProposalAddDialog::ProposalAddDialog(const PlatformStyle *platformStyle, QWidget
 	ui->cmbExpenseType->addItem("P2P");
 	ui->cmbExpenseType->addItem("IT");
 	ui->cmbExpenseType->addItem("SPORK");
-
-	connect(ui->btnAttach, SIGNAL(clicked()), this, SLOT(attachFile()));
-
  }
 
 
@@ -81,6 +78,7 @@ void ProposalAddDialog::UpdateDisplay()
 	ui->txtInfo->setText(GUIUtil::TOQS(sInfo));
 }
 
+/*
 void ProposalAddDialog::attachFile()
 {
     QString filename = GUIUtil::getOpenFileName(this, tr("Select a file to attach to this proposal"), "", "", NULL);
@@ -130,6 +128,7 @@ void ProposalAddDialog::attachFile()
 	}
     ui->txtAttach->setText(GUIUtil::TOQS(sFN));
 }
+*/
 
 void ProposalAddDialog::setModel(WalletModel *model)
 {
@@ -152,7 +151,6 @@ void ProposalAddDialog::clear()
     ui->txtURL->setText("");
 	ui->txtAmount->setText("");
 	ui->txtAddress->setText("");
-	ui->txtAttach->setText("");
 }
 
 
@@ -206,10 +204,10 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 		sJson += GJE("type", sType, true, false);
 		sJson += GJE("expensetype", sExpenseType, true, true);
 
-		// Anti-Censorship Features (ACF)
-		std::string sPDFFilename = GUIUtil::FROMQS(ui->txtAttach->text());
 		CAmount nStorageFee = 0;
 
+		/*
+		// Anti-Censorship Features (ACF)
 		if (!sPDFFilename.empty())
 		{
 			std::string sExt = sPDFFilename.substr(sPDFFilename.length() - 3, 3);
@@ -241,6 +239,7 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 			}
 		}
 		// End of ACF
+		*/
 
 		sJson += GJE("url", sURL, false, true);
 		sJson += "}]]";

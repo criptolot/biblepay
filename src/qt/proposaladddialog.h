@@ -48,8 +48,7 @@ public:
 	
 public Q_SLOTS:
     void clear();
-	void attachFile();
-
+	
 protected:
    
 

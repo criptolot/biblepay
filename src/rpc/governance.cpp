@@ -721,6 +721,7 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
 			CGovernanceObject* myGov = governance.FindGovernanceObject(pGovObj->GetHash());
 	    	UniValue obj = myGov->GetJSONObject();
 
+			/*
 			std::string sPDFData = obj["pdf"].getValStr();
 			if (!sPDFData.empty())
 			{
@@ -728,6 +729,8 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
 				std::string sFileName = obj["attachment_name"].getValStr();
 				DeserializeToFile(sFileName, sPDFData);
 			}
+			*/
+
 
 			bObj.push_back(Pair("Hash",  pGovObj->GetHash().ToString()));
 			bObj.push_back(Pair("CollateralHash",  pGovObj->GetCollateralHash().ToString()));

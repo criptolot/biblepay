@@ -239,6 +239,7 @@ std::vector<char> ReadBytesAll(char const* filename);
 std::string VectToString(std::vector<unsigned char> v);
 CAmount StringToAmount(std::string sValue);
 bool CompareMask(CAmount nValue, CAmount nMask);
+bool POSEOrphanTest(std::string sSanctuaryPubKey);
 std::string GetElement(std::string sIn, std::string sDelimiter, int iPos);
 bool CopyFile(std::string sSrc, std::string sDest);
 std::string Caption(std::string sDefault, int iMaxLen);

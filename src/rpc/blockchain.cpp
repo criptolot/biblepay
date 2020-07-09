@@ -3180,6 +3180,12 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("File", str));
 		}
 	}
+	else if (sItem == "posetest")
+	{
+		std::string sBio = request.params[1].get_str();
+		bool f1 = POSEOrphanTest(sBio);
+		results.push_back(Pair("bio", f1));
+	}
 	else if (sItem == "testhttps")
 	{
 		std::string sURL = "https://" + GetSporkValue("bms");
@@ -3503,7 +3509,6 @@ UniValue exec(const JSONRPCRequest& request)
 		{
 			results.push_back(Pair("Test Mode", sHowey));
 		}
-
 	}
 	else if (sItem == "dwsquote")
 	{

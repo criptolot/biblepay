@@ -3974,3 +3974,22 @@ uint256 GetRandomXHash2(std::string sHeaderHex, uint256 key, uint256 hashPrevBlo
 	uint256 uRXMined = RandomX_Hash(data0, key, iThreadID);
 	return uRXMined;
 }
+
+bool POSEOrphanTest(std::string sSanctuaryPubKey)
+{
+	std::string sURL = "https://";
+	std::string sDomain = GetSporkValue("poseorphandomain");
+	if (sDomain.empty())
+		sDomain = "biblepay.cameroonone.org";
+	sURL += sDomain;
+	if (sSanctuaryPubKey.empty())
+		return false;
+	std::string sPrefix = sSanctuaryPubKey.substr(0, std::min((int)sSanctuaryPubKey.length(), 8));
+	std::string sPage = "bios/" + sPrefix + ".htm";
+	std::string sResponse = HTTPSPost(false, 0, "", "", "", sURL, sPage, 443, "", 25, 15000, 1);
+	std::string sOK = ExtractXML(sResponse, "Status:", "\r\n");
+	bool fOK = Contains(sOK, "OK");
+	//std::string sLang = ExtractXML(sResponse, "Country:", "\r\n");
+	//fOK = Contains(sLang, "Cameroon");
+	return fOK;
+}

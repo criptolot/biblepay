@@ -1773,10 +1773,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 	uiInterface.InitMessage(_("Loading Ukrainian (UTO) Bible..."));
 	inituto();
 	
-	// Load Researchers into RAM
-	uiInterface.InitMessage(_("Loading PODC Researchers..."));
-	LoadResearchers();
-
+	
     // ********************************************************* Step 7a: check lite mode and load sporks
 
     // lite mode disables all DAC-specific functionality
@@ -2217,8 +2214,12 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     // Memorize Prayers
     uiInterface.InitMessage(_("Memorizing Prayers..."));
     MemorizeBlockChainPrayers(false, false, true, false);
+
+	// Load Researchers into RAM
+	uiInterface.InitMessage(_("Loading PODC Researchers..."));
+	LoadResearchers();
+
     uiInterface.InitMessage(_("Discovering Peers..."));
-    
     Discover(threadGroup);
 
     // Map ports with UPnP

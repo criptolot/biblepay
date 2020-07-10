@@ -887,51 +887,6 @@ void CDeterministicMNManager::DecreasePoSePenalties(CDeterministicMNList& mnList
     for (const auto& proTxHash : toDecrease) {
         mnList.PoSeDecrease(proTxHash);
     }
-
-	// Biblepay - Sanctuaries - Proof of Orphan Sponsorship (POOS) 
-	// This call happens once per block, and processing occurs once per 10 blocks if the node is in sync
-	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
-	double nMaximumSanctuaryBanPercentage = GetSporkDouble("MaxSancBanPercentage", .50);
-	int64_t nAgeTip = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();
-	int nHeight = chainActive.Tip()->nHeight;
-	// Limit to (once per 10 block modulus) to prevent d-dossing, and ensure we are synced before we try
-	if (nAgeTip < (60 * 60) && nHeight % 10 == 0 && nOrphanBanning == 1)
-	{
-		// Ensure we have connectivity first
-		int nPunished = 0;
-		bool fConnectivity = POSEOrphanTest("status");
-		if (fConnectivity)
-		{
-			std::vector<uint256> toPunish;
-			toPunish.reserve(mnList.GetValidMNsCount());
-			// Store all non-pose banned nodes
-			double nMaxPunishments = mnList.GetValidMNsCount() * nMaximumSanctuaryBanPercentage;
-			mnList.ForEachMN(true, [&](const CDeterministicMNCPtr& dmn) 
-			{
-				if (dmn->pdmnState->nPoSeBanHeight == -1) 
-				{
-					if (nPunished < nMaxPunishments)
-					{
-						bool fOK = POSEOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString());
-						if (!fOK)
-						{
-							LogPrintf("\r\nPOOS::Punished %s", dmn->pdmnState->pubKeyOperator.Get().ToString());
-							nPunished++;
-							toPunish.emplace_back(dmn->proTxHash);
-						}
-					}
-				}
-			});
-			// Do not punish more than half of the network (by keeping track of nPunished)
-			// Todo - Ensure a termination character exists in the call to check the cameroon-one page (Mostly Fixed)
-			for (const auto& proTxHash : toPunish) 
-			{
-				// We punish at 15 because this is 50% more than the decrease delta over 10 blocks, meaning that a node should theoretically get primarily POOS banned (at level 100 in 200 blocks) -- (Primarily because the POOS banned max ban threshhold is > 100).
-				mnList.PoSePunish(proTxHash, 15, true);
-				nPunished++;
-			}
-		}
-	}
 }
 
 CDeterministicMNList CDeterministicMNManager::GetListForBlock(const CBlockIndex* pindex)

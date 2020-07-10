@@ -266,6 +266,7 @@ void CDKGSessionHandler::HandlePhase(QuorumPhase curPhase,
     WaitForNextPhase(curPhase, nextPhase, expectedQuorumHash, runWhileWaiting);
 }
 
+
 // returns a set of NodeIds which sent invalid messages
 template<typename Message>
 std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<std::pair<NodeId, std::shared_ptr<Message>>>& messages)
@@ -316,6 +317,10 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
         pubKeys.emplace_back(member->dmn->pdmnState->pubKeyOperator.Get());
         messageHashes.emplace_back(msgHash);
     }
+
+	// POOS
+	revertToSingleVerification = true;
+
     if (!revertToSingleVerification) {
         bool valid = aggSig.VerifyInsecureAggregated(pubKeys, messageHashes);
         if (valid) {
@@ -339,12 +344,21 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
             }
         }
         // if yes, take a short path and return a set with only him
-        if (nodeIdsAllSame) {
+        if (false && nodeIdsAllSame) {
             ret.emplace(firstNodeId);
             return ret;
         }
         // different nodes, let's figure out who are the bad ones
     }
+
+	// POOS
+	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
+	double nMaximumSanctuaryBanPercentage = GetSporkDouble("MaxSancBanPercentage", .50);
+	int nPunished = 0;
+	int64_t nStartTime = GetAdjustedTime();
+	bool fConnectivity = POSEOrphanTest("status");
+	auto mnList = deterministicMNManager->GetListAtChainTip();
+	double nMaxPunishments = mnList.GetValidMNsCount() * nMaximumSanctuaryBanPercentage;
 
     for (const auto& p : messages) {
         if (ret.count(p.first)) {
@@ -354,7 +368,20 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
         const auto& msg = *p.second;
         auto member = session.GetMember(msg.proTxHash);
         bool valid = msg.sig.VerifyInsecure(member->dmn->pdmnState->pubKeyOperator.Get(), msg.GetSignHash());
-        if (!valid) {
+		// 7-10-2020 - POOS - R ANDREWS (Proof of Orphan Sponsorship)
+		int64_t nElapsed = GetAdjustedTime() - nStartTime;
+		bool fPoosValid = true;
+		if (fConnectivity && nOrphanBanning == 1 && nElapsed < (60 * 7) && member->dmn->pdmnState->nPoSeBanHeight == -1 && nPunished < nMaxPunishments)
+		{
+			fPoosValid = POSEOrphanTest(member->dmn->pdmnState->pubKeyOperator.Get().ToString());
+			if (!fPoosValid)
+			{
+				nPunished++;
+				LogPrintf("POOS::Punishing %s %f", member->dmn->pdmnState->pubKeyOperator.Get().ToString(), nPunished);
+			}
+		}
+
+        if (!valid || !fPoosValid) {
             ret.emplace(p.first);
         }
     }

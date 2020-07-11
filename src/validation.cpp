@@ -2426,7 +2426,8 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
             }	
         }	
     } else {	
-        LogPrintf("ConnectBlock::ERROR::Spork is off, skipping transaction locking checks\n");	
+		if (fDebugSpam)
+			LogPrintf("ConnectBlock::ERROR::Spork is off, skipping transaction locking checks\n");	
     }	
 
     // DAC : MODIFIED TO CHECK MASTERNODE PAYMENTS AND SUPERBLOCKS	

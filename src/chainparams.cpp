@@ -443,16 +443,18 @@ public:
 
 		consensus.nDCCSuperblockStartBlock = 4504; 
         consensus.nDCCSuperblockCycle = BLOCKS_PER_DAY; // Daily
-        consensus.BIP34Height = 5001;
-        consensus.BIP34Hash = uint256S("0x0");
         consensus.BIP65Height = 2431; 
         consensus.BIP66Height = 2075; 
 
         consensus.DIP0001Height = 7000;
-		consensus.DIP0003Height = 5001; 
-		consensus.DIP0003EnforcementHeight = 8400;
-		consensus.DIP0003HeightPhase2 = 7000;
-		consensus.LLMQHeight = 7000;
+
+		consensus.DIP0003Height = 51000; 
+		consensus.DIP0003EnforcementHeight = 51001;
+		consensus.DIP0003HeightPhase2 = 51002;
+		consensus.LLMQHeight = 51003;
+		consensus.BIP34Height = 51000;
+        consensus.BIP34Hash = uint256S("0x0");
+      
 		consensus.nSanctuaryPaymentsPhaseIIHeight = 8400;
 
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); 

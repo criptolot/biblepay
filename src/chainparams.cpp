@@ -448,7 +448,7 @@ public:
 
         consensus.DIP0001Height = 7000;
 
-		consensus.DIP0003Height = 51000; 
+		consensus.DIP0003Height = 30000; 
 		consensus.DIP0003EnforcementHeight = 51001;
 		consensus.DIP0003HeightPhase2 = 51002;
 		consensus.LLMQHeight = 51003;

@@ -174,6 +174,7 @@ bool CheckProRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValid
     if (collateralTxDest == CTxDestination(ptx.keyIDOwner) || collateralTxDest == CTxDestination(ptx.keyIDVoting)) {
         return state.DoS(10, false, REJECT_INVALID, "bad-protx-collateral-reuse");
     }
+	const Consensus::Params& consensusParams = Params().GetConsensus();
 
     if (pindexPrev) {
         auto mnList = deterministicMNManager->GetListForBlock(pindexPrev);
@@ -188,8 +189,8 @@ bool CheckProRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValid
             return state.DoS(10, false, REJECT_DUPLICATE, "bad-protx-dup-key");
         }
 
-        if (!deterministicMNManager->IsDIP3Enforced(pindexPrev->nHeight)) {
-            if (ptx.keyIDOwner != ptx.keyIDVoting) {
+        if (!deterministicMNManager->IsDIP3Enforced(pindexPrev->nHeight) && pindexPrev->nHeight > consensusParams.DIP0003EnforcementHeight) {
+           if (ptx.keyIDOwner != ptx.keyIDVoting) {
                 return state.DoS(10, false, REJECT_INVALID, "bad-protx-key-not-same");
             }
         }

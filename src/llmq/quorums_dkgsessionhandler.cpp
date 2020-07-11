@@ -271,6 +271,7 @@ void CDKGSessionHandler::HandlePhase(QuorumPhase curPhase,
 template<typename Message>
 std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<std::pair<NodeId, std::shared_ptr<Message>>>& messages)
 {
+
     if (messages.empty()) {
         return {};
     }
@@ -352,6 +353,7 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
     }
 
 	// POOS
+
 	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
 	double nMaximumSanctuaryBanPercentage = GetSporkDouble("MaxSancBanPercentage", .50);
 	int nPunished = 0;
@@ -371,9 +373,13 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
 		// 7-10-2020 - POOS - R ANDREWS (Proof of Orphan Sponsorship)
 		int64_t nElapsed = GetAdjustedTime() - nStartTime;
 		bool fPoosValid = true;
+		LogPrintf("POOS %f", 803);
+
 		if (fConnectivity && nOrphanBanning == 1 && nElapsed < (60 * 7) && member->dmn->pdmnState->nPoSeBanHeight == -1 && nPunished < nMaxPunishments)
 		{
 			fPoosValid = POSEOrphanTest(member->dmn->pdmnState->pubKeyOperator.Get().ToString());
+			LogPrintf("POOS %f %f", 807, fPoosValid);
+
 			if (!fPoosValid)
 			{
 				nPunished++;
@@ -385,6 +391,7 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
             ret.emplace(p.first);
         }
     }
+
     return ret;
 }
 

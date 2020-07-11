@@ -107,7 +107,7 @@ static CBlock FindDevNetGenesisBlock(const Consensus::Params& params, const CBlo
     assert(false);
 }
 
-// this one is for testing only
+// TESTNET
 static Consensus::LLMQParams llmq5_60 = {
         .type = Consensus::LLMQ_5_60,
         .name = "llmq_5_60",
@@ -115,35 +115,37 @@ static Consensus::LLMQParams llmq5_60 = {
         .minSize = 2,
         .threshold = 2,
 
-        .dkgInterval = 24, // one DKG per hour
+        .dkgInterval = 24, // one DKG per 3 hours
         .dkgPhaseBlocks = 2,
         .dkgMiningWindowStart = 10, // dkgPhaseBlocks * 5 = after finalization
         .dkgMiningWindowEnd = 18,
-        .dkgBadVotesThreshold = 8,
+        .dkgBadVotesThreshold = 2,
 
         .signingActiveQuorumCount = 2, // just a few ones to allow easier testing
 
         .keepOldConnections = 3,
 };
 
+// PRODUCTION
 static Consensus::LLMQParams llmq50_60 = {
         .type = Consensus::LLMQ_50_60,
         .name = "llmq_50_60",
-        .size = 7,
-        .minSize = 7,
+        .size = 100,
+        .minSize = 10,
         .threshold = 5,
 
         .dkgInterval = 24, // one DKG per 3 hours
         .dkgPhaseBlocks = 2,
         .dkgMiningWindowStart = 10, // dkgPhaseBlocks * 5 = after finalization
         .dkgMiningWindowEnd = 18,
-        .dkgBadVotesThreshold = 30,
+        .dkgBadVotesThreshold = 5, // 75% of the active quorum
 
-        .signingActiveQuorumCount = 7, // a full day worth of LLMQs
+        .signingActiveQuorumCount = 5, // 75% of the active quorum
 
-        .keepOldConnections = 10,
+        .keepOldConnections = 25,
 };
 
+// FUTURE
 static Consensus::LLMQParams llmq400_60 = {
         .type = Consensus::LLMQ_400_60,
         .name = "llmq_400_60",
@@ -378,11 +380,12 @@ public:
 				(105028, uint256S("0x2d38a145444c5e880209fe6a1ee1b09542f5438f50ca8736b20bafc5c552d79b"))
 				(119000, uint256S("0x527a086d639b315e4eb03cb52d394a809654d072387c5cb73401799cb5998f90"))
 				(145000, uint256S("0xe830a524fc6a71aa0c3171db1ef592893f84de65fdcda57ddff8b378dcbda12f"))
+				(206000, uint256S("0xc5c6dfcc2b84fb48873b1fd45d2a693a183fbaef8c79673d6defb2b073ef09d2"))
 		};
 
         chainTxData = ChainTxData{
-            1551671253, // * UNIX timestamp of last known number of transactions
-            879614,     // * total number of transactions between genesis and that timestamp
+            1594482077, // * UNIX timestamp of last known number of transactions
+            1292967,     // * total number of transactions between genesis and that timestamp
                         //   (the tx=... number in the SetBestChain debug.log lines)
             0.01        // * estimated number of transactions per second after that timestamp
         };

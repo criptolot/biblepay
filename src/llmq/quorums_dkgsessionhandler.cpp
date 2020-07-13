@@ -154,7 +154,7 @@ bool CDKGSessionHandler::InitNewQuorum(const CBlockIndex* pindexQuorum)
     auto mns = CLLMQUtils::GetAllQuorumMembers(params.type, pindexQuorum);
 
     if (!curSession->Init(pindexQuorum, mns, activeMasternodeInfo.proTxHash)) {
-        LogPrintf("CDKGSessionManager::%s -- quorum initialiation failed\n", __func__);
+        LogPrintf("CDKGSessionManager::%s -- quorum initiation failed\n", __func__);
         return false;
     }
 

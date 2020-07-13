@@ -271,7 +271,8 @@ std::map<std::string, Researcher> GetPayableResearchers()
 			std::string cpid = GetCPIDElementByData(sData, 8);
 			std::string sCPK = GetCPIDElementByData(sData, 0);
 			vFIFO.push_back(std::make_tuple(nLockTime, cpid, sCPK));
-			LogPrintf("cpid %s cpk %s locktime %f", cpid, sCPK, nLockTime);
+			if (fDebugSpam)
+				LogPrintf("cpid %s cpk %s locktime %f", cpid, sCPK, nLockTime);
 		}
 	}
 		
@@ -284,7 +285,8 @@ std::map<std::string, Researcher> GetPayableResearchers()
 		std::string cpid = std::get<1>(item); //item.second;
 		std::string sCPK = std::get<2>(item); //item.third;
 		cpid_reverse_lookup[cpid] = sCPK;
-		LogPrintf("Adding cpid %s with %s ", cpid, sCPK);
+		if (fDebugSpam)
+			LogPrintf("Adding cpid %s with %s ", cpid, sCPK);
 	}
 	
 	// Payable Researchers
@@ -302,12 +304,14 @@ std::map<std::string, Researcher> GetPayableResearchers()
 					if (myResearcher.second.rac > 1)
 					{
 						r[sSignedCPID] = myResearcher.second;
-						LogPrintf("\nGetPayableResearchers::Adding %s for %s", sSignedCPID, sSourceCPK);
+						if (fDebugSpam)
+							LogPrintf("\nGetPayableResearchers::Adding %s for %s", sSignedCPID, sSourceCPK);
 					}
 				}
 				else
 				{
-					LogPrintf("\nGPR::Not Adding %s because %s", sSignedCPID, sSourceCPK);
+					if (fDebugSpam)
+						LogPrintf("\nGPR::Not Adding %s because %s", sSignedCPID, sSourceCPK);
 				}
 			}
 		}

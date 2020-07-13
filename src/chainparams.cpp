@@ -111,7 +111,7 @@ static CBlock FindDevNetGenesisBlock(const Consensus::Params& params, const CBlo
 static Consensus::LLMQParams llmq5_60 = {
         .type = Consensus::LLMQ_5_60,
         .name = "llmq_5_60",
-        .size = 3,
+        .size = 7,
         .minSize = 2,
         .threshold = 2,
 
@@ -121,7 +121,7 @@ static Consensus::LLMQParams llmq5_60 = {
         .dkgMiningWindowEnd = 18,
         .dkgBadVotesThreshold = 2,
 
-        .signingActiveQuorumCount = 2, // just a few ones to allow easier testing
+        .signingActiveQuorumCount = 2, // 6 hours worth of LLMQs (for easier testing)
 
         .keepOldConnections = 3,
 };
@@ -130,17 +130,17 @@ static Consensus::LLMQParams llmq5_60 = {
 static Consensus::LLMQParams llmq50_60 = {
         .type = Consensus::LLMQ_50_60,
         .name = "llmq_50_60",
-        .size = 100,
-        .minSize = 10,
-        .threshold = 5,
+        .size = 70,
+        .minSize = 7,
+        .threshold = 4,
 
-        .dkgInterval = 24, // one DKG per 3 hours
+        .dkgInterval = 49, // one DKG per 7 hours (4 per day)
         .dkgPhaseBlocks = 2,
         .dkgMiningWindowStart = 10, // dkgPhaseBlocks * 5 = after finalization
         .dkgMiningWindowEnd = 18,
-        .dkgBadVotesThreshold = 5, // 75% of the active quorum
+        .dkgBadVotesThreshold = 4, // 75% of the active quorum
 
-        .signingActiveQuorumCount = 5, // 75% of the active quorum
+        .signingActiveQuorumCount = 1, // A Full day of LLMQs
 
         .keepOldConnections = 25,
 };

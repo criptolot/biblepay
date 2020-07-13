@@ -812,8 +812,11 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
                 int quorumHeight = qc.nHeight - (qc.nHeight % params.dkgInterval);
                 auto quorumIndex = pindexPrev->GetAncestor(quorumHeight);
                 if (!quorumIndex || quorumIndex->GetBlockHash() != qc.commitment.quorumHash) {
+					const Consensus::Params& consensusParams = Params().GetConsensus();
                     // we should actually never get into this case as validation should have catched it...but lets be sure
-                    return _state.DoS(100, false, REJECT_INVALID, "bad-qc-quorum-hash");
+					// And this also happens when we change the binary quorum params in the middle of the chain
+					if (nHeight >= consensusParams.DIP0003HeightPhase2)
+						return _state.DoS(100, false, REJECT_INVALID, "bad-qc-quorum-hash");
                 }
 
                 HandleQuorumCommitment(qc.commitment, quorumIndex, newList, debugLogs);

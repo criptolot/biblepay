@@ -449,9 +449,9 @@ public:
         consensus.DIP0001Height = 7000;
 
 		consensus.DIP0003Height = 30000; 
-		consensus.DIP0003EnforcementHeight = 51001;
-		consensus.DIP0003HeightPhase2 = 51002;
-		consensus.LLMQHeight = 51003;
+		consensus.DIP0003EnforcementHeight = 51350;
+		consensus.DIP0003HeightPhase2 = 51350;
+		consensus.LLMQHeight = 51350;
 		consensus.BIP34Height = 51000;
         consensus.BIP34Hash = uint256S("0x0");
       

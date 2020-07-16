@@ -318,5 +318,6 @@ uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBloc
 uint256 GetRandomXHash2(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID);
 std::string GenerateFaucetCode();
 void WriteBinaryToFile(char const* filename, std::vector<char> data);
-
+std::tuple<std::string, std::string, std::string> GetOrphanPOOSURL(std::string sSanctuaryPubKey);
+bool ApproveSanctuaryRevivalTransaction(CTransaction tx);
 #endif

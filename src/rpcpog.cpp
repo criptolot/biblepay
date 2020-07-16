@@ -17,6 +17,9 @@
 #include "messagesigner.h"
 #include "smartcontract-server.h"
 #include "smartcontract-client.h"
+#include "evo/specialtx.h"
+#include "evo/deterministicmns.h"
+
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/algorithm/string.hpp> // for trim()
@@ -49,7 +52,7 @@ extern CWallet* pwalletMain;
 #endif // ENABLE_WALLET
 UniValue VoteWithMasternodes(const std::map<uint256, CKey>& keys,	
                              const uint256& hash, vote_signal_enum_t eVoteSignal,	
-                             vote_outcome_enum_t eVoteOutcome);
+                             vote_outcome_enum_t eVoteOutcome, std::string sMultiChoiceData);
 
 std::string GenerateNewAddress(std::string& sError, std::string sName)
 {
@@ -886,7 +889,7 @@ bool VoteManyForGobject(std::string govobj, std::string strVoteSignal, std::stri
 
 	try	
 	{	
-		vOutcome = VoteWithMasternodes(votingKeys, hash, eVoteSignal, eVoteOutcome);
+		vOutcome = VoteWithMasternodes(votingKeys, hash, eVoteSignal, eVoteOutcome, "9");
 	}	
 	catch(std::runtime_error& e)
 	{
@@ -3993,7 +3996,7 @@ uint256 GetRandomXHash2(std::string sHeaderHex, uint256 key, uint256 hashPrevBlo
 	return uRXMined;
 }
 
-bool POSEOrphanTest(std::string sSanctuaryPubKey)
+std::tuple<std::string, std::string, std::string> GetOrphanPOOSURL(std::string sSanctuaryPubKey)
 {
 	std::string sURL = "https://";
 	std::string sDomain = GetSporkValue("poseorphandomain");
@@ -4001,13 +4004,51 @@ bool POSEOrphanTest(std::string sSanctuaryPubKey)
 		sDomain = "biblepay.cameroonone.org";
 	sURL += sDomain;
 	if (sSanctuaryPubKey.empty())
-		return false;
+		std::make_tuple("", "", "");
 	std::string sPrefix = sSanctuaryPubKey.substr(0, std::min((int)sSanctuaryPubKey.length(), 8));
 	std::string sPage = "bios/" + sPrefix + ".htm";
-	std::string sResponse = HTTPSPost(false, 0, "", "", "", sURL, sPage, 443, "", 25, 15000, 1);
+	return std::make_tuple(sURL, sPage, sPrefix);
+}
+
+bool POSEOrphanTest(std::string sSanctuaryPubKey)
+{
+	std::tuple<std::string, std::string, std::string> t = GetOrphanPOOSURL(sSanctuaryPubKey);
+	std::string sResponse = HTTPSPost(false, 0, "", "", "", std::get<0>(t), std::get<1>(t), 443, "", 25, 15000, 1);
 	std::string sOK = ExtractXML(sResponse, "Status:", "\r\n");
 	bool fOK = Contains(sOK, "OK");
-	//std::string sLang = ExtractXML(sResponse, "Country:", "\r\n");
-	//fOK = Contains(sLang, "Cameroon");
 	return fOK;
+}
+
+bool ApproveSanctuaryRevivalTransaction(CTransaction tx)
+{
+	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
+	bool fConnectivity = POSEOrphanTest("status");
+	if (nOrphanBanning != 1)
+		return true;
+	if (!fConnectivity)
+		return true;
+	if (tx.nVersion != 3)
+		return true;
+	// POOS will only check special TXs
+    if (tx.nType == TRANSACTION_PROVIDER_UPDATE_SERVICE) 
+	{
+		CProUpServTx proTx;
+		if (!GetTxPayload(tx, proTx)) 
+		{
+			return true;
+		}
+		CDeterministicMNList newList = deterministicMNManager->GetListForBlock(chainActive.Tip());
+        CDeterministicMNCPtr dmn = newList.GetMN(proTx.proTxHash);
+        if (!dmn) 
+		{
+			return true;
+		}
+		bool fPoosValid = POSEOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString());
+		LogPrintf("\nApproveSanctuaryRevivalTx TXID=%s, Op=%s, Approved=%f ", tx.GetHash().GetHex(), dmn->pdmnState->pubKeyOperator.Get().ToString(), (double)fPoosValid);
+		return fPoosValid;
+	}
+	else
+	{
+		return true;
+	}
 }

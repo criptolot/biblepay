@@ -409,7 +409,8 @@ UniValue gobject_vote_conf(const JSONRPCRequest& request)
         return returnObj;
     }
 
-    CGovernanceVote vote(dmn->collateralOutpoint, hash, eVoteSignal, eVoteOutcome);
+	// TODO: gobject vote-conf update the multiplechoice data
+    CGovernanceVote vote(dmn->collateralOutpoint, hash, eVoteSignal, eVoteOutcome, "0");
 
     bool signSuccess = false;
     if (govObjType == GOVERNANCE_OBJECT_PROPOSAL && eVoteSignal == VOTE_SIGNAL_FUNDING) {
@@ -449,7 +450,7 @@ UniValue gobject_vote_conf(const JSONRPCRequest& request)
 
 UniValue VoteWithMasternodes(const std::map<uint256, CKey>& keys,
                              const uint256& hash, vote_signal_enum_t eVoteSignal,
-                             vote_outcome_enum_t eVoteOutcome)
+                             vote_outcome_enum_t eVoteOutcome, std::string sMultiChoiceData)
 {
     int govObjType;
     {
@@ -483,7 +484,7 @@ UniValue VoteWithMasternodes(const std::map<uint256, CKey>& keys,
             continue;
         }
 
-        CGovernanceVote vote(dmn->collateralOutpoint, hash, eVoteSignal, eVoteOutcome);
+        CGovernanceVote vote(dmn->collateralOutpoint, hash, eVoteSignal, eVoteOutcome, sMultiChoiceData);
         if (!vote.Sign(key, key.GetPubKey().GetID())) {
             nFailed++;
             statusObj.push_back(Pair("result", "failed"));
@@ -575,7 +576,7 @@ UniValue gobject_vote_many(const JSONRPCRequest& request)
         }
     });
 
-    return VoteWithMasternodes(votingKeys, hash, eVoteSignal, eVoteOutcome);
+    return VoteWithMasternodes(votingKeys, hash, eVoteSignal, eVoteOutcome, "7");
 }
 
 void gobject_vote_alias_help(CWallet* const pwallet)
@@ -636,7 +637,7 @@ UniValue gobject_vote_alias(const JSONRPCRequest& request)
     std::map<uint256, CKey> votingKeys;
     votingKeys.emplace(proTxHash, votingKey);
 
-    return VoteWithMasternodes(votingKeys, hash, eVoteSignal, eVoteOutcome);
+    return VoteWithMasternodes(votingKeys, hash, eVoteSignal, eVoteOutcome, "8");
 }
 #endif
 
@@ -746,6 +747,7 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
 			bObj.push_back(Pair("YesCount",  pGovObj->GetYesCount(VOTE_SIGNAL_FUNDING)));
 			bObj.push_back(Pair("NoCount",  pGovObj->GetNoCount(VOTE_SIGNAL_FUNDING)));
 			bObj.push_back(Pair("AbstainCount",  pGovObj->GetAbstainCount(VOTE_SIGNAL_FUNDING)));
+			bObj.push_back(Pair("MultipleChoiceWinner", pGovObj->ReturnWinner()));
 
 			// REPORT VALIDITY AND CACHING FLAGS FOR VARIOUS SETTINGS
 			std::string strError = "";
@@ -1147,7 +1149,8 @@ UniValue voteraw(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Failure to find masternode in list : " + outpoint.ToStringShort());
     }
 
-    CGovernanceVote vote(outpoint, hashGovObj, eVoteSignal, eVoteOutcome);
+	//ToDo: Populate Multiple Choice data on voteraw
+    CGovernanceVote vote(outpoint, hashGovObj, eVoteSignal, eVoteOutcome, "12");
     vote.SetTime(nTime);
     vote.SetSignature(vchSig);
 

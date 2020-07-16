@@ -206,26 +206,21 @@ void CChainLocksHandler::UpdatedBlockTip(const CBlockIndex* pindexNew)
 
 void CChainLocksHandler::CheckActiveState()
 {
-    bool fDIP0008Active;
-    {
-        LOCK(cs_main);
-        fDIP0008Active = VersionBitsState(chainActive.Tip()->pprev, Params().GetConsensus(), Consensus::DEPLOYMENT_DIP0008, versionbitscache) == THRESHOLD_ACTIVE;
-    }
-
     LOCK(cs);
-    bool oldIsEnforced = isEnforced;
-    isSporkActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
-    // TODO remove this after DIP8 is active
-    bool fEnforcedBySpork = (Params().NetworkIDString() == CBaseChainParams::TESTNET) && (sporkManager.GetSporkValue(SPORK_19_CHAINLOCKS_ENABLED) == 1);
-    isEnforced = (fDIP0008Active && isSporkActive) || fEnforcedBySpork;
 
-    if (!oldIsEnforced && isEnforced) {
+    // R Andrews 
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+	isSporkActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
+    isEnforced = isSporkActive && chainActive.Tip()->pprev->nHeight > consensusParams.DIP0003EnforcementHeight;
+
+    if (isEnforced) {
         // ChainLocks got activated just recently, but it's possible that it was already running before, leaving
         // us with some stale values which we should not try to enforce anymore (there probably was a good reason
         // to disable spork19)
         bestChainLockHash = uint256();
         bestChainLock = bestChainLockWithKnownBlock = CChainLockSig();
         bestChainLockBlockIndex = lastNotifyChainLockBlockIndex = nullptr;
+		LogPrintf("bestChainLockHeight %f", bestChainLock.nHeight);
     }
 }
 

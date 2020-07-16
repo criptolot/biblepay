@@ -906,7 +906,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             return state.DoS(0, false, REJECT_DUPLICATE, "protx-dup");
         }
 
-		// DAC
+		// BiblePay Memory Pool
 		if (chainActive.Tip() != NULL)
 		{
 			// If this is a PODC association, user must prove ownership of the CPID, otherwise reject the transaction
@@ -919,11 +919,19 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 
 			CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
 			std::string sError2;
+			// Dynamic Whale Staking Verification
 			if (!VerifyDynamicWhaleStake(tx1, sError2))
 			{
 				LogPrintf("AcceptToMemoryPool::Dynamic Whale Burn rejected %s [%s]\n", tx.GetHash().GetHex(), sError2);
 				return false;
 			}
+			// Verify Sanctuary Revival Txes
+			if (!ApproveSanctuaryRevivalTransaction(tx))
+			{
+				LogPrintf("\nAcceptToMemoryPool::Sanctuary Revival Tx Rejected %s\n", tx.GetHash().GetHex());
+				return false;
+			}
+
 		}
 		
         // If we aren't going to actually accept it but just we're verifying it, we are fine already

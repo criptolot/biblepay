@@ -45,6 +45,7 @@ public:
     static vote_signal_enum_t ConvertVoteSignal(const std::string& strVoteSignal);
     static std::string ConvertOutcomeToString(vote_outcome_enum_t nOutcome);
     static std::string ConvertSignalToString(vote_signal_enum_t nSignal);
+	
 };
 
 //
@@ -66,6 +67,7 @@ private:
     int nVoteOutcome; // see VOTE_OUTCOMES above
     int64_t nTime;
     std::vector<unsigned char> vchSig;
+	std::string sMultipleChoiceData;
 
     /** Memory only. */
     const uint256 hash;
@@ -73,7 +75,7 @@ private:
 
 public:
     CGovernanceVote();
-    CGovernanceVote(const COutPoint& outpointMasternodeIn, const uint256& nParentHashIn, vote_signal_enum_t eVoteSignalIn, vote_outcome_enum_t eVoteOutcomeIn);
+    CGovernanceVote(const COutPoint& outpointMasternodeIn, const uint256& nParentHashIn, vote_signal_enum_t eVoteSignalIn, vote_outcome_enum_t eVoteOutcomeIn, std::string sMultiChoiceData);
 
     bool IsValid() const { return fValid; }
 
@@ -86,6 +88,8 @@ public:
     vote_outcome_enum_t GetOutcome() const { return vote_outcome_enum_t(nVoteOutcome); }
 
     const uint256& GetParentHash() const { return nParentHash; }
+	
+	
 
     void SetTime(int64_t nTimeIn)
     {
@@ -114,6 +118,7 @@ public:
     uint256 GetSignatureHash() const;
 
     std::string ToString() const;
+	std::string GetMultipleChoiceData() const;
 
     ADD_SERIALIZE_METHODS;
 
@@ -128,6 +133,8 @@ public:
         if (!(s.GetType() & SER_GETHASH)) {
             READWRITE(vchSig);
         }
+		READWRITE(sMultipleChoiceData);
+
         if (ser_action.ForRead())
             UpdateHash();
     }

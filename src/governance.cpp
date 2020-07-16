@@ -531,7 +531,7 @@ std::vector<CGovernanceVote> CGovernanceManager::GetCurrentVotes(const uint256& 
             int outcome = voteInstancePair.second.eOutcome;
             int64_t nCreationTime = voteInstancePair.second.nCreationTime;
 
-            CGovernanceVote vote = CGovernanceVote(mnpair.first, nParentHash, (vote_signal_enum_t)signal, (vote_outcome_enum_t)outcome);
+            CGovernanceVote vote = CGovernanceVote(mnpair.first, nParentHash, (vote_signal_enum_t)signal, (vote_outcome_enum_t)outcome, voteInstancePair.second.sMultipleChoiceData);
             vote.SetTime(nCreationTime);
 
             vecResult.push_back(vote);

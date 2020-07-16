@@ -179,6 +179,8 @@ struct Params {
     int DIP0003Height;
     /** Block height at which DIP0003 becomes enforced */
     int DIP0003EnforcementHeight;
+	int DIP0008Height;
+
     uint256 DIP0003EnforcementHash;
 	int DIP0003HeightPhase2;
 	int LLMQHeight;

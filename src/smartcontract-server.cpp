@@ -553,7 +553,7 @@ bool VoteForGobject(uint256 govobj, std::string sVoteSignal, std::string sVoteOu
 		return false;
     }
 
-    CGovernanceVote vote(dmn->collateralOutpoint, govobj, eVoteSignal, eVoteOutcome);
+    CGovernanceVote vote(dmn->collateralOutpoint, govobj, eVoteSignal, eVoteOutcome, "10");
 
     bool signSuccess = false;
     if (govObjType == GOVERNANCE_OBJECT_PROPOSAL && eVoteSignal == VOTE_SIGNAL_FUNDING)

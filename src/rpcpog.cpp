@@ -1830,6 +1830,18 @@ void MemorizeBlockChainPrayers(bool fDuringConnectBlock, bool fSubThread, bool f
 						std::string sXML = ExtractXML(sPrayer, "<dws>", "</dws>");
 						WriteCache("dws-burn", block.vtx[n]->GetHash().GetHex(), sXML, GetAdjustedTime());
 					}
+					std::string sGobjectID = ExtractXML(sPrayer, "<gobjectid>", "</gobjectid>");
+					std::string sType = ExtractXML(sPrayer, "<MT>", "</MT>");
+					std::string sGSCCampaign = ExtractXML(sPrayer, "<gsccampaign>", "</gsccampaign>");
+					std::string sCPK = ExtractXML(sPrayer, "<cpk>", "</cpk>");
+					if (!sGobjectID.empty() && sType == "GSCTransmission" && sGSCCampaign == "coinagevote")
+					{
+						// This user voted on a poll with coin-age:
+						CTransactionRef tx = block.vtx[n];
+						double nCoinAge = GetVINCoinAge(block.GetBlockTime(), tx, false);
+						//Todo make this pass the age into 
+						LogPrintf("\nVoted with %f coinage for %s from %s ", nCoinAge, sGobjectID, sCPK);
+					}
 				}
 				double dAge = GetAdjustedTime() - block.GetBlockTime();
 				MemorizePrayer(sPrayer, block.GetBlockTime(), dTotalSent, 0, block.vtx[n]->GetHash().GetHex(), pindex->nHeight, dFoundationDonation, dAge, 0);
@@ -4004,7 +4016,7 @@ std::tuple<std::string, std::string, std::string> GetOrphanPOOSURL(std::string s
 		sDomain = "biblepay.cameroonone.org";
 	sURL += sDomain;
 	if (sSanctuaryPubKey.empty())
-		std::make_tuple("", "", "");
+		return std::make_tuple("", "", "");
 	std::string sPrefix = sSanctuaryPubKey.substr(0, std::min((int)sSanctuaryPubKey.length(), 8));
 	std::string sPage = "bios/" + sPrefix + ".htm";
 	return std::make_tuple(sURL, sPage, sPrefix);
@@ -4051,4 +4063,17 @@ bool ApproveSanctuaryRevivalTransaction(CTransaction tx)
 	{
 		return true;
 	}
+}
+
+std::string VoteWithCoinAge(std::string sGobjectID)
+{
+	std::string sError = std::string();
+	std::string sWarning = std::string();
+	CreateGSCTransmission(sGobjectID, false, "", sError, "coinagevote", sWarning);
+	if (!sError.empty())
+	{
+		LogPrintf("\nVoteWithCoinAge::ERROR %f, WARNING %s, Campaign %s, Error [%s].\n", GetAdjustedTime(), "coinagevote", sError, sWarning);
+	}
+	return "";
+			
 }

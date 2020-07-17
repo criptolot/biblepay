@@ -41,6 +41,10 @@ private Q_SLOTS:
     void slotAbstainCount();
     void slotChartProposal();
     void slotViewProposal();
+	void slotVoteCoinAgeFor();
+	void slotVoteCoinAgeAgainst();
+	void slotVoteCoinAgeAbstain();
+
 	void slotCustomMenuRequested(QPoint pos);
 
 private:
@@ -52,6 +56,8 @@ private:
     QVector<QVector<QString> > SplitData(const QString &pStr);
     void ProcessVote(std::string gobject, std::string signal, std::string outcome);
 	QStringList GetHeaders();
+	void VerifyUserReallyWantsToVote(std::string sVotingType, std::string sVotingAction);
+
 
 
 };

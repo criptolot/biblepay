@@ -125,11 +125,17 @@ void Proposals::slotCustomMenuRequested(QPoint pos)
     /* Create an object context menu */
     QMenu * menu = new QMenu(this);
     //  Create, Connect and Set the actions to the menu
-    menu->addAction(tr("Vote For"), this, SLOT(slotVoteFor()));
-    menu->addAction(tr("Vote Against"), this, SLOT(slotVoteAgainst()));
-    menu->addAction(tr("Vote Abstain"), this, SLOT(slotAbstainCount()));
+    menu->addAction(tr("Vote with Sanctuary For"), this, SLOT(slotVoteFor()));
+    menu->addAction(tr("Vote with Sanctuary Against"), this, SLOT(slotVoteAgainst()));
+    menu->addAction(tr("Vote with Sanctuary Abstain"), this, SLOT(slotAbstainCount()));
+
+	menu->addAction(tr("Vote with Coin-Age For"), this, SLOT(slotVoteCoinAgeFor()));
+    menu->addAction(tr("Vote with Coin-Age Against"), this, SLOT(slotVoteCoinAgeAgainst()));
+    menu->addAction(tr("Vote with Coin-Age Abstain"), this, SLOT(slotVoteCoinAgeAbstain()));
+    
     menu->addAction(tr("Chart Proposal"), this, SLOT(slotChartProposal()));
     menu->addAction(tr("View Proposal"), this, SLOT(slotViewProposal()));
+
     menu->popup(ui->tableWidget->viewport()->mapToGlobal(pos));
 }
 
@@ -183,6 +189,41 @@ void Proposals::slotVoteAgainst()
         }
     }
 }
+
+void Proposals::VerifyUserReallyWantsToVote(std::string sVotingType, std::string sVotingAction)
+{
+    int row = ui->tableWidget->selectionModel()->currentIndex().row();
+    if(row >= 0)
+    {
+        QMessageBox msgBox;
+        msgBox.setWindowTitle(tr("Biblepay Proposal Voting"));
+        msgBox.setText(QString::fromStdString("Vote For the Proposal with " + sVotingType + "?"));
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        if (QMessageBox::Yes == msgBox.exec())
+        {
+			std::string gobject = GUIUtil::FROMQS(ui->tableWidget->item(row,0)->text());
+			//			ProcessVote(gobject, "funding", "yes");
+       	}
+    }
+}
+
+
+void Proposals::slotVoteCoinAgeFor()
+{
+	VerifyUserReallyWantsToVote("coin-age", "for");
+}
+
+void Proposals::slotVoteCoinAgeAgainst()
+{
+	VerifyUserReallyWantsToVote("coin-age", "no");
+}
+
+void Proposals::slotVoteCoinAgeAbstain()
+{
+	VerifyUserReallyWantsToVote("coin-age", "abstain");
+}
+
 
 void Proposals::slotVoteFor()
 {

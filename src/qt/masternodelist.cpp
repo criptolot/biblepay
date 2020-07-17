@@ -45,7 +45,7 @@ MasternodeList::MasternodeList(const PlatformStyle* platformStyle, QWidget* pare
 
     int columnAddressWidth = 200;
     int columnStatusWidth = 80;
-    int columnPoSeScoreWidth = 80;
+    int columnPoSeScoreWidth = 85;
     int columnRegisteredWidth = 80;
     int columnLastPaidWidth = 80;
     int columnNextPaymentWidth = 100;

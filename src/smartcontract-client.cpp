@@ -219,7 +219,7 @@ double GetNecessaryCoinAgePercentageForPODC()
 }
 	
 
-CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary, CBlockIndex* pindexLast, double nCoinAgePercentage, CAmount nFoundationDonation, 
+CWalletTx CreateGSCClientTransmission(std::string sGobjectID, std::string sCampaign, std::string sDiary, CBlockIndex* pindexLast, double nCoinAgePercentage, CAmount nFoundationDonation, 
 	CReserveKey& reservekey, std::string& sXML, std::string& sError, std::string& sWarning)
 {
 	CWalletTx wtx;
@@ -325,7 +325,7 @@ CWalletTx CreateGSCClientTransmission(std::string sCampaign, std::string sDiary,
 		return wtx;
 	}
 
-	sXML += "<gscsig>" + sSignature + "</gscsig><abncpk>" + sCPK + "</abncpk><gsccampaign>" + sCampaign + "</gsccampaign><abnwgt>" 
+	sXML += "<gscsig>" + sSignature + "</gscsig><gobject>" + sGobjectID + "</gobject><abncpk>" + sCPK + "</abncpk><gsccampaign>" + sCampaign + "</gsccampaign><abnwgt>" 
 		+ RoundToString(nTargetCoinAge, 0) + "</abnwgt><diary>" + sDiary + "</diary>";
 	std::string strError;
 	
@@ -397,7 +397,7 @@ bool CreateAllGSCTransmissions(std::string& sError)
 		{
 			std::string sError1 = std::string();
 			std::string sWarning = std::string();
-			CreateGSCTransmission(false, "", sError1, s.first, sWarning);
+			CreateGSCTransmission("", false, "", sError1, s.first, sWarning);
 			if (!sError1.empty())
 			{
 				LogPrintf("\nCreateAllGSCTransmissions %f, Campaign %s, Error [%s].\n", GetAdjustedTime(), s.first, sError1);
@@ -408,7 +408,7 @@ bool CreateAllGSCTransmissions(std::string& sError)
 	}
 }
 
-bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError, std::string sSpecificCampaignName, std::string& sWarning)
+bool CreateGSCTransmission(std::string sGobjectID, bool fForce, std::string sDiary, std::string& sError, std::string sSpecificCampaignName, std::string& sWarning)
 {
 	boost::to_upper(sSpecificCampaignName);
 	if (sSpecificCampaignName == "HEALING")
@@ -429,7 +429,7 @@ bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError,
 				
 	double nDefaultCoinAgePercentage = GetSporkDouble(sSpecificCampaignName + "defaultcoinagepercentage", .10);
 	std::string sError1;
-	if (!Enrolled(sSpecificCampaignName, sError1))
+	if (!Enrolled(sSpecificCampaignName, sError1) && sSpecificCampaignName != "coinagevote")
 	{
 		sError = "Sorry, CPK is not enrolled in project. [" + sError1 + "].  Error 795. ";
 		return false;
@@ -445,7 +445,7 @@ bool CreateGSCTransmission(bool fForce, std::string sDiary, std::string& sError,
 		nCoinAgePercentage = 0.0001;
 	}
 	CAmount nFoundationDonation = 0;
-	CWalletTx wtx = CreateGSCClientTransmission(sSpecificCampaignName, sDiary, chainActive.Tip(), nCoinAgePercentage, nFoundationDonation, reservekey, sXML, sError, sWarning);
+	CWalletTx wtx = CreateGSCClientTransmission(sGobjectID, sSpecificCampaignName, sDiary, chainActive.Tip(), nCoinAgePercentage, nFoundationDonation, reservekey, sXML, sError, sWarning);
 	LogPrintf("\nCreated client side transmission - %s [%s] with txid %s ", sXML, sError, wtx.tx->GetHash().GetHex());
 	// Bubble any error to getmininginfo - or clear the error
 	if (!sError.empty())

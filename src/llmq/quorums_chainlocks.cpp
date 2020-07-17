@@ -209,9 +209,12 @@ void CChainLocksHandler::CheckActiveState()
     LOCK(cs);
 
     // R Andrews 
+	if (chainActive.Tip() == NULL || chainActive.Tip()->pprev == NULL)
+		return;
+
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	isSporkActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
-    isEnforced = isSporkActive && chainActive.Tip()->pprev->nHeight > consensusParams.DIP0003EnforcementHeight;
+    isEnforced = isSporkActive && chainActive.Tip()->pprev->nHeight > consensusParams.DIP0008Height;
 
     if (isEnforced) {
         // ChainLocks got activated just recently, but it's possible that it was already running before, leaving

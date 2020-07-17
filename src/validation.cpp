@@ -5139,6 +5139,8 @@ void KillBlockchainFiles()
 	boost::filesystem::remove_all(pathChainstate);
 	boost::filesystem::path pathEvo = GetDataDir() / "evodb";
 	boost::filesystem::remove_all(pathEvo);
+	boost::filesystem::path pathLLMQ = GetDataDir() / "llmq";
+	boost::filesystem::remove_all(pathLLMQ);
 	boost::filesystem::path pathMnpayments = GetDataDir() / "mnpayments.dat";
 	if(boost::filesystem::exists(pathMnpayments)) boost::filesystem::remove(pathMnpayments); 
 	boost::filesystem::path pathIS = GetDataDir() / "instantsend.dat";

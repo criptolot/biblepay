@@ -3181,10 +3181,10 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("File", str));
 		}
 	}
-	else if (sItem == "posetest")
+	else if (sItem == "poostest")
 	{
 		std::string sBio = request.params[1].get_str();
-		bool f1 = POSEOrphanTest(sBio);
+		bool f1 = POOSOrphanTest(sBio, 60);
 		results.push_back(Pair("bio", f1));
 	}
 	else if (sItem == "testhttps")

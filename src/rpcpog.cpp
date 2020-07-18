@@ -358,6 +358,29 @@ std::string ReadCache(std::string sSection, std::string sKey)
 	return t.first;
 }
 
+std::string ReadCacheWithMaxAge(std::string sSection, std::string sKey, int64_t nSeconds)
+{
+	LOCK(csReadWait);
+	
+	std::string sLookupSection = sSection;
+	std::string sLookupKey = sKey;
+	boost::to_upper(sLookupSection);
+	boost::to_upper(sLookupKey);
+	int64_t nAge = GetCacheEntryAge(sLookupSection, sLookupKey);
+	
+	if (nAge > nSeconds)
+	{
+		// Invalidate the cache
+		return std::string();
+	}
+	if (sLookupSection.empty() || sLookupKey.empty())
+		return std::string();
+	std::pair<std::string, int64_t> t = mvApplicationCache[std::make_pair(sLookupSection, sLookupKey)];
+	return t.first;
+}
+
+
+
 std::string TimestampToHRDate(double dtm)
 {
 	if (dtm == 0) return "1-1-1970 00:00:00";
@@ -4022,11 +4045,21 @@ std::tuple<std::string, std::string, std::string> GetOrphanPOOSURL(std::string s
 	return std::make_tuple(sURL, sPage, sPrefix);
 }
 
-bool POSEOrphanTest(std::string sSanctuaryPubKey)
+bool POOSOrphanTest(std::string sSanctuaryPubKey, int64_t nTimeout)
 {
+	std::string sCacheOK = ReadCacheWithMaxAge("poosorphantest", sSanctuaryPubKey, nTimeout);
+	if (!sCacheOK.empty())
+	{
+		bool fCacheOK = Contains(sCacheOK, "OK");
+		return fCacheOK;
+	}
 	std::tuple<std::string, std::string, std::string> t = GetOrphanPOOSURL(sSanctuaryPubKey);
 	std::string sResponse = HTTPSPost(false, 0, "", "", "", std::get<0>(t), std::get<1>(t), 443, "", 25, 15000, 1);
 	std::string sOK = ExtractXML(sResponse, "Status:", "\r\n");
+	if (!sOK.empty())
+	{
+		WriteCache("poosorphantest", sSanctuaryPubKey, sOK, GetAdjustedTime());
+	}
 	bool fOK = Contains(sOK, "OK");
 	return fOK;
 }
@@ -4034,7 +4067,7 @@ bool POSEOrphanTest(std::string sSanctuaryPubKey)
 bool ApproveSanctuaryRevivalTransaction(CTransaction tx)
 {
 	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
-	bool fConnectivity = POSEOrphanTest("status");
+	bool fConnectivity = POOSOrphanTest("status", 60);
 	if (nOrphanBanning != 1)
 		return true;
 	if (!fConnectivity)
@@ -4055,7 +4088,7 @@ bool ApproveSanctuaryRevivalTransaction(CTransaction tx)
 		{
 			return true;
 		}
-		bool fPoosValid = POSEOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString());
+		bool fPoosValid = POOSOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString(), 30);
 		LogPrintf("\nApproveSanctuaryRevivalTx TXID=%s, Op=%s, Approved=%f ", tx.GetHash().GetHex(), dmn->pdmnState->pubKeyOperator.Get().ToString(), (double)fPoosValid);
 		return fPoosValid;
 	}
@@ -4075,5 +4108,7 @@ std::string VoteWithCoinAge(std::string sGobjectID)
 		LogPrintf("\nVoteWithCoinAge::ERROR %f, WARNING %s, Campaign %s, Error [%s].\n", GetAdjustedTime(), "coinagevote", sError, sWarning);
 	}
 	return "";
-			
 }
+
+
+

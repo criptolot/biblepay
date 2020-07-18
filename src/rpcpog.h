@@ -203,6 +203,7 @@ int64_t GetFileSize(std::string sPath);
 std::string AddBlockchainMessages(std::string sAddress, std::string sType, std::string sPrimaryKey, 
 	std::string sHTML, CAmount nAmount, double minCoinAge, std::string& sError);
 std::string ReadCache(std::string sSection, std::string sKey);
+std::string ReadCacheWithMaxAge(std::string sSection, std::string sKey, int64_t nSeconds);
 void ClearCache(std::string sSection);
 void WriteCache(std::string sSection, std::string sKey, std::string sValue, int64_t locktime, bool IgnoreCase=true);
 std::string GetSporkValue(std::string sKey);
@@ -239,7 +240,7 @@ std::vector<char> ReadBytesAll(char const* filename);
 std::string VectToString(std::vector<unsigned char> v);
 CAmount StringToAmount(std::string sValue);
 bool CompareMask(CAmount nValue, CAmount nMask);
-bool POSEOrphanTest(std::string sSanctuaryPubKey);
+bool POOSOrphanTest(std::string sSanctuaryPubKey, int64_t nTimeout);
 std::string GetElement(std::string sIn, std::string sDelimiter, int iPos);
 bool CopyFile(std::string sSrc, std::string sDest);
 std::string Caption(std::string sDefault, int iMaxLen);

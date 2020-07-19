@@ -39,6 +39,8 @@
 #include <univalue.h>
 #include "randomx_bbp.h"
 #include "validation.h"
+#include "llmq/quorums_chainlocks.h"
+#include "llmq/quorums_instantsend.h"
 
 #include <boost/thread/thread.hpp> // boost::thread::interrupt
 #include <boost/algorithm/string.hpp> // boost::trim
@@ -190,7 +192,9 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 		if (bShowPrayers) 
 			result.push_back(Pair("verses", sVerses));
 		result.push_back(Pair("chaindata", block.vtx[0]->vout[0].sTxOutMessage));
-	}
+		bool fChainLock = llmq::chainLocksHandler->HasChainLock(blockindex->nHeight, blockindex->GetBlockHash());
+		result.push_back(Pair("chainlock", fChainLock));
+    }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));
@@ -1373,6 +1377,8 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
 	bool fDIP0008Active = chainActive.Tip()->pprev->nHeight > consensusParams.DIP0008Height;
 	
 	bool fChainLocksActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
+	bool fDIP0003Legacy_context = VersionBitsState(chainActive.Tip(), consensusParams, Consensus::DEPLOYMENT_DIP0003, versionbitscache) == THRESHOLD_ACTIVE;
+	obj.push_back(Pair("legacy_dip0003_versionbitsstate", fDIP0003Legacy_context));
 
 	obj.push_back(Pair("dip0008active", fDIP0008Active));
 	obj.push_back(Pair("chainlocks_active", fChainLocksActive));
@@ -3179,6 +3185,42 @@ UniValue exec(const JSONRPCRequest& request)
 		for (auto str : g)
 		{
 			results.push_back(Pair("File", str));
+		}
+	}
+	else if (sItem == "votewithcoinage")
+	{
+		std::string sGobjectID = request.params[1].get_str();
+		std::string sOutcome = request.params[2].get_str();
+		std::string TXID_OUT;
+		std::string ERROR_OUT;
+		bool fVoted = VoteWithCoinAge(sGobjectID, sOutcome, TXID_OUT, ERROR_OUT);
+		results.push_back(Pair("vote-txid", TXID_OUT));
+		results.push_back(Pair("vote-error", ERROR_OUT));
+		results.push_back(Pair("vote-result", fVoted));
+		if (!TXID_OUT.empty())
+		{
+			double nCoinAge = GetCoinAge(TXID_OUT);
+			results.push_back(Pair("vote-coin-age", nCoinAge));
+		}
+	}
+	else if (sItem == "getgobjectvotingdata")
+	{
+		std::string sGobjectID = request.params[1].get_str();
+
+		CoinAgeVotingDataStruct c = GetCoinAgeVotingData(sGobjectID);
+		for (int i = 0; i < 3; i++)
+		{
+			results.push_back(Pair("Vote Type", i));
+			BOOST_FOREACH(const PAIRTYPE(const std::string, int)& myVote, c.mapsVoteCount[i])
+			{
+				results.push_back(Pair(myVote.first, myVote.second));
+			}
+			results.push_back(Pair("Total Votes Type " + RoundToString(i, 0), c.mapTotalVotes[i]));
+			BOOST_FOREACH(const PAIRTYPE(const std::string, double)& myAge, c.mapsVoteAge[i])
+			{
+				results.push_back(Pair(myAge.first, myAge.second));
+			}
+			results.push_back(Pair("Total Age Type " + RoundToString(i, 0), c.mapTotalCoinAge[i]));
 		}
 	}
 	else if (sItem == "poostest")

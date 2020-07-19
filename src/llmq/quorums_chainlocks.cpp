@@ -204,6 +204,7 @@ void CChainLocksHandler::UpdatedBlockTip(const CBlockIndex* pindexNew)
     }, 0);
 }
 
+static bool fColdBoot = false;
 void CChainLocksHandler::CheckActiveState()
 {
     LOCK(cs);
@@ -214,9 +215,11 @@ void CChainLocksHandler::CheckActiveState()
 
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	isSporkActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
-    isEnforced = isSporkActive && chainActive.Tip()->pprev->nHeight > consensusParams.DIP0008Height;
+    isEnforced = isSporkActive && chainActive.Tip()->nHeight > consensusParams.DIP0008Height;
 
-    if (isEnforced) {
+	LogPrintf("CheckActiveState %f IsEnforced ", isEnforced);
+
+    if (!isEnforced || !fColdBoot) {
         // ChainLocks got activated just recently, but it's possible that it was already running before, leaving
         // us with some stale values which we should not try to enforce anymore (there probably was a good reason
         // to disable spork19)
@@ -224,7 +227,9 @@ void CChainLocksHandler::CheckActiveState()
         bestChainLock = bestChainLockWithKnownBlock = CChainLockSig();
         bestChainLockBlockIndex = lastNotifyChainLockBlockIndex = nullptr;
 		LogPrintf("bestChainLockHeight %f", bestChainLock.nHeight);
+		fColdBoot = true;
     }
+
 }
 
 void CChainLocksHandler::TrySignChainTip()
@@ -472,6 +477,7 @@ void CChainLocksHandler::EnforceBestChainLock()
         LOCK(cs);
 
         if (!isEnforced) {
+			LogPrintf("not enforced %f", 905);
             return;
         }
 
@@ -480,6 +486,7 @@ void CChainLocksHandler::EnforceBestChainLock()
 
         if (!currentBestChainLockBlockIndex) {
             // we don't have the header/block, so we can't do anything right now
+			LogPrintf("ChainLocksHandler::No header block %f", 904);
             return;
         }
     }

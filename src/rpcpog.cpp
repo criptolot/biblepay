@@ -19,6 +19,7 @@
 #include "smartcontract-client.h"
 #include "evo/specialtx.h"
 #include "evo/deterministicmns.h"
+#include "rpc/server.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
@@ -860,10 +861,18 @@ std::string GetActiveProposals()
 				+ RoundToString(dCharityAmount, 2) + sDelim
 				+ sCharityType + sDelim
 				+ sProposalTime + sDelim
-					+ RoundToString(iYes, 0) + sDelim
-					+ RoundToString(iNo, 0) + sDelim + RoundToString(iAbstain,0) 
-					+ sDelim + sURL;
-				sXML += sRow;
+				+ RoundToString(iYes, 0) + sDelim
+				+ RoundToString(iNo, 0) + sDelim + RoundToString(iAbstain,0);
+					
+			// Add the coin-age voting data
+			CoinAgeVotingDataStruct c = GetCoinAgeVotingData(pGovObj->GetHash().ToString());
+			sRow += sDelim + RoundToString(c.mapTotalVotes[0], 0) + sDelim + RoundToString(c.mapTotalVotes[1], 0) + sDelim + RoundToString(c.mapTotalVotes[2], 0);
+			// Add the coin-age voting data totals
+			sRow += sDelim + RoundToString(c.mapTotalCoinAge[0], 0) + sDelim + RoundToString(c.mapTotalCoinAge[1], 0) + sDelim + RoundToString(c.mapTotalCoinAge[2], 0);
+			
+			sRow += sDelim + sURL;
+			sXML += sRow;
+
 		}
 	}
 	return sXML;
@@ -1310,7 +1319,7 @@ UniValue GetDataList(std::string sType, int iMaxAgeInDays, int& iSpecificEntry, 
 	int iTotalRecords = 0;
 	for (auto ii : mvApplicationCache) 
 	{
-		if (ii.first.first == sType)
+		if (ii.first.first == sType || Contains(ii.first.first, sType))
 		{
 			std::pair<std::string, int64_t> v = mvApplicationCache[std::make_pair(ii.first.first, ii.first.second)];
 			int64_t nTimestamp = v.second;
@@ -1603,7 +1612,6 @@ bool CheckBusinessObjectSig(TxMessage t)
 }
 
 
-
 TxMessage GetTxMessage(std::string sMessage, int64_t nTime, int iPosition, std::string sTxId, double dAmount, double dFoundationDonation, int nHeight)
 {
 	TxMessage t;
@@ -1853,17 +1861,28 @@ void MemorizeBlockChainPrayers(bool fDuringConnectBlock, bool fSubThread, bool f
 						std::string sXML = ExtractXML(sPrayer, "<dws>", "</dws>");
 						WriteCache("dws-burn", block.vtx[n]->GetHash().GetHex(), sXML, GetAdjustedTime());
 					}
-					std::string sGobjectID = ExtractXML(sPrayer, "<gobjectid>", "</gobjectid>");
+					// For Coin-Age voting:  This vote cannot be falsified because we require the user to vote with coin-age (they send the stake back to their own address):
+					std::string sGobjectID = ExtractXML(sPrayer, "<gobject>", "</gobject>");
 					std::string sType = ExtractXML(sPrayer, "<MT>", "</MT>");
 					std::string sGSCCampaign = ExtractXML(sPrayer, "<gsccampaign>", "</gsccampaign>");
-					std::string sCPK = ExtractXML(sPrayer, "<cpk>", "</cpk>");
-					if (!sGobjectID.empty() && sType == "GSCTransmission" && sGSCCampaign == "coinagevote")
+					std::string sCPK = ExtractXML(sPrayer, "<abncpk>", "</abncpk>");
+					if (!sGobjectID.empty() && sType == "GSCTransmission" && sGSCCampaign == "COINAGEVOTE" && !sCPK.empty())
 					{
 						// This user voted on a poll with coin-age:
 						CTransactionRef tx = block.vtx[n];
 						double nCoinAge = GetVINCoinAge(block.GetBlockTime(), tx, false);
 						//Todo make this pass the age into 
-						LogPrintf("\nVoted with %f coinage for %s from %s ", nCoinAge, sGobjectID, sCPK);
+						// At this point we can do two cool things to extend the sanctuary gobject vote:
+						// 1: Increment the vote count by distinct voter (1 vote per distinct GobjectID-CPK), and, 2: increment the vote coin-age-tally by coin-age spent (sum(coinage(gobjectid-cpk))):
+						std::string sOutcome = ExtractXML(sPrayer, "<outcome>", "</outcome>");
+						if (sOutcome == "YES" || sOutcome == "NO" || sOutcome == "ABSTAIN")
+						{
+							WriteCache("coinage-vote-count-" + sGobjectID, sCPK, sOutcome, GetAdjustedTime());
+							// Note, if someone votes more than once, we only count it once (see above line), but, we do tally coin-age (within the duration of the poll start-end).  This means a whale who accidentally voted with 10% of the coin-age on Monday may vote with the rest of their 90% of coin age as long as the poll is not expired and the coin-age will be counted in total.  But, we will display one vote for the cpk, with the sum of the coinage spent.
+							WriteCache("coinage-vote-sum-" + sOutcome + "-" + sGobjectID, sCPK + "-" + tx->GetHash().GetHex(), RoundToString(nCoinAge, 2), GetAdjustedTime());
+							// TODO - limit voting to start date and end date here
+							LogPrintf("\nVoted with %f coinage outcome %s for %s from %s ", nCoinAge, sOutcome, sGobjectID, sCPK);
+						}
 					}
 				}
 				double dAge = GetAdjustedTime() - block.GetBlockTime();
@@ -4098,17 +4117,101 @@ bool ApproveSanctuaryRevivalTransaction(CTransaction tx)
 	}
 }
 
-std::string VoteWithCoinAge(std::string sGobjectID)
+bool VoteWithCoinAge(std::string sGobjectID, std::string sOutcome, std::string& TXID_OUT, std::string& ERROR_OUT)
 {
+	bool fGood = false;
+	if (sOutcome == "YES" || sOutcome == "NO" || sOutcome == "ABSTAIN")
+		fGood = true;
 	std::string sError = std::string();
 	std::string sWarning = std::string();
-	CreateGSCTransmission(sGobjectID, false, "", sError, "coinagevote", sWarning);
+
+	if (!fGood)
+	{
+		ERROR_OUT = "Invalid outcome (Yes, No, Abstain).";
+		return false;
+	}
+	CreateGSCTransmission(sGobjectID, sOutcome, false, "", sError, "coinagevote", sWarning, TXID_OUT);
 	if (!sError.empty())
 	{
 		LogPrintf("\nVoteWithCoinAge::ERROR %f, WARNING %s, Campaign %s, Error [%s].\n", GetAdjustedTime(), "coinagevote", sError, sWarning);
+		ERROR_OUT = sError;
+		return false;
 	}
-	return "";
+	if (!sWarning.empty())
+	{
+		LogPrintf("\nVoteWithCoinAge::WARNING %s", sWarning);
+	}
+
+	return true;
 }
 
+double GetCoinAge(std::string txid)
+{
+	uint256 hashBlock = uint256();
+	uint256 uTx = ParseHashV(txid, "txid");
+	COutPoint out1(uTx, 0);
+	CoinVin b = GetCoinVIN(out1, 0);
+	double nCoinAge = 0;
+	if (b.Found)
+	{
+		CBlockIndex* pblockindex = mapBlockIndex[b.HashBlock];
+		int64_t nBlockTime = GetAdjustedTime();
+		if (pblockindex != NULL)
+				nBlockTime = pblockindex->GetBlockTime();
+		double nCoinAge = GetVINCoinAge(nBlockTime, b.TxRef, false);
+		return nCoinAge;
+	}
+	return 0;
+}
 
+CoinAgeVotingDataStruct GetCoinAgeVotingData(std::string sGobjectID)
+{
+	CoinAgeVotingDataStruct c;
+	std::string sOutcomes = "YES;NO;ABSTAIN";
+	std::vector<std::string> vOutcomes = Split(sOutcomes.c_str(), ";");
+		
+	for (auto ii : mvApplicationCache) 
+	{
+		std::pair<std::string, int64_t> v = mvApplicationCache[std::make_pair(ii.first.first, ii.first.second)];
+		std::string sCPK = ii.first.second;
+		std::string sValue = v.first;
+		// Calculate the coin-age-sums
+		for (int i = 0; i < vOutcomes.size(); i++)
+		{
+			std::string sSumKey = "COINAGE-VOTE-SUM-" + vOutcomes[i] + "-" + sGobjectID;
+			boost::to_upper(sSumKey);
+			if (ii.first.first == sSumKey)
+			{
+				double nValue = cdbl(v.first, 2);
+				c.mapsVoteAge[i][sCPK] += nValue;
+				c.mapTotalCoinAge[i] += nValue;
+				//nTotalCoinAge += nValue;
+			}
+		}
 
+		// Calculate the vote-totals
+		std::string sVoteKey = "COINAGE-VOTE-COUNT-" + sGobjectID;
+		boost::to_upper(sVoteKey);
+		if (ii.first.first == sVoteKey)
+		{
+			std::string sOutcome = v.first;
+			if (sOutcome == "YES")
+			{
+				c.mapsVoteCount[0][sCPK]++;
+				c.mapTotalVotes[0]++;
+			}
+			else if (sOutcome == "NO")
+			{
+				c.mapsVoteCount[1][sCPK]++;
+				c.mapTotalVotes[1]++;
+			}
+			else if (sOutcome == "ABSTAIN")
+			{
+				c.mapsVoteCount[2][sCPK]++;
+				c.mapTotalVotes[2]++;
+			}
+		}
+	}
+	
+	return c;
+}

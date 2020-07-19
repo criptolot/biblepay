@@ -20,7 +20,7 @@ bool Enrolled(std::string sCampaignName, std::string& sError);
 CPK GetCPKFromProject(std::string sProjName, std::string sCPKPtr);
 UniValue SentGSCCReport(int nHeight, std::string sMyCPK);
 CPK GetMyCPK(std::string sProjectName);
-bool CreateGSCTransmission(std::string sGobjectID, bool fForce, std::string sDiary, std::string& sError, std::string sSpecificCampaignName, std::string& sWarning);
+bool CreateGSCTransmission(std::string sGobjectID, std::string sOutcome, bool fForce, std::string sDiary, std::string& sError, std::string sSpecificCampaignName, std::string& sWarning, std::string& TXID_OUT);
 bool CreateAllGSCTransmissions(std::string& sError);
 double GetNecessaryCoinAgePercentageForPODC();
 

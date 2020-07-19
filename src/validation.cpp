@@ -5156,7 +5156,9 @@ void KillBlockchainFiles()
 void ConnectNonFinancialTransactions(const CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams)
 {
     int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
-    bool fDIP0003Active_context = VersionBitsState(pindexPrev, consensusParams, Consensus::DEPLOYMENT_DIP0003, versionbitscache) == THRESHOLD_ACTIVE;
+	
+	bool fDIP0003Active_context = nHeight >= consensusParams.DIP0003Height;
+
     if (fDIP0003Active_context) 
 	{
 		for (const auto& tx : block.vtx) 

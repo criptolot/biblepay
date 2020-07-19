@@ -296,7 +296,9 @@ void CDummyDKG::UpdatedBlockTip(const CBlockIndex* pindex, bool fInitialDownload
         return;
     }
 
-    bool fDIP0003Active = VersionBitsState(chainActive.Tip(), Params().GetConsensus(), Consensus::DEPLOYMENT_DIP0003, versionbitscache) == THRESHOLD_ACTIVE;
+    const auto& consensusParams = Params().GetConsensus();
+    bool fDIP0003Active = pindex->nHeight >= consensusParams.DIP0003Height;
+   
     if (!fDIP0003Active) {
         return;
     }
@@ -316,6 +318,7 @@ void CDummyDKG::UpdatedBlockTip(const CBlockIndex* pindex, bool fInitialDownload
             CreateFinalCommitment(params.type, pindex);
         }
     }
+	LogPrint("llmq", "Dummy-DKG::llmq::UpdateBlockTip %f", pindex->nHeight);
 }
 
 void CDummyDKG::CreateDummyContribution(Consensus::LLMQType llmqType, const CBlockIndex* pindex)

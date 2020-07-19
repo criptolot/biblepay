@@ -349,7 +349,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 		// Create the client side transaction here
 		std::string sError;
 		std::string sWarning;
-		bool fCreated = CreateGSCTransmission("", true, sOptPrayer, sError, "HEALING", sWarning);
+		std::string TXID_OUT;
+		bool fCreated = CreateGSCTransmission("", "", true, sOptPrayer, sError, "HEALING", sWarning, TXID_OUT);
 		int iMsg = fCreated ? CClientUIInterface::MSG_INFORMATION : CClientUIInterface::MSG_ERROR;
 		std::string sNarr = fCreated ? "Created Diary Entry for GSC Transmission" : sError;
 		LogPrintf("WalletModel::CreateDiaryEntry Results Narr %s, Error %s", sNarr, sError);

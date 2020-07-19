@@ -1667,8 +1667,9 @@ UniValue sendgscc(const JSONRPCRequest& request)
 	WriteCache("gsc", "errors", "", GetAdjustedTime());
 	std::string sError;
 	std::string sWarning;
+	std::string TXID_OUT;
     UniValue results(UniValue::VOBJ);
-	bool fCreated = CreateGSCTransmission("", true, sDiary, sError, sCampaignName, sWarning);
+	bool fCreated = CreateGSCTransmission("", "", true, sDiary, sError, sCampaignName, sWarning, TXID_OUT);
 
 	if (!sError.empty())
 		results.push_back(Pair("Error!", sError));

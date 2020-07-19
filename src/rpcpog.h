@@ -80,6 +80,16 @@ struct Researcher
 	std::string CPK;
 };
 
+struct CoinAgeVotingDataStruct
+{
+	//std::map<std::string, int> mapVoteCount;
+	//std::map<std::string, double> mapVoteAge;
+	std::map<int, std::map<std::string, int>> mapsVoteCount;
+	std::map<int, std::map<std::string, double>> mapsVoteAge;
+	std::map<int, int> mapTotalVotes;
+	std::map<int, double> mapTotalCoinAge;
+};
+
 struct CoinVin
 {
 	COutPoint OutPoint;
@@ -321,4 +331,8 @@ std::string GenerateFaucetCode();
 void WriteBinaryToFile(char const* filename, std::vector<char> data);
 std::tuple<std::string, std::string, std::string> GetOrphanPOOSURL(std::string sSanctuaryPubKey);
 bool ApproveSanctuaryRevivalTransaction(CTransaction tx);
+bool VoteWithCoinAge(std::string sGobjectID, std::string sOutcome, std::string& TXID_OUT, std::string& ERROR_OUT);
+double GetCoinAge(std::string txid);
+CoinAgeVotingDataStruct GetCoinAgeVotingData(std::string sGobjectID);
+
 #endif

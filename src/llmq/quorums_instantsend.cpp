@@ -1163,8 +1163,7 @@ void CInstantSendManager::UpdatedBlockTip(const CBlockIndex* pindexNew)
 void CInstantSendManager::HandleFullyConfirmedBlock(const CBlockIndex* pindex)
 {
     auto& consensusParams = Params().GetConsensus();
-	LogPrintf("ChainLock %f", 1001);
-
+	
     std::unordered_map<uint256, CInstantSendLockPtr> removeISLocks;
     {
         LOCK(cs);
@@ -1207,8 +1206,6 @@ void CInstantSendManager::HandleFullyConfirmedBlock(const CBlockIndex* pindex)
             RemoveNonLockedTx(txid, true);
         }
     }
-	LogPrintf("ChainLock %f", 1002);
-
 }
 
 void CInstantSendManager::RemoveMempoolConflictsForLock(const uint256& hash, const CInstantSendLock& islock)

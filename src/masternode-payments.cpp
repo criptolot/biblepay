@@ -466,7 +466,7 @@ bool CMasternodePayments::IsTransactionValid(const CTransaction& txNew, int nBlo
             }
 			else
 			{
-				// POOS 7-18-2020
+				// POOS (Proof-of-orphan-sponsorship) - 7-18-2020
 				CTxDestination dest1;
 				CTxDestination dest2;
 				if (ExtractDestination(txout.scriptPubKey, dest1) && ExtractDestination(txout2.scriptPubKey, dest2))
@@ -478,6 +478,12 @@ bool CMasternodePayments::IsTransactionValid(const CTransaction& txNew, int nBlo
 					CAmount nAmount2 = txout2.nValue;
 					// So for POOS, to prevent forking, we handle the situation that could occur when the supermajority set a payment of 1 (network values) and (lets say due to an internet outage, or a change of POOS status) we internally try to pay the full amount, let us catch that here:
 					if (!sRecipient1.empty() && (sRecipient1 == sRecipient2) && (nAmount1 == (1 * COIN) || nAmount2 == (1 * COIN)))
+					{
+						found = true;
+						break;
+					}
+					// Automatic Price Mooning
+					if (!sRecipient1.empty() && (sRecipient1 == sRecipient2) && (blockReward == APM_REWARD * COIN))
 					{
 						found = true;
 						break;

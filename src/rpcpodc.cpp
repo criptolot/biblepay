@@ -164,13 +164,22 @@ double GetCryptoPrice(std::string sSymbol)
 	return dMid;
 }
 
-double GetPBase(double& out_BTC)
+double GetPBase(double& out_BTC, double& out_BBP)
 {
 	// Get the DAC market price based on midpoint of bid-ask in Satoshi * BTC price in USD
-	double dDacPrice = GetCryptoPrice("bbp");  // ToDo:  Revisit this after the community votes, etc.
+	double dBBPPrice = GetCryptoPrice("bbp");  // ToDo:  Revisit this after the community votes, etc.
 	double dBTC = GetCryptoPrice("btc");
 	out_BTC = dBTC;
-	double dPriceUSD = dBTC * dDacPrice;
+	out_BBP = dBBPPrice;
+
+	double nBBPOverride = cdbl(GetSporkValue("BBPPRICE"), 12);
+	if (!fProd && nBBPOverride > 0)
+	{
+		// In Testnet, allow us to override the BBP price with a spork price so we can test APM
+		out_BBP = nBBPOverride;
+	}
+
+	double dPriceUSD = dBTC * dBBPPrice;
 	return dPriceUSD;
 }
 

@@ -415,13 +415,14 @@ std::string GetQTPhaseXML(uint256 gObj)
 			std::string sPrice = obj["price"].getValStr();
 			std::string sQTPhase = obj["qtphase"].getValStr();
 			std::string sBTC = obj["btcprice"].getValStr();
+			std::string sBBP = obj["bbpprice"].getValStr();
 			std::string sSporkData = obj["spork_data"].getValStr();
-			std::string sXML = "<price>" + sPrice + "</price><qtphase>" + sQTPhase + "</qtphase><btcprice>" + sBTC + "</btcprice>";
+			std::string sXML = "<price>" + sPrice + "</price><bbpprice>" + sBBP + "</bbpprice><qtphase>" + sQTPhase + "</qtphase><btcprice>" + sBTC + "</btcprice>";
 			sXML += sSporkData;
 			return sXML;
 		}
 	}
-	return "<price>-0.00</price><qtphase>-0.00</qtphase><btcprice>-0</btcprice>";
+	return "<price>-0.00</price><bbpprice>-0.00</bbpprice><qtphase>-0.00</qtphase><btcprice>-0</btcprice>";
 }
 
 

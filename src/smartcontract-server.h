@@ -42,6 +42,8 @@ double GetRequiredCoinAgeForPODC(double nRAC, double nTeamID);
 double GetCoinPrice();
 bool VerifyChild(std::string childID, std::string sCharity);
 bool IsOverBudget(int nHeight, std::string sAmounts);
+double CalculateAPM(int nHeight);
+double ExtractAPM(int nHeight);
 std::string CheckGSCHealth();
 
 #endif

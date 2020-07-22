@@ -1353,6 +1353,14 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 
 	CAmount nSuperblockPart = (nPrevHeight > consensusParams.nBudgetPaymentsStartBlock) ? nSubsidy * dGovernancePercent : 0;
 	CAmount nNetSubsidy = nSubsidy - nSuperblockPart;
+	// APM (Automatic Price Mooning)
+	double nAPM = ExtractAPM(nPrevHeight);
+	// 0 = OFF, -1 = PRICE MISSING, 1 = UNCHANGED, 2 = INCREASED, 3 = DECREASED
+	if (nAPM == 3)
+	{
+		// With Automatic Price Mooning, we decrease the block subsidy down to 7 if our Price has decreased over the last 24 hours.  (Otherwise, normal emissions occur).
+		nNetSubsidy = APM_REWARD * COIN;
+	}
 
 	return fSuperblockPartOnly ? nSuperblockPart : nNetSubsidy;
 }
@@ -3757,7 +3765,7 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 					if (!fFound)
 					{
 						if (fDebugSpam)
-							LogPrintf("\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
+							LogPrint("llmq", "\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
 									nHeight, nDiff, nMinRXDiff, sRecip, sPoolList);
 						return false; 
 					}

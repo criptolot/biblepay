@@ -3793,9 +3793,13 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 		sError = "Sorry, our daily whale commitments are too high today.  Please try again tomorrow.";
 		return false;
 	}
-
-	WhaleMetric wmFuture = GetWhaleMetrics(w.MaturityHeight, true);
-	
+	// @Meno : 7-20-2020 : Honor exact payment window 
+	// We need to do this as of the GSC height (not the maturity height)
+	int iNextSuperblock = 0;
+	int iLastSuperblock = GetLastGSCSuperblockHeight(w.MaturityHeight, iNextSuperblock);
+	// The following GSC superblock after the maturity height:
+	iNextSuperblock += BLOCKS_PER_DAY; 
+	WhaleMetric wmFuture = GetWhaleMetrics(iNextSuperblock, true);
 	if (wmFuture.nTotalGrossBurnsToday + w.TotalOwed + 1 > MAX_DAILY_WHALE_COMMITMENTS)
 	{
 		LogPrintf("\nVerifyDynamicWhaleStake::REJECTED, Sorry, our future whale commitments of %f at the future height is higher than the acceptable maximum of %f, please try a different duration.", 

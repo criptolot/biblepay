@@ -139,7 +139,8 @@ double GetCoinPrice()
 	double dPriorPrice = 0;
 	double dPriorPhase = 0;
 	double out_BTC = 0;
-	nLastPrice = GetPBase(out_BTC);
+	double out_BBP = 0;
+	nLastPrice = GetPBase(out_BTC, out_BBP);
 	return nLastPrice;
 }
 
@@ -622,6 +623,96 @@ std::string GetStringElement(std::string sData, std::string sDelimiter, int iEle
 	return vP[iElement];
 }
 		
+std::string ExtractBlockMessage(int nHeight)
+{
+	CBlockIndex* pindex = FindBlockByHeight(nHeight);
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+	std::string sMessage;
+	if (pindex != NULL)
+	{
+		CBlock block;
+		if (ReadBlockFromDisk(block, pindex, consensusParams)) 
+		{
+			for (unsigned int i = 0; i < block.vtx[0]->vout.size(); i++)
+			{
+				sMessage += block.vtx[0]->vout[i].sTxOutMessage;
+			}
+			return sMessage;
+		}
+	}
+	return std::string();
+}
+
+double ExtractAPM(int nHeight)
+{
+	double nAPMHeight = GetSporkDouble("APM", 0);
+	if (nHeight < nAPMHeight)
+		return 0;
+	
+    const CBlockIndex* pindex;
+    {
+        LOCK(cs_main);
+        pindex = chainActive[nHeight];
+    }
+
+	if (pindex != NULL)
+	{
+		int64_t nAge = GetAdjustedTime() - pindex->GetBlockTime();
+		if (nAge > (60 * 60 * 24 * 30))
+			return 0;
+	}
+
+	int nNextSuperblock = 0;
+	int nLastSuperblock = GetLastGSCSuperblockHeight(nHeight, nNextSuperblock);
+	double nAPM = cdbl(ExtractXML(ExtractBlockMessage(nLastSuperblock), "<qtphase>", "</qtphase>"), 0);
+	LogPrintf("\nExtractAPM Height %f=%f ", nHeight, nAPM);
+	return nAPM;
+}
+
+double CalculateAPM(int nHeight)
+{
+	// Automatic Price Mooning - July 21, 2020
+	int nLastSuperblock = nHeight - BLOCKS_PER_DAY;
+	if (nLastSuperblock < 0) 
+		return 0;
+	double nAPMHeight = GetSporkDouble("APM", 0);
+	if (nHeight < nAPMHeight)
+		return 0;
+	double out_BTC = 0;
+	double out_BBP = 0;
+	double dPrice = GetPBase(out_BTC, out_BBP);
+	double dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nLastSuperblock), "<bbpprice>", "</bbpprice>"), 12);
+	if (dLastPrice == 0 && nLastSuperblock > BLOCKS_PER_DAY * 2)
+	{
+		// In case BBP missed a day (somehow), one more try using the previous day as the prior price:
+		nLastSuperblock -= BLOCKS_PER_DAY;
+		dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nLastSuperblock), "<bbpprice>", "</bbpprice>"), 12);
+	}
+	double nResult = 0;
+	if (dLastPrice == 0 || dPrice == 0)
+	{
+		// Price is missing for one of the two days
+		nResult = -1;
+	}
+	else if (dLastPrice == dPrice)
+	{
+		// Price has not changed
+		nResult = 1;
+	}
+	else if (dLastPrice < dPrice)
+	{
+		// Price has INCREASED!  YES!
+		nResult = 2;
+	}
+	else if (dLastPrice > dPrice)
+	{
+		// Price has DECREASED -- BOO.
+		nResult = 3;
+	}
+
+	LogPrintf("CalculateAPM::Result==%f::LastHeight %f Price %f, Current %f Price %f", nResult, nLastSuperblock, dLastPrice, nHeight, out_BBP);
+	return nResult;
+}
 
 std::string AssessBlocks(int nHeight, bool fCreatingContract)
 {
@@ -916,11 +1007,13 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 	if (fCreatingContract)
 	{
 		// Add the QT Phase
-		double out_PriorPrice = 0;
-		double out_PriorPhase = 0;
+		//double out_PriorPrice = 0;
+		//double out_PriorPhase = 0;
 		double out_BTC = 0;
-		double dPrice = GetPBase(out_BTC);
-		QTData = "<QTDATA><PRICE>" + RoundToString(dPrice, 12) + "</PRICE><BTCPRICE>" + RoundToString(out_BTC, 2) + "</BTCPRICE></QTDATA>";
+		double out_BBP = 0;
+		double dPrice = GetPBase(out_BTC, out_BBP);
+		QTData = "<QTDATA><QTPHASE>" + RoundToString(CalculateAPM(nHeight), 0) + "</QTPHASE><BBPPRICE>" + RoundToString(out_BBP, 12) + "</BBPPRICE><PRICE>" 
+			+ RoundToString(dPrice, 12) + "</PRICE><BTCPRICE>" + RoundToString(out_BTC, 2) + "</BTCPRICE></QTDATA>";
 
 		std::string DWSData;
 		// Dynamic Whale Staking - R Andrews - 11/11/2019
@@ -1423,6 +1516,7 @@ std::string SerializeSanctuaryQuorumTrigger(int iContractAssessmentHeight, int n
 		sJson += GJE("price", ExtractXML(sQTData, "<PRICE>", "</PRICE>"), true, true);
 		sJson += GJE("qtphase", ExtractXML(sQTData, "<QTPHASE>", "</QTPHASE>"), true, true);
 		sJson += GJE("btcprice", ExtractXML(sQTData,"<BTCPRICE>", "</BTCPRICE>"), true, true);
+		sJson += GJE("bbpprice", ExtractXML(sQTData,"<BBPPRICE>", "</BBPPRICE>"), true, true);
 	}
 	sJson += GJE("type", sType, false, false); 
 	sJson += "}]]";

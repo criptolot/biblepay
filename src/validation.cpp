@@ -1356,7 +1356,7 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 	// APM (Automatic Price Mooning)
 	double nAPM = ExtractAPM(nPrevHeight);
 	// 0 = OFF, -1 = PRICE MISSING, 1 = UNCHANGED, 2 = INCREASED, 3 = DECREASED
-	if (nAPM == 3)
+	if (nAPM == 3 || nAPM == 1)
 	{
 		// With Automatic Price Mooning, we decrease the block subsidy down to 7 if our Price has decreased over the last 24 hours.  (Otherwise, normal emissions occur).
 		nNetSubsidy = APM_REWARD * COIN;
@@ -5110,11 +5110,11 @@ void SetOverviewStatus()
 		double dDiff = GetDifficulty(chainActive.Tip());
 		std::string sPrayer = "N/A";
 		GetDataList("PRAYER", 30, miGlobalPrayerIndex, "", sPrayer);
-		msGlobalStatus = "Blocks: " + RoundToString((double)chainActive.Tip()->nHeight, 0);
-		msGlobalStatus += "<br>Difficulty: " + RoundToString(GetDifficulty(chainActive.Tip()), 2);
-		msGlobalStatus += "<br>";
+		msGlobalStatus = "Blocks: " + RoundToString((double)chainActive.Tip()->nHeight, 0) + ", Difficulty: " + RoundToString(GetDifficulty(chainActive.Tip()), 2);
+		msGlobalStatus += "<br>APM: " + GetAPMNarrative();
 		std::string sVersionAlert = GetVersionAlert();
-		if (!sVersionAlert.empty()) msGlobalStatus += " <font color=purple>" + sVersionAlert + "</font> ;";
+		if (!sVersionAlert.empty()) 
+			msGlobalStatus += " <font color=purple>" + sVersionAlert + "</font> ;";
 		std::string sPrayers = FormatHTML(sPrayer, 20, "<br>");
 		if (!sPrayer.empty())
 			msGlobalStatus2 = "<br><b>Prayer Requests:</b><br><font color=maroon><b>" + sPrayer + "</font></b><br>&nbsp;";

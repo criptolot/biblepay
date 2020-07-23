@@ -334,5 +334,6 @@ bool ApproveSanctuaryRevivalTransaction(CTransaction tx);
 bool VoteWithCoinAge(std::string sGobjectID, std::string sOutcome, std::string& TXID_OUT, std::string& ERROR_OUT);
 double GetCoinAge(std::string txid);
 CoinAgeVotingDataStruct GetCoinAgeVotingData(std::string sGobjectID);
+std::string GetAPMNarrative();
 
 #endif

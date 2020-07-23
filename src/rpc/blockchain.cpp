@@ -2732,6 +2732,8 @@ UniValue exec(const JSONRPCRequest& request)
 		double nPrice = GetCoinPrice();
 		double nDashPriceUSD = dBTC * dDASH;
 		double nXMRPriceUSD = dBTC * dXMR;
+		std::string sAPM = GetAPMNarrative();
+		results.push_back(Pair("APM", sAPM));
 		results.push_back(Pair("DASH/USD", nDashPriceUSD));
 		results.push_back(Pair("XMR/USD", nXMRPriceUSD));
 		results.push_back(Pair(CURRENCY_TICKER + "/USD", nPrice));

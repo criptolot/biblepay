@@ -672,45 +672,43 @@ double ExtractAPM(int nHeight)
 double CalculateAPM(int nHeight)
 {
 	// Automatic Price Mooning - July 21, 2020
-	int nLastSuperblock = nHeight - BLOCKS_PER_DAY;
-	if (nLastSuperblock < 0) 
-		return 0;
 	double nAPMHeight = GetSporkDouble("APM", 0);
-	if (nHeight < nAPMHeight)
+	if (nHeight < nAPMHeight || nHeight < 1)
 		return 0;
 	double out_BTC = 0;
 	double out_BBP = 0;
 	double dPrice = GetPBase(out_BTC, out_BBP);
-	double dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nLastSuperblock), "<bbpprice>", "</bbpprice>"), 12);
-	if (dLastPrice == 0 && nLastSuperblock > BLOCKS_PER_DAY * 2)
+	double dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nHeight), "<bbpprice>", "</bbpprice>"), 12);
+	if (dLastPrice == 0 && nHeight > BLOCKS_PER_DAY * 2)
 	{
 		// In case BBP missed a day (somehow), one more try using the previous day as the prior price:
-		nLastSuperblock -= BLOCKS_PER_DAY;
-		dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nLastSuperblock), "<bbpprice>", "</bbpprice>"), 12);
+		nHeight -= BLOCKS_PER_DAY;
+		dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nHeight), "<bbpprice>", "</bbpprice>"), 12);
 	}
 	double nResult = 0;
-	if (dLastPrice == 0 || dPrice == 0)
+	if (dLastPrice == 0 || out_BBP == 0)
 	{
 		// Price is missing for one of the two days
 		nResult = -1;
 	}
-	else if (dLastPrice == dPrice)
+	else if (dLastPrice == out_BBP)
 	{
 		// Price has not changed
 		nResult = 1;
 	}
-	else if (dLastPrice < dPrice)
+	else if (dLastPrice < out_BBP)
 	{
 		// Price has INCREASED!  YES!
 		nResult = 2;
 	}
-	else if (dLastPrice > dPrice)
+	else if (dLastPrice > out_BBP)
 	{
 		// Price has DECREASED -- BOO.
 		nResult = 3;
 	}
 
-	LogPrintf("CalculateAPM::Result==%f::LastHeight %f Price %f, Current %f Price %f", nResult, nLastSuperblock, dLastPrice, nHeight, out_BBP);
+	LogPrintf("CalculateAPM::Result==%f::LastHeight %f Price %s, Current Price %s", 
+		nResult, nHeight, RoundToString(dLastPrice, 12), RoundToString(out_BBP, 12));
 	return nResult;
 }
 

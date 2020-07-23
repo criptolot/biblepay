@@ -3052,7 +3052,8 @@ DACResult DSQL_ReadOnlyQuery(std::string sXMLSource)
 	int iTimeout = 30000;
 	int iSize = 24000000;
 	DACResult b;
-	LogPrintf("DSQLROQ %s %s", sDomain, sXMLSource);
+	if (fDebugSpam)
+		LogPrint("sql", "ROQ %s %s", sDomain, sXMLSource);
 
 	b.Response = HTTPSPost(true, 0, "", "", "", sDomain, sXMLSource, 443, "", iTimeout, iSize, 4);
 	return b;
@@ -4216,6 +4217,56 @@ CoinAgeVotingDataStruct GetCoinAgeVotingData(std::string sGobjectID)
 			}
 		}
 	}
-	
 	return c;
 }
+
+std::string APMToString(double nAPM)
+{
+	std::string sAPM;
+	if (nAPM == 0)
+	{
+		sAPM = "PRICE_MISSING";
+	}
+	else if (nAPM == 1)
+	{
+		sAPM = "PRICE_UNCHANGED";
+	}
+	else if (nAPM == 2)
+	{
+		sAPM = "PRICE_INCREASED";
+	}
+	else if (nAPM == 3)
+	{
+		sAPM = "PRICE_DECREASED";
+	}
+	else 
+	{
+		sAPM = "N/A";
+	}
+	return sAPM;
+}
+
+std::string GetAPMNarrative()
+{
+	int iNextSuperblock = 0;
+	int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
+	double dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(iLastSuperblock), "<bbpprice>", "</bbpprice>"), 12);
+	double out_BTC = 0;
+	double out_BBP = 0;
+	double dPrice = GetPBase(out_BTC, out_BBP);
+	//result.push_back(Pair("hrtime", TimestampToHRDate(block.GetBlockTime())));
+    CBlockIndex* pindexSuperblock = chainActive[iLastSuperblock];
+	if (pindexSuperblock != NULL)
+	{
+		std::string sHistoricalTime = TimestampToHRDate(pindexSuperblock->GetBlockTime());
+		double nAPM = CalculateAPM(iLastSuperblock);
+		std::string sAPMNarr = APMToString(nAPM);
+		std::string sNarr = "Prior Open " + RoundToString(dLastPrice, 12) + " @" + sHistoricalTime + " [" + RoundToString(iLastSuperblock, 0) + "]"
+			+ "<br>Current Price " + RoundToString(out_BBP, 12) + ", Next SB=" + RoundToString(iNextSuperblock, 0) + ", APM=" + sAPMNarr;
+
+		return sNarr;
+	}
+	return std::string();
+}
+
+

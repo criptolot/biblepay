@@ -45,5 +45,6 @@ bool IsOverBudget(int nHeight, std::string sAmounts);
 double CalculateAPM(int nHeight);
 double ExtractAPM(int nHeight);
 std::string CheckGSCHealth();
+std::string ExtractBlockMessage(int nHeight);
 
 #endif

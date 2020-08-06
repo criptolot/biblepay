@@ -1896,12 +1896,10 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "versioncheck")
 	{
-		std::string sNarr = GetVersionAlert();
 		std::string sGithubVersion = GetGithubVersion();
 		std::string sCurrentVersion = FormatFullVersion();
 		results.push_back(Pair("Github_version", sGithubVersion));
 		results.push_back(Pair("Current_version", sCurrentVersion));
-		if (!sNarr.empty()) results.push_back(Pair("Alert", sNarr));
 	}
 	else if (sItem == "sins")
 	{
@@ -1953,68 +1951,185 @@ UniValue exec(const JSONRPCRequest& request)
 			}
 		}
 	}
-	else if (sItem == "dsql_select")
+	else if (sItem == "testenc")
 	{
-		if (request.params.size() != 2)
-			throw std::runtime_error("You must specify dsql_select \"query\".");
-		std::string sSQL = request.params[1].get_str();
-		std::string sJson = DSQL_Ansi92Query(sSQL);
-		UniValue u(UniValue::VOBJ);
-		u.read(sJson);
-		std::string sSerialized = u.write().c_str();
-		results.push_back(Pair("dsql_query", sJson));
+		std::string sPath = request.params[1].get_str();
+		bool fTest = EncryptFile(sPath, sPath + ".enc");
+		results.push_back(Pair("res", fTest));
+	}
+	else if (sItem == "testdec")
+	{
+		std::string sPath = request.params[1].get_str();
+		bool fTest = DecryptFile(sPath, sPath + ".dec");
+		results.push_back(Pair("res", fTest));
+	}
+	else if (sItem == "bipfs_list")
+	{
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, mapSidechainTransactions)
+		{
+			std::string sDesc = "FileName: " + item.second.FileName + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(item.second.nSize, 2) 
+				+ ", Duration=" + RoundToString(item.second.nDuration, 0)
+				+ ", Density=" + RoundToString(item.second.nDensity, 0) + ", BlockHash=" + item.second.BlockHash + ", URL=" + item.second.URL + ", Network=" + item.second.Network 
+				+ ", Height=" + RoundToString(item.second.nHeight, 0);
+			results.push_back(Pair(item.second.TXID, sDesc));
+		}
+	}
+	else if (sItem == "bipfs_get")
+	{
+		if (request.params.size() != 4)
+			throw std::runtime_error("You must specify exec bipfs_get web_path local_path 0=not_encrypted/1=encrypted.  IE: exec bipfs_get web_path local_path 0.  "
+			" ( The web_path is the web URL.  The file_path the target folder location on your machine.  ");
+		
+		std::string sWebPath = request.params[1].get_str();
+		std::string sDirPath = request.params[2].get_str();
+		double nEncrypted = cdbl(request.params[3].get_str(), 0);
+		bool fEncrypted = nEncrypted == 1 ? true : false;
+		std::string sURL = FormatURL(sWebPath, 0); 
+		std::string sPage = FormatURL(sWebPath, 1);
+		DACResult d = DownloadFile(sURL, sPage, 443, 30000, sDirPath, fEncrypted);
+		results.push_back(Pair("Domain", sURL));
+		results.push_back(Pair("Page", sPage));
+		results.push_back(Pair("Results", d.Response));
+		results.push_back(Pair("Error", d.ErrorCode));
 	}
 	else if (sItem == "bipfs_file")
 	{
-		if (request.params.size() != 3)
-			throw std::runtime_error("You must specify exec bipfs_file path webpath.  IE: exec bipfs_file armageddon.jpg mycpk/armageddon.jpg");
-		std::string sPath = request.params[1].get_str();
-		std::string sWebPath = request.params[2].get_str();
-		std::string sResponse = BIPFS_UploadSingleFile(sPath, sWebPath);
-		std::string sFee = ExtractXML(sResponse, "<FEE>", "</FEE>");
-		std::string sErrors = ExtractXML(sResponse, "<ERRORS>", "</ERRORS>");
-		std::string sSize = ExtractXML(sResponse, "<SIZE>", "</SIZE>");
+		if (request.params.size() != 7)
+			throw std::runtime_error("You must specify exec bipfs_file file_path webpath target_density lease_duration_in_days 0=not_encrypted/1=encrypted 0=dryrun/1=real.  IE: exec bipfs_file file_path mywebpath 1 30 0 0.  "
+			" ( The file_path is the location of the file on your machine.  The web_path is the target URL of the file.  "
+			" The target density is how many world regions you would like the file to be stored in (choose 1-4).  "
+			" The lease duration in days is the number of days you would like the file stored for.  Dry Run=0 means we will not charge for the transaction, we will test the outcome and send you a price quote.  "
+			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the BiblePay IPFS network. ");
 
-		results.push_back(Pair("Fee", sFee));
-		results.push_back(Pair("Size", sSize));
-		results.push_back(Pair("Errors", sErrors));
+		std::string sDirPath = request.params[1].get_str();
+		std::string sWebPath = request.params[2].get_str();
+		int nTargetDensity = cdbl(request.params[3].get_str(), 0);
+		int nDurationDays = cdbl(request.params[4].get_str(), 0);
+		if (nTargetDensity < 1 || nTargetDensity > 4)
+			throw std::runtime_error("Invalid density. (Must be 1-4).");
+		if (nDurationDays < 1 || nDurationDays > (365*10))
+			throw std::runtime_error("Invalid lease duration (must be 1-36,500 in days).");
+
+		int nEncrypted = cdbl(request.params[5].get_str(), 0);
+		bool fEncrypted = nEncrypted == 1 ? true : false;
+
+		int nDryRun = cdbl(request.params[6].get_str(), 0);
+		if (nDryRun < 0 || nDryRun > 1)
+			throw std::runtime_error("Invalid dry run value (must be 0 or 1).");
+		bool fDryRun = nDryRun == 0 ? true : false;
+		std::string sTXID;
+		if (!fDryRun)
+		{
+			// Persist TXID
+			DACResult dDry = BIPFS_UploadFile(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, true, fEncrypted);
+			if (dDry.nFee/COIN < 1)
+				throw std::runtime_error("Unable to calculate fee. ");
+
+			std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+			std::string sHash = RetrieveMd5(sDirPath);
+			std::string sXML = "<bipfs>" + sHash + "</bipfs>";
+			std::string sError;
+			std::string sExtraPayload = "<size>" + RoundToString(dDry.nSize, 0) + "</size>";
+			sTXID = SendBlockchainMessage("bipfs", sCPK, sXML, dDry.nFee/COIN, false, sExtraPayload, sError);
+			if (!sError.empty())
+			{
+				throw std::runtime_error("IPFS::" + sError);
+			}
+			SyncSideChain(chainActive.Tip()->nHeight);
+			results.push_back(Pair("TXID", sTXID));
+		}
+		else
+		{
+			sTXID = RetrieveMd5(sDirPath);
+		}
+
+		DACResult d = BIPFS_UploadFile(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, fDryRun, fEncrypted);
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, d.mapResponses)
+		{
+			std::string sDesc = "File: " + item.second.File + ", Response: " + item.second.Response + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(d.nSize, 2) + "] [Error=" + d.ErrorCode + "]";
+			results.push_back(Pair(item.second.TXID, sDesc));
+			// For each Density 
+			BOOST_FOREACH(PAIRTYPE(std::string, std::string) region, item.second.mapRegions)
+			{
+				results.push_back(Pair(region.first, region.second));
+			}
+		}
+
 	}
 	else if (sItem == "bipfs_folder")
 	{
-		if (request.params.size() != 3)
-			throw std::runtime_error("You must specify exec bipfs_folder path webpath.  IE: exec bipfs_folder foldername mycpk/mywebpath");
+		if (request.params.size() != 7)
+			throw std::runtime_error("You must specify exec bipfs_folder file_path webpath target_density lease_duration_in_days 0=unencrypted/1=encrypted 0=dryrun/1=real.  IE: exec bipfs_folder foldername mywebpath 1 30 0 0.  "
+			" ( The file_path is the location of the file on your machine.  The web_path is the target URL of the file.  "
+			" The target density is how many world regions you would like the file to be stored in (choose 1-4).  "
+			" The lease duration in days is the number of days you would like the file stored for.  Dry Run=0 means we will not charge for the transaction, we will test the outcome and send you a price quote.  "
+			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the BiblePay IPFS network. ");
+
 		std::string sDirPath = request.params[1].get_str();
 		std::string sWebPath = request.params[2].get_str();
-		std::vector<std::string> skipList;
-		std::vector<std::string> g = GetVectorOfFilesInDirectory(sDirPath, skipList);
-		for (auto sFileName : g)
+		int nTargetDensity = cdbl(request.params[3].get_str(), 0);
+		int nDurationDays = cdbl(request.params[4].get_str(), 0);
+		if (nTargetDensity < 1 || nTargetDensity > 4)
+			throw std::runtime_error("Invalid density. (Must be 1-4).");
+		if (nDurationDays < 1 || nDurationDays > (365*10))
+			throw std::runtime_error("Invalid lease duration (must be 1-36,500 in days).");
+
+		int nEncrypted = cdbl(request.params[5].get_str(), 0);
+		bool fEncrypted = nEncrypted == 1 ? true : false;
+
+		if (nEncrypted < 0 || nEncrypted > 1)
+			throw std::runtime_error("Invalid encrypted (must be 0 or 1)");
+
+		int nDryRun = cdbl(request.params[6].get_str(), 0);
+		if (nDryRun < 0 || nDryRun > 1)
+			throw std::runtime_error("Invalid dry run value (must be 0 or 1).");
+		bool fDryRun = nDryRun == 0 ? true : false;
+
+		std::string sTXID;
+		if (!fDryRun)
 		{
-			results.push_back(Pair("Processing File", sFileName));
-			std::string sRelativeFileName = strReplace(sFileName, sDirPath, "");
+			// Persist TXID
+			DACResult dDry = BIPFS_UploadFolder(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, true, fEncrypted);
+			if (dDry.nFee/COIN < 1)
+				throw std::runtime_error("Unable to calculate fee. ");
 
-			std::string sFullWebPath = Path_Combine(sWebPath, sRelativeFileName);
-			std::string sFullSourcePath = Path_Combine(sDirPath, sFileName);
-
-			LogPrintf("Iterated Filename %s, RelativeFile %s, FullWebPath %s", 
-				sFileName.c_str(), sRelativeFileName.c_str(), sFullWebPath.c_str());
-
-			std::string sResponse = BIPFS_UploadSingleFile(sFullSourcePath, sFullWebPath);
-			results.push_back(Pair("SourcePath", sFullSourcePath));
-
-			results.push_back(Pair("FileName", sFileName));
-			results.push_back(Pair("WebPath", sFullWebPath));
-			std::string sFee = ExtractXML(sResponse, "<FEE>", "</FEE>");
-			std::string sErrors = ExtractXML(sResponse, "<ERRORS>", "</ERRORS>");
-			std::string sSize = ExtractXML(sResponse, "<SIZE>", "</SIZE>");
-			std::string sHash = ExtractXML(sResponse, "<hash>", "</hash>");
-
-			results.push_back(Pair("Fee", sFee));
-			results.push_back(Pair("Size", sSize));
-			results.push_back(Pair("Hash", sHash));
-			results.push_back(Pair("Errors", sErrors));
+			std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+			std::string sHash = RetrieveMd5(sDirPath);
+			std::string sXML = "<bipfs>" + sHash + "</bipfs>";
+			std::string sError;
+			std::string sExtraPayload = "<size>" + RoundToString(dDry.nSize, 0) + "</size>";
+			sTXID = SendBlockchainMessage("bipfs", sCPK, sXML, dDry.nFee/COIN, false, sExtraPayload, sError);
+			if (!sError.empty())
+			{
+				throw std::runtime_error("IPFS::" + sError);
+			}
+			// Dry run succeeded
+			results.push_back(Pair("TXID", sTXID));
 		}
-	}
+		else
+		{
+			sTXID = RetrieveMd5(sDirPath);
+		}
 
+		DACResult d = BIPFS_UploadFolder(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, fDryRun, fEncrypted);
+
+
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, d.mapResponses)
+		{
+			std::string sDesc = "File: " + item.second.File + ", Response: " + item.second.Response + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(d.nSize, 2) + "] [Error=" + d.ErrorCode + "]";
+			results.push_back(Pair(item.second.TXID, sDesc));
+			// For each Density region
+			BOOST_FOREACH(PAIRTYPE(std::string, std::string) region, item.second.mapRegions)
+			{
+				results.push_back(Pair(region.first, region.second));
+			}
+		}
+
+		results.push_back(Pair("Total Size", d.nSize));
+		results.push_back(Pair("Total Fee", (double)(d.nFee / COIN)));
+		results.push_back(Pair("Results", d.Response));
+
+	}
 	else if (sItem == "testgscvote")
 	{
 		int iNextSuperblock = 0;
@@ -2024,16 +2139,18 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("contract", sContract));
 		std::string sAddresses;
 		std::string sAmounts;
+		std::string out_qtdata;
 		int iVotes = 0;
 		uint256 uGovObjHash = uint256S("0x0");
 		uint256 uPAMHash = GetPAMHashByContract(sContract);
 		results.push_back(Pair("pam_hash", uPAMHash.GetHex()));
 	
-		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
+		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts, out_qtdata);
 		std::string sError;
 		results.push_back(Pair("govobjhash", uGovObjHash.GetHex()));
 		results.push_back(Pair("Addresses", sAddresses));
 		results.push_back(Pair("Amounts", sAmounts));
+		results.push_back(Pair("QTData", out_qtdata));
 		double dTotal = AddVector(sAmounts, "|");
 		results.push_back(Pair("Total_Target_Spend", dTotal));
 		if (uGovObjHash == uint256S("0x0"))
@@ -2597,8 +2714,10 @@ UniValue exec(const JSONRPCRequest& request)
 		int iVotes = 0;
 		uint256 uGovObjHash = uint256S("0x0");
 		uint256 uPAMHash = uint256S("0x0");
-		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
-		uint256 hPam = GetPAMHash(sAddresses, sAmounts);
+		std::string out_qtdata;
+		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts, out_qtdata);
+
+		uint256 hPam = GetPAMHash(sAddresses, sAmounts, out_qtdata);
 		results.push_back(Pair("pam_hash", hPam.GetHex()));
 		std::string sContract = GetGSCContract(iLastSuperblock, true);
 		uint256 hPAMHash2 = GetPAMHashByContract(sContract);
@@ -2615,6 +2734,7 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("required_votes", iRequiredVotes));
 		results.push_back(Pair("last_superblock", iLastSuperblock));
 		results.push_back(Pair("next_superblock", iNextSuperblock));
+		results.push_back(Pair("qt_data", out_qtdata));
 		bool fTriggered = CSuperblockManager::IsSuperblockTriggered(iNextSuperblock);
 		results.push_back(Pair("next_superblock_triggered", fTriggered));
 		if (bImpossible)
@@ -3249,7 +3369,7 @@ UniValue exec(const JSONRPCRequest& request)
 	{
 		std::string sURL = "https://" + GetSporkValue("bms");
 		std::string sRestfulURL = "BMS/LAST_MANDATORY_VERSION";
-		std::string sResponse = HTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 25, 10000, 1);
+		std::string sResponse = Uplink(false, "", sURL, sRestfulURL, SSL_PORT, 25, 1);
 		results.push_back(Pair(sRestfulURL, sResponse));
 	}
 	else if (sItem == "sendmessage")

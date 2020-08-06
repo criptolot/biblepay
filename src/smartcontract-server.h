@@ -18,9 +18,9 @@ std::string AssessBlocks(int nHeight, bool fCreating);
 int GetLastGSCSuperblockHeight(int nCurrentHeight, int& nNextSuperblock);
 std::string GetGSCContract(int nHeight, bool fCreating);
 bool SubmitGSCTrigger(std::string sHex, std::string& gobjecthash, std::string& sError);
-void GetGSCGovObjByHeight(int nHeight, uint256 uOptFilter, int& out_nVotes, uint256& out_uGovObjHash, std::string& out_PaymentAddresses, std::string& out_PaymentAmounts);
+void GetGSCGovObjByHeight(int nHeight, uint256 uOptFilter, int& out_nVotes, uint256& out_uGovObjHash, std::string& out_PaymentAddresses, std::string& out_PaymentAmounts, std::string& out_QT);
 uint256 GetPAMHashByContract(std::string sContract);
-uint256 GetPAMHash(std::string sAddresses, std::string sAmounts);
+uint256 GetPAMHash(std::string sAddresses, std::string sAmounts, std::string sQTPhase);
 bool VoteForGSCContract(int nHeight, std::string sMyContract, std::string& sError);
 std::string ExecuteGenericSmartContractQuorumProcess();
 UniValue GetProminenceLevels(int nHeight, std::string sFilterName);
@@ -34,7 +34,6 @@ DACProposal GetProposalByHash(uint256 govObj, int nLastSuperblock);
 std::string DescribeProposal(DACProposal dacProposal);
 std::string GetTxCPK(CTransactionRef tx, std::string& sCampaignName);
 double CalculatePoints(std::string sCampaign, std::string sDiary, double nCoinAge, CAmount nDonation, std::string sCPK);
-double GetChildBalance(std::string sChildID, std::string sCharity);
 double GetProminenceCap(std::string sCampaignName, double nPoints, double nProminence);
 std::string GetCPIDByCPK(std::string sCPK);
 std::string GetCPIDElementByData(std::string sData, int iElement);
@@ -46,5 +45,6 @@ double CalculateAPM(int nHeight);
 double ExtractAPM(int nHeight);
 std::string CheckGSCHealth();
 std::string ExtractBlockMessage(int nHeight);
+bool DoesContractExist(int nHeight, uint256 uGovID);
 
 #endif

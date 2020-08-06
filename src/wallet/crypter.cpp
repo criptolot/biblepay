@@ -445,7 +445,6 @@ end:
 	return(pkey);
 }
 
-
 std::vector<char> ReadAllBytes(char const* filename)
 {
     std::ifstream ifs(filename, std::ios::binary|std::ios::ate);

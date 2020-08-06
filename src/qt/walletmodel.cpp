@@ -257,8 +257,10 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     int nAddresses = 0;
 	std::string sOptPrayer;
 	bool fDiaryEntry = false;
+	bool fDWS = false;
     const Consensus::Params& consensusParams = Params().GetConsensus();
 	CAmount nSundries = 0;
+	CAmount nDWSAmount = 0;
     // Pre-check input data for validity
     Q_FOREACH(const SendCoinsRecipient &rcp, recipients)
     {
@@ -267,6 +269,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 
 		if (rcp.fDiary)
 			fDiaryEntry = true;
+
+		if (rcp.fDWS)
+			fDWS = true;
 
         if (rcp.paymentRequest.IsInitialized())
         {   // PaymentRequest...
@@ -332,8 +337,12 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 				nSundries += aTitheAmount;
 				vecSend.push_back(recFoundation);
 			}
-
+			else if (rcp.fDWS)
+			{
+				nDWSAmount += rcp.amount;
+			}
             total += rcp.amount;
+
         }
     }
 
@@ -361,6 +370,10 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 		}
 	    Q_EMIT message(tr("Create Diary Entry"), QString::fromStdString(sNarr), iMsg);
 	    return SendCoinsReturn(TransactionCommitFailed, QString::fromStdString("GSC_SUCCESS"));
+	}
+	else if (fDWS)
+	{
+	    return SendCoinsReturn(TransactionCommitFailed, QString::fromStdString("DWS_FAIL"));
 	}
 
     if(setAddress.size() != nAddresses)

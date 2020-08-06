@@ -202,6 +202,8 @@ public:
         strNetworkID = "main";
 
 		consensus.POOM_PHASEOUT_HEIGHT = 199000;  // GO LIVE HEIGHT - JUNE 2020 MANDATORY UPGRADE
+		consensus.POOS_HEIGHT = 250000; // Critical Todo - Set the height for the September 2020 Mandatory Upgrade
+
 		consensus.LLMQHeight = 199000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
 
 		consensus.FPOG_CUTOVER_HEIGHT = 100001;   // Feb 7th, 2019 (100,001)
@@ -402,6 +404,7 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
 		consensus.POOM_PHASEOUT_HEIGHT = 38000; 
+		consensus.POOS_HEIGHT = 55720; // Critical Todo - Set the height for the September 2020 Mandatory Upgrade
 
 		consensus.PODC_LAST_BLOCK = 100; // March 13th, 2019
 		consensus.PODC2_CUTOVER_HEIGHT = 21000;  // Go live height for PODC 2.0, DWS (Christmas 2019)

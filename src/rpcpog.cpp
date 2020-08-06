@@ -199,7 +199,8 @@ std::string GetSporkValue(std::string sKey)
 double GetSporkDouble(std::string sName, double nDefault)
 {
 	double dSetting = cdbl(GetSporkValue(sName), 2);
-	if (dSetting == 0) return nDefault;
+	if (dSetting == 0)
+		return nDefault;
 	return dSetting;
 }
 
@@ -222,6 +223,7 @@ std::map<std::string, std::string> GetSporkMap(std::string sPrimaryKey, std::str
 
 std::string Left(std::string sSource, int bytes)
 {
+	// I learned this in 1978 when I learned BASIC... LOL
 	if (sSource.length() >= bytes)
 	{
 		return sSource.substr(0, bytes);
@@ -293,7 +295,6 @@ CPK GetCPK(std::string sData)
 	k.nLockTime = (int64_t)cdbl(vDec[2], 0);
 
 	return k;
-
 } 
 
 std::map<std::string, CPK> GetChildMap(std::string sGSCObjType)
@@ -312,7 +313,6 @@ std::map<std::string, CPK> GetChildMap(std::string sGSCObjType)
 	}
 	return mCPKMap;
 }
-
 
 std::map<std::string, CPK> GetGSCMap(std::string sGSCObjType, std::string sSearch, bool fRequireSig)
 {
@@ -380,8 +380,6 @@ std::string ReadCacheWithMaxAge(std::string sSection, std::string sKey, int64_t 
 	return t.first;
 }
 
-
-
 std::string TimestampToHRDate(double dtm)
 {
 	if (dtm == 0) return "1-1-1970 00:00:00";
@@ -404,7 +402,6 @@ std::string ExtractXML(std::string XMLdata, std::string key, std::string key_end
 	}
 	return extraction;
 }
-
 
 std::string AmountToString(const CAmount& amount)
 {
@@ -470,7 +467,7 @@ std::string DefaultRecAddress(std::string sType)
 std::string CreateBankrollDenominations(double nQuantity, CAmount denominationAmount, std::string& sError)
 {
 	// First mark the denominations with the 1milli TitheMarker
-	denominationAmount += ((.001) * COIN);
+	denominationAmount += (.001 * COIN);
 	CAmount nBankrollMask = .001 * COIN;
 
 	CAmount nTotal = denominationAmount * nQuantity;
@@ -550,35 +547,6 @@ std::string PubKeyToAddress(const CScript& scriptPubKey)
     CBitcoinAddress address2(address1);
     return address2.ToString();
 }    
-
-/*
-void GetTxTimeAndAmountAndHeight(uint256 hashInput, int hashInputOrdinal, int64_t& out_nTime, CAmount& out_caAmount, int& out_height)
-{
-	CTransaction tx1;
-	uint256 hashBlock1;
-	if (GetTransaction(hashInput, tx1, Params().GetConsensus(), hashBlock1, true))
-	{
-		out_caAmount = tx1.vout[hashInputOrdinal].nValue;
-		BlockMap::iterator mi = mapBlockIndex.find(hashBlock1);
-		if (mi != mapBlockIndex.end())
-		{
-			CBlockIndex* pindexHistorical = mapBlockIndex[hashBlock1];              
-			out_nTime = pindexHistorical->GetBlockTime();
-			out_height = pindexHistorical->nHeight;
-			return;
-		}
-		else
-		{
-			LogPrintf("\nUnable to find hashBlock %s", hashBlock1.GetHex().c_str());
-		}
-	}
-	else
-	{
-		LogPrintf("\nUnable to find hashblock1 in GetTransaction %s ",hashInput.GetHex().c_str());
-	}
-}
-*/
-
 
 CAmount GetRPCBalance()
 {
@@ -869,10 +837,8 @@ std::string GetActiveProposals()
 			sRow += sDelim + RoundToString(c.mapTotalVotes[0], 0) + sDelim + RoundToString(c.mapTotalVotes[1], 0) + sDelim + RoundToString(c.mapTotalVotes[2], 0);
 			// Add the coin-age voting data totals
 			sRow += sDelim + RoundToString(c.mapTotalCoinAge[0], 0) + sDelim + RoundToString(c.mapTotalCoinAge[1], 0) + sDelim + RoundToString(c.mapTotalCoinAge[2], 0);
-			
 			sRow += sDelim + sURL;
 			sXML += sRow;
-
 		}
 	}
 	return sXML;
@@ -917,7 +883,6 @@ bool VoteManyForGobject(std::string govobj, std::string strVoteSignal, std::stri
 		}
 	});
 	UniValue vOutcome;
-
 
 	try	
 	{	
@@ -1140,53 +1105,6 @@ void GetMiningParams(int nPrevHeight, bool& f7000, bool& f8000, bool& f9000, boo
     fTitheBlocksActive = (nPrevHeight + 1) < nLastTitheBlock;
 }
 
-/*
-std::string RetrieveTxOutInfo(const CBlockIndex* pindexLast, int iLookback, int iTxOffset, int ivOutOffset, int iDataType)
-{
-	// When DataType == 1, returns txOut Address
-	// When DataType == 2, returns TxId
-	// When DataType == 3, returns Blockhash
-
-    if (pindexLast == NULL || pindexLast->nHeight == 0) 
-	{
-        return ;
-    }
-
-    for (int i = 1; i < iLookback; i++) 
-	{
-        if (pindexLast->pprev == NULL) { break; }
-        pindexLast = pindexLast->pprev;
-    }
-	if (iDataType < 1 || iDataType > 3) return "DATA_TYPE_OUT_OF_RANGE";
-
-	if (iDataType == 3) return pindexLast ? pindexLast->GetBlockHash().GetHex() : "";	
-	
-	const Consensus::Params& consensusParams = Params().GetConsensus();
-	CBlock block;
-	if (ReadBlockFromDisk(block, pindexLast, consensusParams))
-	{
-		if (iTxOffset >= (int)block.vtx.size()) iTxOffset=block.vtx.size()-1;
-		if (ivOutOffset >= (int)block.vtx[iTxOffset]->vout.size()) ivOutOffset=block.vtx[iTxOffset]->vout.size()-1;
-		if (iTxOffset >= 0 && ivOutOffset >= 0)
-		{
-			if (iDataType == 1)
-			{
-				std::string sPKAddr = PubKeyToAddress(block.vtx[iTxOffset]->vout[ivOutOffset].scriptPubKey);
-				return sPKAddr;
-			}
-			else if (iDataType == 2)
-			{
-				std::string sTxId = block.vtx[iTxOffset]->GetHash().ToString();
-				return sTxId;
-			}
-		}
-	}
-	
-	return;
-
-}
-*/
-
 std::string GetIPFromAddress(std::string sAddress)
 {
 	std::vector<std::string> vAddr = Split(sAddress.c_str(),":");
@@ -1194,7 +1112,6 @@ std::string GetIPFromAddress(std::string sAddress)
 		return std::string();
 	return vAddr[0];
 }
-
 
 bool SubmitProposalToNetwork(uint256 txidFee, int64_t nStartTime, std::string sHex, std::string& sError, std::string& out_sGovObj)
 {
@@ -1240,7 +1157,6 @@ bool SubmitProposalToNetwork(uint256 txidFee, int64_t nStartTime, std::string sH
 	return true;
 }
 
-
 std::vector<char> ReadBytesAll(char const* filename)
 {
 	int iFileSize = GetFileSize(filename);
@@ -1255,6 +1171,7 @@ std::vector<char> ReadBytesAll(char const* filename)
     std::vector<char>  result(pos);
     ifs.seekg(0, std::ios::beg);
     ifs.read(&result[0], pos);
+	ifs.close();
     return result;
 }
 
@@ -1265,7 +1182,6 @@ void WriteBinaryToFile(char const* filename, std::vector<char> data)
 	OutFile.write(&data[0], data.size());
 	OutFile.close();
 }
-
 
 std::string GetFileNameFromPath(std::string sPath)
 {
@@ -2046,14 +1962,75 @@ std::string PrepareHTTPPost(bool bPost, std::string sPage, std::string sHostHead
     s << "\r\n" << sMsg;
     return s.str();
 }
+
+DACResult SubmitIPFSPart(int iPort, std::string sWebPath, std::string sTXID, std::string sBaseURL, std::string sPage, std::string sOriginalName, std::string sFileName, int iPartNumber, int iTotalParts, int iDensity, int iDuration, bool fEncrypted, CAmount nFee)
+{
+	std::map<std::string, std::string> mapRequestHeaders;
+	mapRequestHeaders["PartNumber"] = RoundToString(iPartNumber, 0);
+	mapRequestHeaders["TXID"] = sTXID;
+	mapRequestHeaders["Fee"] = RoundToString(nFee/COIN, 2);
+	mapRequestHeaders["WebPath"] = sWebPath;
+	mapRequestHeaders["Density"] = RoundToString(iDensity, 0);
+	mapRequestHeaders["Duration"] = RoundToString(iDuration, 0);
+	mapRequestHeaders["Part"] = sFileName;
+	mapRequestHeaders["OriginalName"] = sOriginalName;
+	mapRequestHeaders["TotalParts"] = RoundToString(iTotalParts, 0);
+	mapRequestHeaders["BlockHash"] = chainActive.Tip()->GetBlockHash().GetHex();
+	mapRequestHeaders["BlockHeight"] = RoundToString(chainActive.Tip()->nHeight, 0);
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	mapRequestHeaders["CPK"] = sCPK;
+	std::string sData = GetAttachmentData(sFileName, fEncrypted);
+	LogPrintf("IPFS::SubmitIPFSPart Part # %f, DataLen %s", iPartNumber, sData.size());
+
+	DACResult b;
+	b.Response = Uplink(true, sData, sBaseURL, sPage, iPort, 600, 1, mapRequestHeaders);
+	return b;
+}
+
+std::vector<char> ReadAllBytesFromFile(char const* filename)
+{
+    std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
+    std::ifstream::pos_type pos = ifs.tellg();
+    std::vector<char>  result(pos);
+    ifs.seekg(0, std::ios::beg);
+    ifs.read(&result[0], pos);
+    return result;
+}
+
+DACResult DownloadFile(std::string sBaseURL, std::string sPage, int iPort, int iTimeoutSecs, std::string sTargetFileName, bool fEncrypted)
+{
+	std::map<std::string, std::string> mapRequestHeaders;
+	DACResult dResult;
+	std::string sTargetPath = sTargetFileName;
+	if (fEncrypted)
+	{
+		std::string sTargetPath = sTargetFileName;
+		sTargetFileName = sTargetFileName + ".temp";
+	}
+	dResult.Response = Uplink(false, "", sBaseURL, sPage, iPort, iTimeoutSecs, 1, mapRequestHeaders, sTargetFileName);
+	if (fEncrypted)
+	{
+		DecryptFile(sTargetFileName, sTargetPath);
+	}
+	return dResult;
+}
 	
 static double HTTP_PROTO_VERSION = 2.0;
-std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
-	std::string sSolution, int iTimeoutSecs, int iMaxSize, int iBOE)
+std::string Uplink(bool bPost, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, int iTimeoutSecs, int iBOE, std::map<std::string, std::string> mapRequestHeaders, std::string TargetFileName)
 {
 	std::string sData;
 	int iRead = 0;
+	int iMaxSize = 20000000;
 	double dMaxSize = 0;
+	std::ofstream OutFile;
+
+	if (!TargetFileName.empty())
+	{
+		OutFile.open(TargetFileName, std::ios::out | std::ios::binary);
+		iMaxSize = 300000000;
+	}
+
+	bool fContentLengthFound = false;
 
 	// The OpenSSL version of Post *only* works with SSL websites, hence the need for HTTPPost(2) (using BOOST).  The dev team is working on cleaning this up before the end of 2019 to have one standard version with cleaner code and less internal parts. //
 	try
@@ -2061,22 +2038,19 @@ std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::s
 		double dDebugLevel = cdbl(GetArg("-devdebuglevel", "0"), 0);
 
 		if (dDebugLevel == 1)
-			LogPrintf("Connecting to %s ", sBaseURL);
+			LogPrintf("\r\nUplink::Connecting to %s [/] %s ", sBaseURL, sPage);
 
-		std::map<std::string, std::string> mapRequestHeaders;
-		mapRequestHeaders["Miner"] = sDistinctUser;
-		mapRequestHeaders["Action"] = sPayload;
-		mapRequestHeaders["Solution"] = sSolution;
 		mapRequestHeaders["Agent"] = FormatFullVersion();
 		// Supported pool Network Chain modes: main, test, regtest
 		const CChainParams& chainparams = Params();
 		mapRequestHeaders["NetworkID"] = chainparams.NetworkIDString();
-		mapRequestHeaders["ThreadID"] = RoundToString(iThreadID, 0);
 		mapRequestHeaders["OS"] = sOS;
 		mapRequestHeaders["SessionID"] = msSessionID;
-		mapRequestHeaders["WorkerID1"] = GetArg("-workerid", "");
-		mapRequestHeaders["WorkerID2"] = GetArg("-workeridfunded", "");
+		if (sPayload.length() < 1000)
+			mapRequestHeaders["Action"] = sPayload;
 		mapRequestHeaders["HTTP_PROTO_VERSION"] = RoundToString(HTTP_PROTO_VERSION, 0);
+		if (bPost)
+			mapRequestHeaders["Content-Type"] = "application/octet-stream";
 
 		BIO* bio;
 		// Todo add connection timeout here to bio object
@@ -2087,6 +2061,8 @@ std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::s
 		ctx = SSL_CTX_new(SSLv23_client_method());
 		if (ctx == NULL)
 		{
+			if (!TargetFileName.empty())
+				OutFile.close();
 			return "<ERROR>CTX_IS_NULL</ERROR>";
 		}
 		bio = BIO_new_ssl_connect(ctx);
@@ -2112,11 +2088,12 @@ std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::s
 		{
 			if (dDebugLevel == 1)
 				LogPrintf("Failed connection to %s ", sDomainWithPort);
+			if (!TargetFileName.empty())
+				OutFile.close();
+
 			return "<ERROR>Failed connection to " + sDomainWithPort + "</ERROR>";
 		}
 
-		if (dDebugLevel == 1)
-			LogPrintf("connected to %s",sDomainWithPort.c_str());
 		// Evo requires 2 args instead of 3, the last used to be true for DNS resolution=true
 
 		std::string sPost = PrepareHTTPPost(bPost, sPage, sDomain, sPayload, mapRequestHeaders);
@@ -2125,10 +2102,11 @@ std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::s
 			LogPrintf("BioPost %f", 801);
 		if(BIO_write(bio, write_buf, strlen(write_buf)) <= 0)
 		{
+			if (!TargetFileName.empty())
+				OutFile.close();
+
 			return "<ERROR>FAILED_HTTPS_POST</ERROR>";
 		}
-		if (dDebugLevel==1)
-			LogPrintf("BioPost %f", 802);
 		//  Variables used to read the response from the server
 		int size;
 		clock_t begin = clock();
@@ -2146,24 +2124,49 @@ std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::s
 			iRead += (int)size;
 			buf[size] = 0;
 			std::string MyData(buf);
-			sData += MyData;
+			int iOffset = 0;
+
+			if (!TargetFileName.empty())
+			{
+
+				if (!fContentLengthFound)
+				{
+					if (MyData.find("Content-Length:") != std::string::npos)
+					{
+						std::size_t iFoundPos = MyData.find("\r\n\r\n");
+						if ((int)iFoundPos > 1)
+						{
+							iOffset = (int)iFoundPos + 4;
+							size -= iOffset;
+						}
+					}
+				}
+
+				OutFile.write(&buf[iOffset], size);
+			}
+			else
+			{
+				sData += MyData;
+			}
+
 			if (dDebugLevel == 1)
-				LogPrintf("BioReadFinished %s, maxsize %f datasize %f ", MyData, dMaxSize, iRead);
+				LogPrintf(" BioReadFinished maxsize %f datasize %f ", dMaxSize, iRead);
 
 			clock_t end = clock();
 			double elapsed_secs = double(end - begin) / (CLOCKS_PER_SEC + .01);
 			if (elapsed_secs > iTimeoutSecs) break;
 			if (TermPeekFound(sData, iBOE)) break;
 
-			if (dMaxSize == 0)
+			if (!fContentLengthFound)
 			{
-				if (sData.find("Content-Length:") != std::string::npos)
+				if (MyData.find("Content-Length:") != std::string::npos)
 				{
-					dMaxSize = cdbl(ExtractXML(sData,"Content-Length: ","\n"),0);
-					std::size_t foundPos = sData.find("Content-Length:");
+					dMaxSize = cdbl(ExtractXML(MyData, "Content-Length: ","\n"), 0);
+					std::size_t foundPos = MyData.find("Content-Length:");
 					if (dMaxSize > 0)
 					{
 						iMaxSize = dMaxSize + (int)foundPos + 16;
+						fContentLengthFound = true;
 					}
 				}
 			}
@@ -2173,8 +2176,9 @@ std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::s
 		}
 		// Free bio resources
 		BIO_free_all(bio);
-		if (dDebugLevel == 1)
-			LogPrintf("Received %s ", sData);
+		if (!TargetFileName.empty())
+			OutFile.close();
+
 		return sData;
 	}
 	catch (std::exception &e)
@@ -2189,7 +2193,6 @@ std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::s
 
 static std::string DECENTRALIZED_SERVER_FARM_PREFIX = "web.";
 static std::string SSL_PROTOCOL_WEB = "https://";
-static int SSL_PORT = 443;
 static int SSL_TIMEOUT = 15;
 static int SSL_CONN_TIMEOUT = 10000;
 DACResult DSQL(UniValue uObject, std::string sXML)
@@ -2199,135 +2202,14 @@ DACResult DSQL(UniValue uObject, std::string sXML)
 	std::string sJson = uObject.write().c_str();
 	std::string sPayload = "<jsondata>" + sJson + "</jsondata>" + sXML;
 	DACResult b;
-	b.Response = HTTPSPost(true, 0, "POST", "", sPayload, sEndpoint, sMVC, SSL_PORT, "", SSL_TIMEOUT, SSL_CONN_TIMEOUT, 1);
+	b.Response = Uplink(true, sPayload, sEndpoint, sMVC, SSL_PORT, SSL_TIMEOUT, 1);
 	b.ErrorCode = ExtractXML(b.Response, "<ERRORS>", "<ERRORS>");
 	return b;
-}
-
-std::string HTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName)
-{
-	std::ostringstream ssOut;
-	try
-	{
-		// This version of Post has the advantage of working with both HTTP & HTTPS, and works from both QT and the daemon (++).  Our dev team is in the process of testing this across all use cases to ensure it is safe to replace V1.
-		std::map<std::string, std::string> mapRequestHeaders;
-		mapRequestHeaders["Agent"] = FormatFullVersion();
-		std::vector<char> v;
-		std::string s64;
-		if (!sFileName.empty())
-		{
-			mapRequestHeaders["Filename"] = sFileName;
-			v = ReadBytesAll(sFileName.c_str());
-			std::vector<unsigned char> uData(v.begin(), v.end());
-			s64 = EncodeBase64(&uData[0], uData.size());
-		}
-		/* mapRequestHeaders["Content-Type"] = "application/json"; */
-		
-		std::string sPost = PrepareHTTPPost(bPost, sPage, sDomain, s64, mapRequestHeaders);
-		LogPrintf("Preparing post for %s with %s ",sDomain, sPost);
-
-		boost::asio::io_service io_service;
-		// Get a list of endpoints corresponding to the server name.
-		boost::asio::ip::tcp::resolver resolver(io_service);
-		boost::asio::ip::tcp::resolver::query query(sDomain, sProtocol);
-
-		boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-		// Try each endpoint until we successfully establish a connection.
-		boost::asio::ip::tcp::socket socket(io_service);
-		boost::asio::connect(socket, endpoint_iterator);
-
-		boost::asio::ip::tcp::endpoint remote_ep = socket.remote_endpoint();
-		boost::asio::ip::address remote_ad = remote_ep.address();
-		std::string sRAD = remote_ad.to_string();
-
-		LogPrintf(" BPHP Connecting to address %s", sRAD);
-	
-		boost::asio::streambuf request;
-		std::ostream request_stream(&request);
-		request_stream << sPost;
-		// Send the request.
-		boost::asio::write(socket, request);
-		boost::asio::streambuf response;
-		boost::asio::read_until(socket, response, "\r\n");
-		// Check that response is OK.
-		std::istream response_stream(&response);
-		std::string http_version;
-		response_stream >> http_version;
-		unsigned int status_code;
-		response_stream >> status_code;
-		std::string status_message;
-		std::getline(response_stream, status_message);
-		if (!response_stream || http_version.substr(0, 5) != "HTTP/")
-			return "invalid http response";
-		if (status_code != 200)
-			return "response returned with status code " + RoundToString(status_code, 0);
-		// Read the response headers, which are terminated by a blank line.
-		boost::asio::read_until(socket, response, "\r\n");
-		std::string header;
-		while (std::getline(response_stream, header) && header != "\r")
-		{
-			ssOut << header << "\n";
-		}
-		ssOut << "\n";
-		// Write whatever content we already have to output.
-		if (response.size() > 0)
-			ssOut << &response;
-		// Read until EOF, writing data to output as we go.
-		boost::system::error_code error;
-		while (boost::asio::read(socket, response, boost::asio::transfer_at_least(1), error))
-		{
-			ssOut << &response;
-			std::string s1 = ssOut.str();
-			if (Contains(s1, "</html>") || Contains(s1,"<eof>") || Contains(s1,"<END>"))
-				break;
-		}
-  }
-  catch (std::exception& e)
-  {
-	  std::cout << e.what();
-	  return "HTTPS Post Exception";
-  }
-  std::string  sRead = ssOut.str();
-  return sRead;
-}
-
-static std::string msVersionAlert;
-std::string GetVersionAlert()
-{
-	if (!msVersionAlert.empty())
-	{
-		return msVersionAlert;
-	}
-	if (msGithubVersion.empty()) 
-	{
-		msGithubVersion = GetGithubVersion();
-	}
-	if (msGithubVersion.empty())
-		return std::string();
-	std::string sGithubVersion = strReplace(msGithubVersion, ".", "");
-	std::string sError = ExtractXML(sGithubVersion, "<ERROR>", "</ERROR>");
-	if (!sError.empty())
-	{
-		LogPrintf("GetVersionAlert::Error Encountered error %s while checking for latest mandatory version %s", sError, sGithubVersion);
-		return std::string();
-	}
-	double dGithubVersion = cdbl(sGithubVersion, 0);
-	std::string sCurrentVersion = FormatFullVersion();
-	sCurrentVersion = strReplace(sCurrentVersion, ".", "");
-	double dCurrentVersion = cdbl(sCurrentVersion, 0);
-	std::string sNarr = "";
-	bool bDevBranch = (Contains(strSubVersion, "Develop") || Contains(strSubVersion, "Test"));
-	if (bDevBranch)
-		return std::string();
-	if (dCurrentVersion < dGithubVersion && fProd) sNarr = "<br>** Client Out of Date (v=" + sCurrentVersion + "/v=" + sGithubVersion + ") **";
-	msVersionAlert = sNarr;
-	return sNarr;
 }
 
 bool WriteKey(std::string sKey, std::string sValue)
 {
 	std::string sDelimiter = sOS == "WIN" ? "\r\n" : "\n";
-
     // Allows DAC to store the key value in the config file.
     boost::filesystem::path pathConfigFile(GetArg("-conf", GetConfFileName()));
     if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir(false) / pathConfigFile;
@@ -2944,7 +2826,6 @@ void LogPrintWithTimeLimit(std::string sSection, std::string sValue, int64_t nMa
 	WriteCache(sSection, sValue, sValue, GetAdjustedTime());
 }
 
-
 std::vector<std::string> GetVectorOfFilesInDirectory(const std::string &dirPath, const std::vector<std::string> dirSkipList = { })
 {
 	std::vector<std::string> listOfFiles;
@@ -2981,68 +2862,41 @@ std::vector<std::string> GetVectorOfFilesInDirectory(const std::string &dirPath,
 	return listOfFiles;
 }
 
-std::string GetAttachmentData(std::string sPath)
+std::string GetAttachmentData(std::string sPath, bool fEncrypted)
 {
 	if (sPath.empty())
 		return "";
 
 	if (GetFileSize(sPath) == 0)
+	{
+		LogPrintf("IPFS::GetAttachmentData::Empty %f", 1);
 		return "";
+	}
+
+	if (fEncrypted)
+	{
+		std::string sOriginalName = sPath;
+		sPath = sOriginalName + ".enc";
+
+		bool fResult = EncryptFile(sOriginalName, sPath);
+		if (!fResult)
+		{
+			LogPrintf("GetAttachmentData::FAIL Unable to access encrypted file %s ", sPath);
+			return std::string();
+		}
+	}
 	std::vector<char> v = ReadBytesAll(sPath.c_str());
 	std::vector<unsigned char> uData(v.begin(), v.end());
 	std::string s64 = EncodeBase64(&uData[0], uData.size());
 	return s64;
 }
 
-std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath)
-{
-	// Create BIPFS ChristianObject
-	UniValue u(UniValue::VOBJ);
-	
-	std::string sCPK = DefaultRecAddress("PUBLIC-FUNDING-ADDRESS");
-
-	u.push_back(Pair("CPK", sCPK));
-	u.push_back(Pair("Source", sPath));
-	u.push_back(Pair("Added",  TimestampToHRDate(GetAdjustedTime())));
-	u.push_back(Pair("Timestamp", RoundToString(GetAdjustedTime(), 0)));
-	u.push_back(Pair("WebPath", sWebPath));
-	u.push_back(Pair("TableName", "bipfs"));
-	std::string sAttachment = GetAttachmentData(sPath);
-	if (!sAttachment.empty())
-	{
-		std::string sXML = "<attachmentdata>" + sAttachment + "</attachmentdata>";
-		sXML += "<webpath>" + sWebPath + "</webpath>";
-		std::string sURL = "https://web." + DOMAIN_NAME;
-		std::string sRestfulURL = "BMS/SubmitChristianObject";
-		std::string sJson = u.write().c_str();
-		std::string sPayload = "<jsondata>" + sJson + "</jsondata>" + sXML;
-		int iTimeout = 25;
-
-		std::string sResponse = HTTPSPost(false, 0, "", "", sPayload, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
-		std::string sObjHash = ExtractXML(sResponse, "<hash>", "</hash>");
-		// Sign
-		std::string sError;
-		std::string sSignature = SignMessageEvo(sCPK, sObjHash, sError);
-		if (!sError.empty())
-		{
-			return "<ERRORS>" + sError + "</ERRORS>";
-		}
-		sPayload += "<signature>" + sSignature + "</signature>";
-		sResponse = HTTPSPost(false, 0, "", "", sPayload, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
-		return sResponse;
-	}
-	else
-	{
-		return "Empty File/Folder " + sPath;
-	}
-}
 
 std::string DSQL_Ansi92Query(std::string sSQL)
 {
 	std::string sURL = "https://" + GetSporkValue("bms");
 	std::string sRestfulURL = "BMS/JsonSqlQuery";
-	int iTimeout = 30;
-	std::string sResponse = HTTPSPost(false, 0, "", "", sSQL, sURL, sRestfulURL, 443, "", iTimeout, 10000, 1);
+	std::string sResponse = Uplink(false, sSQL, sURL, sRestfulURL, SSL_PORT, 30, 1);
 	return sResponse;
 }
 
@@ -3050,12 +2904,8 @@ DACResult DSQL_ReadOnlyQuery(std::string sXMLSource)
 {
 	std::string sDomain = "https://" + GetSporkValue("bms");
 	int iTimeout = 30000;
-	int iSize = 24000000;
 	DACResult b;
-	if (fDebugSpam)
-		LogPrint("sql", "ROQ %s %s", sDomain, sXMLSource);
-
-	b.Response = HTTPSPost(true, 0, "", "", "", sDomain, sXMLSource, 443, "", iTimeout, iSize, 4);
+	b.Response = Uplink(true, "", sDomain, sXMLSource, SSL_PORT, iTimeout, 4);
 	return b;
 }
 
@@ -3063,10 +2913,23 @@ DACResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML)
 {
 	std::string sDomain = "https://" + GetSporkValue("bms");
 	int iTimeout = 30;
-	int iSize = 24000000;
 	DACResult b;
-	b.Response = HTTPSPost(true, 0, "", "", sXML, sDomain, sEndpoint, 443, "", iTimeout, iSize, 4);
+	b.Response = Uplink(true, sXML, sDomain, sEndpoint, SSL_PORT, iTimeout, 4);
 	return b;
+}
+
+DACResult GetSideChainData(int nHeight)
+{
+	DACResult d = DSQL_ReadOnlyQuery("BMS/BlockData?height=" + RoundToString(nHeight, 0), "");
+	if (!d.Response.empty())
+	{
+		d.fError = false;
+	}
+	else
+	{
+		d.fError = true;
+	}
+	return d;
 }
 
 std::string Path_Combine(std::string sPath, std::string sFileName)
@@ -3151,7 +3014,6 @@ DACResult GetDecentralizedURL()
 std::string BIPFS_Payment(CAmount nAmount, std::string sTXID1, std::string sXML1)
 {
 	// Create BIPFS ChristianObject
-
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	CBitcoinAddress baFPA(consensusParams.FoundationPODSAddress);
 	std:: string sCPK = DefaultRecAddress("PUBLIC-FUNDING-ADDRESS");
@@ -3231,11 +3093,6 @@ int LoadResearchers()
 
 	if (fDebug)
 		LogPrintf("LoadResearchers End %f", GetAdjustedTime());
-
-	if (fDebugSpam && false)
-	{
-		LogPrintf("Researchers sz %f, %s ", b.Response.size(), b.Response);
-	}
 
 	std::vector<std::string> vResearchers = Split(b.Response, "</user>");
 	mvResearchers.clear();
@@ -3436,7 +3293,6 @@ std::string GetEPArg(bool fPublic)
 	return sUsable;
 }
 
-
 int64_t GetTxTime(uint256 blockHash, int& iHeight)
 {
 	BlockMap::iterator mi = mapBlockIndex.find(blockHash);
@@ -3542,6 +3398,10 @@ std::vector<WhaleStake> GetDWS(bool fIncludeMemoryPool)
 CAmount GetAnnualDWSReward(int nHeight)
 {
 	const Consensus::Params& consensusParams = Params().GetConsensus();
+
+	double nAPMHeight = GetSporkDouble("APM", 0);
+	if (nHeight > nAPMHeight && nAPMHeight > 0)
+		nHeight = nAPMHeight - 1;
 
     CAmount blockReward = GetBlockSubsidy(1, nHeight, consensusParams, false);
 	CAmount nTotal = BLOCKS_PER_DAY * blockReward * 30 * 12;
@@ -3868,12 +3728,9 @@ double GetWhaleStakesInMemoryPool(std::string sCPK)
 CoinVin GetCoinVIN(COutPoint o, int64_t nTxTime)
 {
 	CoinVin b;
-	
 	b.OutPoint = o;
 	b.HashBlock = uint256();
-
 	// Special case if the transaction is not in a block:
-
     BOOST_FOREACH(const CTxMemPoolEntry& e, mempool.mapTx)
     {
         const uint256& hash = e.GetTx().GetHash();
@@ -3890,7 +3747,6 @@ CoinVin GetCoinVIN(COutPoint o, int64_t nTxTime)
 			return b;
 		}
     }
-
 
 	if (GetTransaction(b.OutPoint.hash, b.TxRef, Params().GetConsensus(), b.HashBlock, true))
 	{
@@ -4078,7 +3934,7 @@ bool POOSOrphanTest(std::string sSanctuaryPubKey, int64_t nTimeout)
 		return fCacheOK;
 	}
 	std::tuple<std::string, std::string, std::string> t = GetOrphanPOOSURL(sSanctuaryPubKey);
-	std::string sResponse = HTTPSPost(false, 0, "", "", "", std::get<0>(t), std::get<1>(t), 443, "", 25, 15000, 1);
+	std::string sResponse = Uplink(false, "", std::get<0>(t), std::get<1>(t), SSL_PORT, 25, 1);
 	std::string sOK = ExtractXML(sResponse, "Status:", "\r\n");
 	if (!sOK.empty())
 	{
@@ -4190,7 +4046,6 @@ CoinAgeVotingDataStruct GetCoinAgeVotingData(std::string sGobjectID)
 				double nValue = cdbl(v.first, 2);
 				c.mapsVoteAge[i][sCPK] += nValue;
 				c.mapTotalCoinAge[i] += nValue;
-				//nTotalCoinAge += nValue;
 			}
 		}
 
@@ -4254,7 +4109,6 @@ std::string GetAPMNarrative()
 	double out_BTC = 0;
 	double out_BBP = 0;
 	double dPrice = GetPBase(out_BTC, out_BBP);
-	//result.push_back(Pair("hrtime", TimestampToHRDate(block.GetBlockTime())));
     CBlockIndex* pindexSuperblock = chainActive[iLastSuperblock];
 	if (pindexSuperblock != NULL)
 	{
@@ -4267,6 +4121,506 @@ std::string GetAPMNarrative()
 		return sNarr;
 	}
 	return std::string();
+}
+
+
+bool RelinquishSpace(std::string sPath)
+{
+	if (sPath.empty())
+		return false;
+	std::string sMD5 = RetrieveMd5(sPath);
+    std::string sDir = GetSANDirectory2() + sMD5;
+	boost::filesystem::path pathIPFS = sDir;
+	boost::filesystem::remove_all(pathIPFS);
+    return true;
+}
+
+std::vector<char> HexToBytes(const std::string& hex) 
+{
+  std::vector<char> bytes;
+
+  for (unsigned int i = 0; i < hex.length(); i += 2) 
+  {
+    std::string byteString = hex.substr(i, 2);
+    char byte = (char) strtol(byteString.c_str(), NULL, 16);
+    bytes.push_back(byte);
+  }
+
+  return bytes;
+}
+
+bool EncryptFile(std::string sPath, std::string sTargetPath)
+{
+	int iFileSize = GetFileSize(sPath);
+	if (iFileSize < 1)
+	{
+		return false;
+	}
+    std::ifstream ifs(sPath, std::ios::binary|std::ios::ate);
+	std::ofstream OutFile;
+	OutFile.open(sTargetPath.c_str(), std::ios::out | std::ios::binary);
+	int iPos = 0;
+	int OP_SIZE = 1024;
+	// BIBLEPAY - We currently get the key from the biblepay.conf file (from the encryptionkey setting)
+	std::string sEncryptionKey = GetArg("-encryptionkey", "");
+	if (sEncryptionKey.empty())
+	{
+		LogPrintf("IPFS::EncryptFile::EncryptionKey Empty %f", 1);
+		return false;
+	}
+	LogPrintf(" IPFS::Encrypting file %s", sTargetPath);
+
+	while(true)
+	{
+		// Encrypt chunks of 64K at a time
+		int iBytesLeft = iFileSize - iPos;
+		int iBytesToRead = iBytesLeft;
+		if (iBytesToRead > OP_SIZE)
+			iBytesToRead = OP_SIZE;
+		std::vector<char> buffer(1024);
+		ifs.seekg(iPos, std::ios::beg);
+		ifs.read(&buffer[0], iBytesToRead);
+		// Encryption Section
+		std::string sBlockHex = HexStr(buffer.begin(), buffer.end());
+		std::string sEncrypted = EncryptAES256(sBlockHex, sEncryptionKey);
+		// End of Encryption Section
+		OutFile.write(&sEncrypted[0], sEncrypted.size());
+		if (iPos >= iFileSize)
+			break;
+		iPos += iBytesToRead;
+	}
+	OutFile.close();
+    ifs.close();
+	return true;
+}
+
+bool DecryptFile(std::string sPath, std::string sTargetPath)
+{
+
+	int iFileSize = GetFileSize(sPath);
+	if (iFileSize < 1)
+	{
+		return false;
+	}
+    std::ifstream ifs(sPath, std::ios::binary|std::ios::ate);
+	std::ofstream OutFile;
+	OutFile.open(sTargetPath.c_str(), std::ios::out | std::ios::binary);
+	int iPos = 0;
+	// OP_SIZE = Base64(EncryptSize(HexSize(Binary(BLOCK_SIZE)))), note that AES256 padding increases the chunk size by 16.  In summary the .enc file is about twice as large as the unencrypted file.
+	int OP_SIZE = 2752;
+	std::string sEncryptionKey = GetArg("-encryptionkey", "");
+	if (sEncryptionKey.empty())
+	{
+		LogPrintf("IPFS::DecryptFile::EncryptionKey Empty %f", 1);
+		return false;
+	}
+
+	while(true)
+	{
+		int iBytesToRead = iFileSize - iPos;
+		if (iBytesToRead > OP_SIZE)
+			iBytesToRead = OP_SIZE;
+		std::vector<char> buffer(OP_SIZE);
+		ifs.seekg(iPos, std::ios::beg);
+		ifs.read(&buffer[0], iBytesToRead);
+		std::string sTemp(buffer.begin(), buffer.end());
+		std::string sDec = DecryptAES256(sTemp, sEncryptionKey);
+		std::vector<char> decBuffer = HexToBytes(sDec);
+		OutFile.write(&decBuffer[0], decBuffer.size());
+		if (iPos >= iFileSize)
+			break;
+		iPos += iBytesToRead;
+	}
+	OutFile.close();
+    ifs.close();
+	return true;
+}
+
+
+static int MAX_SPLITTER_PARTS = 7000;
+static int MAX_PART_SIZE = 10000000;
+std::string SplitFile(std::string sPath)
+{
+	std::string sMD5 = RetrieveMd5(sPath);
+    std::string sDir = GetSANDirectory2() + sMD5;
+	boost::filesystem::path pathSAN(sDir);
+    if (!boost::filesystem::exists(pathSAN))
+	{
+		boost::filesystem::create_directory(pathSAN);
+	}
+	int iFileSize = GetFileSize(sPath);
+    std::ifstream ifs(sPath, std::ios::binary|std::ios::ate);
+	int iPos = 0;		
+	int iPart = 0;	
+	for (int i = 0; i < MAX_SPLITTER_PARTS; i++)
+	{
+		int iBytesLeft = iFileSize - iPos;
+		int iBytesToRead = iBytesLeft;
+		if (iBytesToRead > MAX_PART_SIZE)
+			iBytesToRead = MAX_PART_SIZE;
+		std::vector<char> buffer(10000000);
+		ifs.seekg(iPos, std::ios::beg);
+		ifs.read(&buffer[0], iBytesToRead);
+		std::string sPartPath = sDir + "/" + RoundToString(iPart, 0) + ".dat";
+		std::ofstream OutFile;
+		OutFile.open(sPartPath.c_str(), std::ios::out | std::ios::binary);
+		OutFile.write(&buffer[0], iBytesToRead);
+		OutFile.close();
+		iPos += iBytesToRead;
+		if (iPos >= iFileSize)
+			break;
+        iPart++;
+	}
+	ifs.close();
+	// We calculate the md5 hash of the splitter directory (for safety), and return the path to the caller.  (This prevents biblepay from deleting any of the users files by accident).
+    return sDir;
+}
+
+CAmount CalculateIPFSFee(int nTargetDensity, int nDurationDays, int nSize)
+{
+	if (nTargetDensity < 1 || nTargetDensity > 4)
+	{
+		LogPrintf("IPFS::CalculateIPFSFee Invalid Density %f", nTargetDensity);
+		return 0;
+	}
+	if (nSize < 1)
+	{
+		LogPrintf("IPFS::CalculateIPFSFee Invalid Size %f", nSize);
+		return 0;
+	}
+	if (nDurationDays < 1)
+	{
+		LogPrintf("IPFS::CalculateIPFSFee Invalid Duration %f", nSize);
+		return 0;
+	}
+	double nSizeFee = nSize/25000;
+	if (nSizeFee < 1000)
+		nSizeFee = 1000;
+	double nDurationFee = nDurationDays / 30;
+	if (nDurationFee < 1)
+		nDurationFee = 1;
+	double nFee = nSizeFee * nDurationFee * nTargetDensity;
+	LogPrintf(" Fee %f D=%f, DUR=%f, sz=%f ", nFee, nTargetDensity, nDurationDays, nSize);
+	return nFee * COIN;
+}
+
+DACResult BIPFS_UploadFile(std::string sLocalPath, std::string sWebPath, std::string sTXID, int iTargetDensity, int nDurationDays, bool fDryRun, bool fEncrypted)
+{
+	// The sidechain stored file must contain the target density, the lease duration, and the correct amount.
+	// The corresponding TXID must contain the hash of the file URL
+	std::string sDir = SplitFile(sLocalPath);
+	DACResult d;
+
+	if (sDir.empty())
+	{
+		d.ErrorCode = "DIRECTORY_EMPTY";
+		return d;
+	}
+	boost::filesystem::path p(sLocalPath);
+	std::string sOriginalName = p.filename().c_str();
+	std::string sURL = "https://" + GetSporkValue("bms");
+	boost::filesystem::path pathDir = sDir;
+	int iFileSize = GetFileSize(sLocalPath);
+	if (iFileSize < 1)
+	{
+		d.ErrorCode = "FILE_MISSING";
+		return d;
+	}
+	// Calculation
+	CAmount nFee = CalculateIPFSFee(iTargetDensity, nDurationDays, iFileSize);
+	if (nFee/COIN < 1)
+	{
+		d.ErrorCode = "FEE_ERROR";
+		return d;
+	}
+	d.nFee = nFee;
+	d.nSize = iFileSize;
+    int iTotalParts = -1;
+	int iPort = SSL_PORT;
+	std::string sPage = "UnchainedUpload";
+	int MAX_SPLITTER_PARTS = 7000;
+    for (int i = 0; i < MAX_SPLITTER_PARTS; i++)
+    {
+		  std::string sPartial = RoundToString(i, 0) + ".dat";
+          boost::filesystem::path pPath = pathDir / sPartial;
+		  int iFileSize = GetFileSize(pPath.c_str());
+		  LogPrintf("File size %f for %s ", iFileSize, pPath.c_str());
+
+		  if (iFileSize > 0)
+		  {
+		      iTotalParts = i;
+		  }
+		  else
+		  {
+		      break; 
+          }
+    }
+
+    for (int i = 0; i <= iTotalParts; i++)
+    {
+		 std::string sPartial = RoundToString(i, 0) + ".dat";
+		 boost::filesystem::path pPath = pathDir / sPartial;
+		 int iFileSize = GetFileSize(pPath.c_str());
+		 if (iFileSize > 0)
+		 {
+			 LogPrintf(" Submitting # %f", i);
+		     DACResult dInd;
+			 if (!fDryRun)
+			 {
+				 // ToDo - ensure WebPath is robust enough to handle the Name+Orig Name
+				 dInd = SubmitIPFSPart(iPort, sWebPath, sTXID, sURL, sPage, sOriginalName, pPath.c_str(), i, iTotalParts, iTargetDensity, nDurationDays, fEncrypted, nFee);
+			 }
+			 
+			 std::string sStatus = ExtractXML(dInd.Response, "<status>", "</status>");
+			 std::string out_URL = ExtractXML(dInd.Response, "<url>", "</url>");
+			 double nStatus = cdbl(sStatus, 0);
+			 if (fDryRun)
+				 nStatus = 1;
+			
+			 if (nStatus != 1)
+             {
+				 bool fResult = RelinquishSpace(sLocalPath);
+				 d.fError = true;
+				 d.ErrorCode = "ERROR_IN_" + RoundToString(i, 0);
+				 return d;
+             }
+             if (i == iTotalParts)
+             {
+				 RelinquishSpace(sLocalPath);
+				 d.Response = out_URL;
+				 d.TXID = sTXID + "-" + RetrieveMd5(sLocalPath);
+    			 
+				IPFSTransaction t1;
+				t1.File = sLocalPath;
+				t1.Response = d.Response;
+				t1.nFee = d.nFee;
+				t1.nSize = d.nSize;
+				t1.ErrorCode = d.ErrorCode;
+				t1.TXID = d.TXID;
+
+				 for (int i = 0; i < iTargetDensity; i++)
+				 {
+					 std::string sRegionName = "<url" + RoundToString(i, 0) + ">";
+					 std::string sSuffix = "</url" + RoundToString(i,0) + ">";
+					 std::string sStorageURL = ExtractXML(dInd.Response, sRegionName, sSuffix);
+					 if (!sStorageURL.empty())
+						 t1.mapRegions.insert(std::make_pair("region_" + RoundToString(i, 0), sStorageURL));
+				 }
+
+				 d.mapResponses.insert(std::make_pair(d.TXID, t1));
+				 d.fError = false;
+				 if (fDryRun)
+					 d.Response = sOriginalName;
+				 return d;
+              }
+         }
+   }
+   RelinquishSpace(sLocalPath);
+   d.fError = true;
+   d.ErrorCode = "NOTHING_TO_PROCESS";
+   return d;
+}
+
+
+DACResult BIPFS_UploadFolder(std::string sDirPath, std::string sWebPath, std::string sTXID, int iTargetDensity, int nDurationDays, bool fDryRun, bool fEncrypted)
+{
+	std::vector<std::string> skipList;
+	std::vector<std::string> g = GetVectorOfFilesInDirectory(sDirPath, skipList);
+	std::string sOut;
+	DACResult dOverall;
+	for (auto sFileName : g)
+	{
+		std::string sRelativeFileName = strReplace(sFileName, sDirPath, "");
+		std::string sFullWebPath = Path_Combine(sWebPath, sRelativeFileName);
+		std::string sFullSourcePath = Path_Combine(sDirPath, sFileName);
+		LogPrintf("BIPFS_UploadFolder::Iterated Filename %s, RelativeFile %s, FullWebPath %s", 
+				sFileName.c_str(), sRelativeFileName.c_str(), sFullWebPath.c_str());
+		DACResult dInd = BIPFS_UploadFile(sFullSourcePath, sWebPath, sTXID, iTargetDensity, nDurationDays, fDryRun, fEncrypted);
+		if (dInd.fError)
+		{
+			return dInd;
+		}
+		else
+		{
+			dOverall.nFee += dInd.nFee;
+			dOverall.nSize += dInd.nSize;
+		}
+
+		dOverall.mapResponses.insert(std::make_pair(dInd.TXID, dInd.mapResponses[dInd.TXID]));
+
+	}
+	dOverall.Response = sOut;
+	dOverall.fError = false;
+	return dOverall;
+}
+
+std::string GetHowey()
+{
+	std::string sHowey = "By typing I_AGREE in uppercase, you agree to the following conditions:"
+			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THESE COINS, AND DO NOT EXPECT AN INCREASE IN VALUE."
+			"\n2.  I HAVE NOT BEEN PROMISED A PROFIT, AND THIS ACTION IS NOT PROMISING ME ANY HOPES OF PROFIT IN ANY WAY NOR IS THE COMMUNITY OR ORGANIZATION."
+			"\n3.  " + CURRENCY_NAME + " IS NOT ACTING AS A COMMON ENTERPRISE OR THIRD PARTY IN THIS ENDEAVOR."
+			"\n4.  I HOLD " + CURRENCY_NAME + " AS A HARMLESS UTILITY."
+			"\n5.  I REALIZE I AM RISKING 100% OF MY CRYPTO-HOLDINGS BY BURNING IT, AND " + CURRENCY_NAME + " IS NOT OBLIGATED TO REFUND MY CRYPTO-HOLDINGS OR GIVE ME ANY REWARD.";
+	return sHowey;
+}
+
+bool SendDWS(std::string& sTXID, std::string& sError, std::string sReturnAddress, std::string sCPK, double nAmt, double nDuration, bool fDryRun)
+{
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+		
+	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
+	int64_t nStakeTime = GetAdjustedTime();
+    int64_t nReclaimTime = (86400 * nDuration) + nStakeTime;
+
+	std::string sPK = "DWS-" + sReturnAddress + "-" + RoundToString(nReclaimTime, 0);
+	std::string sPayload = "<MT>DWS</MT><MK>" + sPK + "</MK><MV><dws><returnaddress>" + sReturnAddress + "</returnaddress><burnheight>" 
+			+ RoundToString(chainActive.Tip()->nHeight, 0) 
+			+ "</burnheight><cpk>" + sCPK + "</cpk><burntime>" + RoundToString(GetAdjustedTime(), 0) + "</burntime><dwu>" + RoundToString(wm.DWU, 4) + "</dwu><duration>" 
+			+ RoundToString(nDuration, 0) + "</duration><duedate>" + TimestampToHRDate(nReclaimTime) + "</duedate><amount>" + RoundToString(nAmt, 2) + "</amount></dws></MV>";
+
+	CBitcoinAddress toAddress(consensusParams.BurnAddress);
+	if (!toAddress.IsValid())
+	{
+		sError = "Invalid Burn-To Address: " + consensusParams.BurnAddress;
+		return false;
+	}
+
+
+	CBitcoinAddress returnAddress(sReturnAddress);
+	if (!returnAddress.IsValid())
+	{
+		sError = "Invalid return address: " + sReturnAddress;
+		return false;
+	}
+
+	
+	if (nAmt < 100 || nAmt > 1000000)
+	{
+		sError = "Sorry, amount must be between 100 and 1,000,000 BBP";
+		return false;
+	}
+
+	if (nDuration < 7 || nDuration > 365)
+	{
+		sError = "Sorry, the duration must be between 7 days and 365 days.";
+		return false;
+	}
+
+	double nTotalStakes = GetWhaleStakesInMemoryPool(sCPK);
+	if (nTotalStakes > 256000)
+	{
+		sError = "Sorry, you currently have " + RoundToString(nTotalStakes, 2) + CURRENCY_NAME + " in whale stakes pending at height " 
+			+ RoundToString(chainActive.Tip()->nHeight, 0) + ".  Please wait until the current block passes before issuing a new DWS. ";
+		return false;
+	}
+	
+
+	bool fSubtractFee = false;
+	bool fInstantSend = false;
+	CWalletTx wtx;
+	// Dry Run step 1:
+	std::vector<CRecipient> vecDryRun;
+	int nChangePosRet = -1;
+	CScript scriptDryRun = GetScriptForDestination(toAddress.Get());
+	CAmount nSend = nAmt * COIN;
+	CRecipient recipientDryRun = {scriptDryRun, nSend, false, fSubtractFee};
+	vecDryRun.push_back(recipientDryRun);
+	double dMinCoinAge = 1;
+	CAmount nFeeRequired = 0;
+	CReserveKey reserveKey(pwalletMain);
+	bool fSent = pwalletMain->CreateTransaction(vecDryRun, wtx, reserveKey, nFeeRequired, nChangePosRet, sError, NULL, true, 
+				ALL_COINS, fInstantSend, 0, sPayload, dMinCoinAge, 0, 0, "");
+	if (!fSent)
+	{
+		sError += "Unable to Create Transaction.";
+		return false;
+	}
+	// Verify the transaction first:
+	std::string sError2;
+	bool fSent2 = VerifyDynamicWhaleStake(wtx.tx, sError2);
+	sError += sError2;
+	if (!fSent2)
+	{
+		sError += " Unable to verify DWS. ";
+		return false;
+	}
+
+	if (!fDryRun)
+	{
+		CValidationState state;
+		if (!pwalletMain->CommitTransaction(wtx, reserveKey, g_connman.get(), state, NetMsgType::TX))
+		{
+			sError += "Whale-Stake-Commit failed.";
+			return false;
+		}
+	
+		sTXID = wtx.GetHash().GetHex();	
+	}
+	return true;
+}
+
+std::string FormatURL(std::string URL, int iPart)
+{
+	if (URL.empty())
+		return std::string();
+	std::vector<std::string> vInput = Split(URL.c_str(), "/");
+	if (vInput.size() < 4)
+		return std::string();
+	std::string sDomain = vInput[0] + "//" + vInput[2];
+	std::string sPage;
+	for (int i = 3; i < (int)vInput.size(); i++)
+	{
+		sPage += vInput[i];
+		if (i < (int)vInput.size() - 1)
+			sPage += "/";
+	}
+	if (iPart == 0)
+		return sDomain;
+
+	if (iPart == 1)
+		return sPage;
+}
+
+void ProcessSidechainData(std::string sData, int nSyncHeight)
+{
+	std::vector<std::string> vInput = Split(sData.c_str(), "<data>");
+	for (int i = 0; i < (int)vInput.size(); i++)
+	{
+		std::vector<std::string> vDataRow = Split(vInput[i].c_str(), "[~]");
+		if (vDataRow.size() > 10)
+		{
+			IPFSTransaction i;
+			i.TXID = vDataRow[1];
+			i.nHeight = (int)cdbl(vDataRow[9], 0);
+
+			if (i.nHeight > 0 && !i.TXID.empty())
+			{
+				i.BlockHash = vDataRow[0];
+				i.FileName = vDataRow[2];
+				i.nFee = cdbl(vDataRow[3], 2) * COIN;
+				i.URL = vDataRow[4];
+				i.CPK = vDataRow[5];
+				i.nDuration = cdbl(vDataRow[6], 0);
+				i.nDensity = (int)cdbl(vDataRow[7], 0);
+				i.Network = vDataRow[8];
+				i.nSize = cdbl(vDataRow[10], 0);
+				mapSidechainTransactions[i.TXID] = i;
+				if (i.nHeight > nSideChainHeight)
+					nSideChainHeight = i.nHeight;
+			}
+		}
+		
+	}
+}
+
+void SyncSideChain(int nHeight)
+{
+	DACResult d = GetSideChainData(nHeight);
+	if (!d.fError)
+	{
+		ProcessSidechainData(d.Response, nHeight);
+	}
 }
 
 

@@ -21,7 +21,7 @@
 #include "rpc/server.h"
 #include "rpc/client.h"
 #include "util.h"
-
+#include "validation.h"
 #include <openssl/crypto.h>
 
 #include <univalue.h>
@@ -882,6 +882,7 @@ void RPCConsole::setNumBlocks(int count, const QDateTime& blockDate, double nVer
 {
     if (!headers) {
         ui->numberOfBlocks->setText(QString::number(count));
+		ui->numberOfSidechainBlocks->setText(QString::number(nSideChainHeight));
         ui->lastBlockTime->setText(blockDate.toString());
     }
 }

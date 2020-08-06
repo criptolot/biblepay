@@ -116,6 +116,7 @@ std::map<uint256, int64_t> mapRejectedBlocks GUARDED_BY(cs_main);
 
 // DAC
 std::map<std::pair<std::string, std::string>, std::pair<std::string, int64_t>> mvApplicationCache;
+std::map<std::string, IPFSTransaction> mapSidechainTransactions;
 std::map<std::string, POSEScore> mvPOSEScore;
 std::map<std::string, Researcher> mvResearchers;
 
@@ -127,6 +128,8 @@ std::string msSessionID;
 std::string sOS;
 bool fEnforceSanctuaryPort = false;
 int PRAYER_MODULUS = 0;
+int nSideChainHeight = 0;
+
 int miGlobalPrayerIndex = 0;
 int miGlobalDiaryIndex = 0;
 int iMinerThreadCount = 0;
@@ -1335,7 +1338,12 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 	// In Phase 2: https://forum.bible[pay].org/index.php?topic=435.0 : GSC budget is reduced to 25% from 30%
 
 	double dGovernancePercent = 0;
-	if (nPrevHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight)
+
+	if (nPrevHeight > consensusParams.POOS_HEIGHT)
+	{
+		dGovernancePercent = .3625;
+	}
+	else if (nPrevHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight && nPrevHeight <= consensusParams.POOS_HEIGHT)
 	{
 		dGovernancePercent = .45;
 	}
@@ -1375,7 +1383,12 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 	// In POOM-phaseout, sanctuaries receive 57% (32.5% of the gross block reward)
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	CAmount ret = 0;
-	if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT)
+	if (nHeight > consensusParams.POOS_HEIGHT)
+	{
+		// https://forum.biblepay.org/index.php?topic=583.0
+		ret = .6575 * blockValue;
+	}
+	else if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT && nHeight <= consensusParams.POOS_HEIGHT)
 	{
 		ret = .57 * blockValue;
 	}
@@ -5112,9 +5125,6 @@ void SetOverviewStatus()
 		GetDataList("PRAYER", 30, miGlobalPrayerIndex, "", sPrayer);
 		msGlobalStatus = "Blocks: " + RoundToString((double)chainActive.Tip()->nHeight, 0) + ", Difficulty: " + RoundToString(GetDifficulty(chainActive.Tip()), 2);
 		msGlobalStatus += "<br>APM: " + GetAPMNarrative();
-		std::string sVersionAlert = GetVersionAlert();
-		if (!sVersionAlert.empty()) 
-			msGlobalStatus += " <font color=purple>" + sVersionAlert + "</font> ;";
 		std::string sPrayers = FormatHTML(sPrayer, 20, "<br>");
 		if (!sPrayer.empty())
 			msGlobalStatus2 = "<br><b>Prayer Requests:</b><br><font color=maroon><b>" + sPrayer + "</font></b><br>&nbsp;";

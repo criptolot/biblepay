@@ -143,6 +143,7 @@ int64_t LateBlockIndex(const CBlockIndex* pindexPrev, int iMinutes);
 
 
 static const std::string BUSINESS_OBJECTS = "BUSINESS_OBJECTS";
+static const int SSL_PORT = 443;
 static const int APM_REWARD = 7;
 static const int MINIMUM_EMAIL_LENGTH = 5; 
 static const int BLOCKS_PER_DAY = 205;
@@ -250,13 +251,16 @@ extern int64_t nMaxTipAge;
 
 extern bool fLargeWorkForkFound;
 extern bool fLargeWorkInvalidChainFound;
+extern int nSideChainHeight;
 
 extern std::map<uint256, int64_t> mapRejectedBlocks;
 extern std::map<std::pair<std::string, std::string>, std::pair<std::string, int64_t>> mvApplicationCache;
 
+struct IPFSTransaction;
 struct POSEScore;
 struct Researcher;
 
+extern std::map<std::string, IPFSTransaction> mapSidechainTransactions;
 extern std::map<std::string, POSEScore> mvPOSEScore;
 extern std::atomic<bool> fDIP0001ActiveAtTip;
 extern std::map<std::string, Researcher> mvResearchers;

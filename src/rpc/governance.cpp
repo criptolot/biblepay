@@ -689,20 +689,19 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
 
 		bool bFound = true;
 		i++;
-		LogPrintf("Type %f %s %s", i, strCachedSignal, pGovObj->GetObjectType());
 
 		if (!sWildCard.empty())
 		{
 			bFound = false;
-			if (pGovObj->GetHash().GetHex().find(sWildCard) != std::string::npos)
-				bFound = true;
 			if (pGovObj->GetDataAsPlainString().find(sWildCard) != std::string::npos)
 				bFound = true;
 		}
 
-		if (nMinVotes > 0)
+		if (nMinVotes > 0 && !sWildCard.empty())
 		{
-			bFound = pGovObj->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING) > nMinVotes;
+			bFound = false;
+			if (pGovObj->GetDataAsPlainString().find(sWildCard) != std::string::npos && pGovObj->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING) > nMinVotes)
+				bFound = true;
 		}
 
 		if (bFound)
@@ -713,9 +712,6 @@ UniValue ListObjects(const std::string& strCachedSignal, const std::string& strT
 				bObj.push_back(Pair("DataHex",  pGovObj->GetDataAsHexString()));
 
 			std::string sDataString = pGovObj->GetDataAsPlainString();
-
-			//std::string sPDF = ExtractXML(sDataString, "\"pdf\"", "\"");
-			//boost::replace_all(sDataString, sPDF, "");
 
 			bObj.push_back(Pair("DataString", sDataString));
 

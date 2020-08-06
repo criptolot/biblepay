@@ -44,11 +44,35 @@ struct CPK
   bool fValid = false;
 };
 
+struct IPFSTransaction
+{
+	std::string File;
+	std::string TXID;
+	CAmount nFee = 0;
+	CAmount nSize = 0;
+	std::string FileName;
+	std::string URL;
+	double nDuration = 0;
+	int nDensity = 0;
+	std::string ErrorCode;
+	std::string Response;
+	std::string BlockHash;
+	std::string Network;
+	std::string CPK;
+	int nHeight = 0;
+	std::map<std::string, std::string> mapRegions = std::map<std::string, std::string>();
+};
+
 struct DACResult
 {
 	std::string Response;
 	bool fError = false;
+	CAmount nFee = 0;
+	int nSize = 0;
+	std::string TXID;
 	std::string ErrorCode;
+	std::map<std::string, IPFSTransaction> mapResponses = std::map<std::string, IPFSTransaction>();
+	std::map<std::string, std::string> mapRegions = std::map<std::string, std::string>();
 };
 
 struct QueuedProposal
@@ -242,7 +266,7 @@ double cdbl(std::string s, int place);
 std::string AmountToString(const CAmount& amount);
 std::string ExtractXML(std::string XMLdata, std::string key, std::string key_end);
 bool Contains(std::string data, std::string instring);
-std::string GetVersionAlert();
+//std::string GetVersionAlert();
 bool CheckNonce(bool f9000, unsigned int nNonce, int nPrevHeight, int64_t nPrevBlockTime, int64_t nBlockTime, const Consensus::Params& params);
 bool RPCSendMoney(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend=false, std::string sOptionalData = "", double nCoinAge = 0);
 bool FundWithExternalPurse(std::string& sError, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, bool fUseInstantSend, CAmount nExactAmount, std::string sOptionalData, double dMinCoinAge, std::string sPursePubKey);
@@ -258,9 +282,7 @@ std::vector<std::string> Split(std::string s, std::string delim);
 void MemorizeBlockChainPrayers(bool fDuringConnectBlock, bool fSubThread, bool fColdBoot, bool fDuringSanctuaryQuorum);
 double GetBlockVersion(std::string sXML);
 bool CheckStakeSignature(std::string sBitcoinAddress, std::string sSignature, std::string strMessage, std::string& strError);
-std::string HTTPSPost(bool bPost, int iThreadID, std::string sActionName, std::string sDistinctUser, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, 
-	std::string sSolution, int iTimeoutSecs, int iMaxSize, int iBreakOnError);
-std::string HTTPSPost2(bool bPost, std::string sProtocol, std::string sDomain, std::string sPage, std::string sPayload, std::string sFileName);
+std::string Uplink(bool bPost, std::string sPayload, std::string sBaseURL, std::string sPage, int iPort, int iTimeoutSecs, int iBOE = 0, std::map<std::string, std::string> mapRequestHeaders = std::map<std::string, std::string>(), std::string sTargetFileName = "");
 std::string FormatHTML(std::string sInput, int iInsertCount, std::string sStringToInsert);
 std::string GJE(std::string sKey, std::string sValue, bool bIncludeDelimiter, bool bQuoteValue);
 bool InstantiateOneClickMiningEntries();
@@ -293,8 +315,7 @@ double GetFees(CTransactionRef tx);
 int64_t GetCacheEntryAge(std::string sSection, std::string sKey);
 void LogPrintWithTimeLimit(std::string sSection, std::string sValue, int64_t nMaxAgeInSeconds);
 std::vector<std::string> GetVectorOfFilesInDirectory(const std::string &dirPath, const std::vector<std::string> dirSkipList);
-std::string GetAttachmentData(std::string sPath);
-std::string BIPFS_UploadSingleFile(std::string sPath, std::string sWebPath);
+std::string GetAttachmentData(std::string sPath, bool fEncrypted);
 std::string Path_Combine(std::string sPath, std::string sFileName);
 std::string DSQL_Ansi92Query(std::string sSQL);
 void ProcessBLSCommand(CTransactionRef tx);
@@ -335,5 +356,16 @@ bool VoteWithCoinAge(std::string sGobjectID, std::string sOutcome, std::string& 
 double GetCoinAge(std::string txid);
 CoinAgeVotingDataStruct GetCoinAgeVotingData(std::string sGobjectID);
 std::string GetAPMNarrative();
+std::string SplitFile(std::string sPath);
+DACResult SubmitIPFSPart(int iPort, std::string sWebPath, std::string sTXID, std::string sBaseURL, std::string sPage, std::string sOriginalName, std::string sFileName, int iPartNumber, int iTotalParts, int iDensity, int iDuration, bool fEncrypted, CAmount nFee);
+DACResult DownloadFile(std::string sBaseURL, std::string sPage, int iPort, int iTimeoutSecs, std::string sTargetFileName, bool fEncrypted);
+DACResult BIPFS_UploadFile(std::string sLocalPath, std::string sWebPath, std::string sTXID, int iTargetDensity, int nDurationDays, bool fDryRun, bool fEncrypted);
+DACResult BIPFS_UploadFolder(std::string sDirPath, std::string sWebPath, std::string sTXID, int iTargetDensity, int nDurationDays, bool fDryRun, bool fEncrypted);
+bool SendDWS(std::string& sTXID, std::string& sError, std::string sReturnAddress, std::string sCPK, double nAmt, double nDuration, bool fDryRun);
+std::string GetHowey();
+bool EncryptFile(std::string sPath, std::string sTargetPath);
+bool DecryptFile(std::string sPath, std::string sTargetPath);
+std::string FormatURL(std::string URL, int iPart);
+void SyncSideChain(int nHeight);
 
 #endif

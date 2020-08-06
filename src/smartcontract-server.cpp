@@ -199,53 +199,6 @@ double GetProminenceCap(std::string sCampaignName, double nPoints, double nPromi
 	return nProminence;
 }
 
-std::string GetChildData(std::string sCharity)
-{
-	int64_t nLastQuery = ReadCacheDouble("child_data_timestamp_" + sCharity);
-	int64_t nElapsed = GetAdjustedTime() - nLastQuery;
-	if (nElapsed < (60 * 1))
-	{
-		return ReadCache("child_data", sCharity);
-	}
-	std::string sURL = GetSporkValue(sCharity + "-domain");
-	std::string sRestfulURL = GetSporkValue(sCharity + "-childapi");
-	std::string sCache = HTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 35, 50000, 1);
-	WriteCache("child_data", sCharity, sCache, GetAdjustedTime());
-	WriteCacheDouble("child_data_timestamp_" + sCharity, GetAdjustedTime());
-	return sCache;
-}
-
-double GetChildBalance(std::string sChildID, std::string sCharity)
-{
-	std::string sData = GetChildData(sCharity);
-	std::vector<std::string> vRows = Split(sData.c_str(), "\n");
-	// Child ID, Added, DR/CR, Notes
-	double dTotal = -999;  // -999 means child not found.
-	for (int i = 1; i < vRows.size(); i++)
-	{
-		vRows[i] = strReplace(vRows[i], "\r", "");
-		vRows[i] = strReplace(vRows[i], "\n", "");
-		vRows[i] = strReplace(vRows[i], "\"", "");
-		std::vector<std::string> vCols = Split(vRows[i].c_str(), ",");
-		if (vCols.size() >= 4)
-		{
-			std::string sID = vCols[0];
-			if (sID == sChildID)
-			{
-				std::string sAdded = vCols[1];
-				double dr = cdbl(vCols[2], 2);
-				std::string sNotes = vCols[3];
-				if (dTotal == -999) 
-					dTotal = 0;
-				dTotal += dr;
-				if (fDebugSpam)
-					LogPrintf("childid %s, added %s, notes %s DrCr %f total %f \n", sID, sAdded, sNotes, dr, dTotal);
-			}
-		}
-	}
-	return dTotal;
-}
-
 
 //////////////////////////////////////////////////////////////////////////////// Watchman-On-The-Wall /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //								                          			DAC's version of The Sentinel, March 31st, 2019                                                                                                  //
@@ -423,7 +376,8 @@ std::string WatchmanOnTheWall(bool fForce, std::string& sContract)
 	uint256 uGovObjHash = uint256S("0x0");
 	uint256 uPamHash = GetPAMHashByContract(sContract);
 	int iTriggerVotes = 0;
-	GetGSCGovObjByHeight(nNextSuperblock, uPamHash, iTriggerVotes, uGovObjHash, sAddresses, sPayments);
+	std::string sQTData;
+	GetGSCGovObjByHeight(nNextSuperblock, uPamHash, iTriggerVotes, uGovObjHash, sAddresses, sPayments, sQTData);
 	std::string sError;
 
 	if (sPayments.empty())
@@ -495,28 +449,7 @@ double CalculatePoints(std::string sCampaign, std::string sDiary, double nCoinAg
 	}
 	else if (sCampaign == "CAMEROON-ONE" || sCampaign == "KAIROS")
 	{
-		double nTotalPoints = 0;
-		// We need to find how many children this CPK sponsors first.
-		std::map<std::string, CPK> cp1 = GetChildMap("cpk|" + sCampaign);
-		for (std::pair<std::string, CPK> a : cp1)
-		{
-			std::string sSponsorCPK = a.second.sAddress;
-			std::string sChildID = a.second.sOptData;
-			if (!sChildID.empty() && sSponsorCPK == sCPK)
-			{
-				double nBalance = GetChildBalance(sChildID, sCampaign);
-				if (nBalance != -999 && nBalance <= 0)
-				{
-					// This child is in good standing (with a credit balance).
-					double nMonthlyRate = GetSporkDouble(sCampaign + "monthlyrate", 40);
-					double nDailyCharges = nMonthlyRate / 30;
-					nTotalPoints += (nDailyCharges * 1000);
-					if (fDebugSpam)
-						LogPrintf("\nFound Child %s for CPK %s, crediting Daily Charges %f, TotalPoints %f ", sChildID, sSponsorCPK, nDailyCharges, nTotalPoints);
-				}
-			}
-		}
-		return nTotalPoints;
+		return 0;
 	}
 	return 0;
 }
@@ -1127,9 +1060,9 @@ int GetRequiredQuorumLevel(int nHeight)
 	return nReq;
 }
 
-uint256 GetPAMHash(std::string sAddresses, std::string sAmounts)
+uint256 GetPAMHash(std::string sAddresses, std::string sAmounts, std::string sQTPhase)
 {
-	std::string sConcat = sAddresses + sAmounts;
+	std::string sConcat = sAddresses + sAmounts + sQTPhase;
 	if (sConcat.empty()) return uint256S("0x0");
 	std::string sHash = RetrieveMd5(sConcat);
 	return uint256S("0x" + sHash);
@@ -1156,8 +1089,10 @@ std::vector<std::pair<int64_t, uint256>> GetGSCSortedByGov(int nHeight, uint256 
 			iOffset++;
 			std::string sPAD = obj["payment_addresses"].get_str();
 			std::string sPAM = obj["payment_amounts"].get_str();
+			std::string sQTPhase = obj["qtphase"].get_str();
+			
 			int iVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
-			uint256 uPamHash = GetPAMHash(sPAD, sPAM);
+			uint256 uPamHash = GetPAMHash(sPAD, sPAM, sQTPhase);
 			if (fIncludeNonMatching && inPamHash != uPamHash)
 			{
 				// This is a Gov Obj that matches the height, but does not match the contract, we need to vote it down
@@ -1194,8 +1129,9 @@ bool VoteForGSCContract(int nHeight, std::string sMyContract, std::string& sErro
 	uint256 uGovObjHash;
 	std::string sPaymentAddresses;
 	std::string sAmounts;
+	std::string sQTData;
 	uint256 uPamHash = GetPAMHashByContract(sMyContract);
-	GetGSCGovObjByHeight(nHeight, uPamHash, iPendingVotes, uGovObjHash, sPaymentAddresses, sAmounts);
+	GetGSCGovObjByHeight(nHeight, uPamHash, iPendingVotes, uGovObjHash, sPaymentAddresses, sAmounts, sQTData);
 	
 	bool fOverBudget = IsOverBudget(nHeight, sAmounts);
 
@@ -1206,13 +1142,12 @@ bool VoteForGSCContract(int nHeight, std::string sMyContract, std::string& sErro
 		return false;
 	}
 	// Sort by GSC gobject hash (creation time does not work as multiple nodes may be called during the same second to create a GSC)
-	// Phase 1: Eliminate all Ties, and vote for the lowest Valid matching contract:
 	std::vector<std::pair<int64_t, uint256>> vPropByGov = GetGSCSortedByGov(nHeight, uPamHash, false);
-	// Now we need to sort the vector by Gov hash
+	// Sort the vector by Gov hash to eliminate ties
 	std::sort(vPropByGov.begin(), vPropByGov.end());
 	std::string sAction;
 	int iVotes = 0;
-	
+	// Step 1:  Vote for contracts that agree with the local chain
 	for (int i = 0; i < vPropByGov.size(); i++)
 	{
 		CGovernanceObject* myGov = governance.FindGovernanceObject(vPropByGov[i].second);
@@ -1228,8 +1163,8 @@ bool VoteForGSCContract(int nHeight, std::string sMyContract, std::string& sErro
 		break;
 	}
 	// Phase 2: Vote against contracts at this height that do not match our hash
-	bool bFeatureOff = false;
-	if (!bFeatureOff && uPamHash != uint256S("0x0"))
+	int iVotedNo = 0;
+	if (uPamHash != uint256S("0x0"))
 	{
 		vPropByGov = GetGSCSortedByGov(nHeight, uPamHash, true);
 		for (int i = 0; i < vPropByGov.size(); i++)
@@ -1240,7 +1175,9 @@ bool VoteForGSCContract(int nHeight, std::string sMyContract, std::string& sErro
 			LogPrintf("\nSmartContract-Server::VoteDownBadGCCContracts::Voting %s for govHash %s, with pre-existing-votes %f (created %f)",
 				sAction, myGovForRemoval->GetHash().GetHex(), iVotes, myGovForRemoval->GetCreationTime());
 			VoteForGobject(myGovForRemoval->GetHash(), "funding", sAction, sError);
-			break;
+			iVotedNo++;
+			if (iVotedNo > 2)
+				break;
 		}
 	}
 
@@ -1255,7 +1192,7 @@ bool VoteForGSCContract(int nHeight, std::string sMyContract, std::string& sErro
 		LogPrintf("\nSmartContract-Server::DeleteYesterdaysEmptyGSCContracts::Voting %s for govHash %s, with pre-existing-votes %f (created %f)",
 				sAction, myGovYesterday->GetHash().GetHex(), iVotes, myGovYesterday->GetCreationTime());
 		int64_t nAge = GetAdjustedTime() - myGovYesterday->GetCreationTime();
-		if (iVotes == 0 && nAge > (60 * 60 * 24))
+		if (iVotes == 0 && nAge > (60 * 60 * 24 * 7))
 		{
 			VoteForGobject(myGovYesterday->GetHash(), "delete", "yes", sError);
 		}
@@ -1381,12 +1318,27 @@ uint256 GetPAMHashByContract(std::string sContract)
 {
 	std::string sAddresses = ExtractXML(sContract, "<ADDRESSES>","</ADDRESSES>");
 	std::string sAmounts = ExtractXML(sContract, "<PAYMENTS>","</PAYMENTS>");
-	uint256 u = GetPAMHash(sAddresses, sAmounts);
+	std::string sQTPhase = ExtractXML(sContract, "<QTPHASE>", "</QTPHASE>");
+	// 7-25-2020; R ANDREWS; ADD APM (Automatic Price Mooning) to PAM HASH
+
+	uint256 u = GetPAMHash(sAddresses, sAmounts, sQTPhase);
 	/* LogPrintf("GetPAMByContract addr %s, amounts %s, uint %s",sAddresses, sAmounts, u.GetHex()); */
 	return u;
 }
 
-void GetGSCGovObjByHeight(int nHeight, uint256 uOptFilter, int& out_nVotes, uint256& out_uGovObjHash, std::string& out_PaymentAddresses, std::string& out_PaymentAmounts)
+bool DoesContractExist(int nHeight, uint256 uGovID)
+{
+	std::string out_pa;
+	std::string out_paa;
+	std::string out_qt;
+	uint256 out_govobjhash = uint256S("0x0");
+	int out_votes = 0;
+	GetGSCGovObjByHeight(nHeight, uGovID, out_votes, out_govobjhash, out_pa, out_paa, out_qt);
+	return uGovID == out_govobjhash;
+}
+
+
+void GetGSCGovObjByHeight(int nHeight, uint256 uOptFilter, int& out_nVotes, uint256& out_uGovObjHash, std::string& out_PaymentAddresses, std::string& out_PaymentAmounts, std::string& out_qtdata)
 {
 	int nStartTime = 0; 
 	LOCK2(cs_main, governance.cs);
@@ -1404,8 +1356,9 @@ void GetGSCGovObjByHeight(int nHeight, uint256 uOptFilter, int& out_nVotes, uint
 		{
 			std::string sPAD = obj["payment_addresses"].get_str();
 			std::string sPAM = obj["payment_amounts"].get_str();
+			std::string sQT = obj["qtphase"].get_str();
 			int iVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
-			uint256 uHash = GetPAMHash(sPAD, sPAM);
+			uint256 uHash = GetPAMHash(sPAD, sPAM, sQT);
 			/* LogPrintf("\n Found gscgovobj2 %s with votes %f with pad %s and pam %s , pam hash %s ", myGov->GetHash().GetHex(), (double)iVotes, sPAD, sPAM, uHash.GetHex()); */
 			if (uOptFilter != uint256S("0x0") && uHash != uOptFilter) continue;
 			// This governance-object matches the trigger height and the optional filter
@@ -1416,6 +1369,7 @@ void GetGSCGovObjByHeight(int nHeight, uint256 uOptFilter, int& out_nVotes, uint
 				out_PaymentAmounts = sPAM;
 				out_nVotes = iHighVotes;
 				out_uGovObjHash = myGov->GetHash();
+				out_qtdata = sQT;
 			}
 		}
 	}
@@ -1440,11 +1394,12 @@ void GetGovObjDataByPamHash(int nHeight, uint256 hPamHash, std::string& out_Data
 		{
 			std::string sPAD = obj["payment_addresses"].get_str();
 			std::string sPAM = obj["payment_amounts"].get_str();
+			std::string sQT = obj["qtphase"].get_str();
 			int iVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
-			uint256 uHash = GetPAMHash(sPAD, sPAM);
+			uint256 uHash = GetPAMHash(sPAD, sPAM, sQT);
 			if (hPamHash == uHash) 
 			{	
-				std::string sRow = "gov=" + myGov->GetHash().GetHex() + ",pam=" + hPamHash.GetHex() + ",votes=" + RoundToString(iVotes, 0) + ";     ";
+				std::string sRow = "gov=" + myGov->GetHash().GetHex() + ",pam=" + hPamHash.GetHex() + ",votes=" + RoundToString(iVotes, 0) + ",qt=" + sQT + ";     ";
 				sData += sRow;
 			}
 		}
@@ -1636,6 +1591,7 @@ void SendDistressSignal()
 static int64_t nLastQuorumHashCheckup = 0;
 std::string CheckGSCHealth()
 {
+	/*
 	double nCheckGSCOptionDisabled = GetSporkDouble("disablegschealthcheck", 0);
 	if (nCheckGSCOptionDisabled == 1)
 		return "DISABLED";
@@ -1654,7 +1610,7 @@ std::string CheckGSCHealth()
 	int iVotes = 0;
 	uint256 uGovObjHash = uint256S("0x0");
 	uint256 uPAMHash = uint256S("0x0");
-	GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
+	ByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
 	uint256 hPam = GetPAMHash(sAddresses, sAmounts);
 	std::string sContract = GetGSCContract(iLastSuperblock, true);
 	uint256 hPAMHash2 = GetPAMHashByContract(sContract);
@@ -1663,6 +1619,7 @@ std::string CheckGSCHealth()
 		SendDistressSignal();
 		return "DISTRESS";
 	}
+	*/
 	return "HEALTHY";
 }
 
@@ -1703,6 +1660,13 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 		LoadResearchers();
 	}
 
+	int64_t nTipAge = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();
+	if (nTipAge < (60 * 60 * 4) && chainActive.Tip()->nHeight % 10 == 0)
+	{
+		SyncSideChain(chainActive.Tip()->nHeight);
+	}
+
+
 	if (fGSCTime)
 		SendOutGSCs();
 
@@ -1734,7 +1698,6 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 	int nCascadeHeight = GetRandInt(chainActive.Tip()->nHeight);
 	bool fWarmingPeriod = nBlocksSinceLastEpoch < WARMING_DURATION;
 	int nQuorumAssessmentHeight = fWarmingPeriod ? nCascadeHeight : chainActive.Tip()->nHeight;
-
 	int nCreateWindow = chainActive.Tip()->nHeight * .25;
 	bool fPrivilegeToCreate = nCascadeHeight < nCreateWindow;
 
@@ -1750,30 +1713,15 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 	std::string sAddresses;
 	std::string sAmounts;
 	std::string sError;
+	std::string out_qtdata;
 	std::string sContract = GetGSCContract(0, true);
-	uint256 uGovObjHash = uint256S("0x0");
+	uint256 out_uGovObjHash = uint256S("0x0");
 	uint256 uPamHash = GetPAMHashByContract(sContract);
 	
-	GetGSCGovObjByHeight(iNextSuperblock, uPamHash, iVotes, uGovObjHash, sAddresses, sAmounts);
+	GetGSCGovObjByHeight(iNextSuperblock, uPamHash, iVotes, out_uGovObjHash, sAddresses, sAmounts, out_qtdata);
 	
 	int iRequiredVotes = GetRequiredQuorumLevel(iNextSuperblock);
 	bool bPending = iVotes > iRequiredVotes;
-
-	bool fFeatureOff = true;
-	if (!fFeatureOff)
-	{
-		// R ANDREWS - We can remove this in the mandatory if our gobject syncing problem is resolved.
-		// Regardless of having a pending superblock or not, let's forward our crown jewel to the network once every quorum - to ensure they have it
-		if (uGovObjHash != uint256S("0x0"))
-		{
-			CGovernanceObject *myGov = governance.FindGovernanceObject(uGovObjHash);
-			if (myGov)
-			{
-				myGov->Relay(*g_connman);
-				LogPrintf(" Relaying crown jewel %s ", myGov->GetHash().GetHex());
-			}
-		}
-	}
 
 	if (bPending) 
 	{
@@ -1785,20 +1733,24 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 	int nBlocksLeft = iNextSuperblock - chainActive.Tip()->nHeight;
 	if (nBlocksLeft < BLOCKS_PER_DAY / 2)
 	{
-		if (iVotes < iRequiredVotes || uGovObjHash == uint256S("0x0") || sAddresses.empty())
+		if (iVotes < iRequiredVotes || out_uGovObjHash == uint256S("0x0") || sAddresses.empty())
 		{
 			LogPrintf("\n ExecuteGenericSmartContractQuorum::DistressAlert!  Not enough votes %f for GSC %s!", 
-				(double)iVotes, uGovObjHash.GetHex());
+				(double)iVotes, out_uGovObjHash.GetHex());
 		}
 	}
 
-	if (uGovObjHash == uint256S("0x0") && fPrivilegeToCreate)
+	if (fPrivilegeToCreate)
 	{
-		std::string sQuorumTrigger = SerializeSanctuaryQuorumTrigger(iLastSuperblock, iNextSuperblock, sContract);
-		std::string sGobjectHash;
-		SubmitGSCTrigger(sQuorumTrigger, sGobjectHash, sError);
-		LogPrintf("**ExecuteGenericSmartContractQuorumProcess::CreatingGSCContract Hex %s , Gobject %s, results %s **\n", sQuorumTrigger.c_str(), sGobjectHash.c_str(), sError.c_str());
-		return "CREATING_CONTRACT";
+		// In this case, we have the privilege to create, and the contract does not exist (and, no clone has been created either - with 0 votes)
+		if (out_uGovObjHash == uint256S("0x0"))
+		{
+			std::string sQuorumTrigger = SerializeSanctuaryQuorumTrigger(iLastSuperblock, iNextSuperblock, sContract);
+			std::string sGobjectHash;
+			SubmitGSCTrigger(sQuorumTrigger, sGobjectHash, sError);
+			LogPrintf("**ExecuteGenericSmartContractQuorumProcess::CreatingGSCContract Hex %s , Gobject %s, results %s **\n", sQuorumTrigger.c_str(), sGobjectHash.c_str(), sError.c_str());
+			return "CREATING_CONTRACT";
+		}
 	}
 	if (iVotes <= iRequiredVotes)
 	{
@@ -1816,7 +1768,7 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 	}
 	else if (iVotes > iRequiredVotes)
 	{
-		LogPrintf(" ExecuteGenericSmartContractQuorum::GSC Contract %s has won.  Waiting for superblock. ", uGovObjHash.GetHex());
+		LogPrintf(" ExecuteGenericSmartContractQuorum::GSC Contract %s has won.  Waiting for superblock. ", out_uGovObjHash.GetHex());
 		return "PENDING_SUPERBLOCK";
 	}
 

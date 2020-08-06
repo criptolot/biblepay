@@ -31,7 +31,8 @@ std::string GetSANDirectory2()
 	 std::string prefix = CURRENCY_NAME;
 	 boost::to_lower(prefix);
 	 boost::filesystem::path pathConfigFile(GetArg("-conf", prefix + ".conf"));
-     if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir(false) / pathConfigFile;
+     if (!pathConfigFile.is_complete()) 
+		 pathConfigFile = GetDataDir(false) / pathConfigFile;
 	 boost::filesystem::path dir = pathConfigFile.parent_path();
 	 std::string sDir = dir.string() + "/SAN/";
 	 boost::filesystem::path pathSAN(sDir);
@@ -143,19 +144,14 @@ std::string GetGithubVersion()
 {
 	std::string sURL = "https://" + GetSporkValue("bms");
 	std::string sRestfulURL = "BMS/LAST_MANDATORY_VERSION";
-	std::string sV = ExtractXML(HTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 25, 10000, 1), "<VERSION>", "</VERSION>");
+	std::string sV = ExtractXML(Uplink(false, "", sURL, sRestfulURL, SSL_PORT, 25, 1), "<VERSION>", "</VERSION>");
 	return sV;
 }
 
 double GetCryptoPrice(std::string sSymbol)
 {
 	boost::to_lower(sSymbol);
-	int SSL_PORT = 443;
-	int CONNECTION_TIMEOUT = 15;
-	int TRANSMISSION_TIMEOUT = 15000;
-	int TERM_TYPE = 1;
-	std::string sC1 = HTTPSPost(false, 0, "", "", "api", GetSporkValue("bms"), GetSporkValue("getbmscryptoprice" + sSymbol), 
-		SSL_PORT, "", CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, TERM_TYPE);
+	std::string sC1 = Uplink(false, "", GetSporkValue("bms"), GetSporkValue("getbmscryptoprice" + sSymbol), SSL_PORT, 15, 1);
 	double dDebugLevel = cdbl(GetArg("-debuglevel", "0"), 0);
 	if (dDebugLevel == 1)
 		LogPrintf("CryptoPrice %s %s", sSymbol, sC1);
@@ -235,7 +231,7 @@ int GetWCGMemberID(std::string sMemberName, std::string sAuthCode, double& nPoin
 {
 	std::string sDomain = "https://www.worldcommunitygrid.org";
 	std::string sRestfulURL = "verifyMember.do?name=" + sMemberName + "&code=" + sAuthCode;
-	std::string sResponse = HTTPSPost(true, 0, "", "", "", sDomain, sRestfulURL, 443, "", 12, 14000, 1);
+	std::string sResponse = Uplink(true, "", sDomain, sRestfulURL, SSL_PORT, 12, 1);
 	int iID = (int)cdbl(ExtractXML(sResponse, "<MemberId>","</MemberId>"), 0);
 	nPoints = cdbl(ExtractXML(sResponse, "<Points>", "</Points>"), 2);
 	return iID;

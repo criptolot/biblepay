@@ -1017,8 +1017,9 @@ std::string StoreBusinessObject(UniValue& oBusinessObject, std::string& sError)
 */
 
 
-int64_t GetFileSize(std::string sPath)
+int64_t GETFILESIZE(std::string sPath)
 {
+	// Due to Windows taking up "getfilesize" we changed this to uppercase.
 	if (!boost::filesystem::exists(sPath)) 
 		return 0;
 	if (!boost::filesystem::is_regular_file(sPath))
@@ -1159,7 +1160,7 @@ bool SubmitProposalToNetwork(uint256 txidFee, int64_t nStartTime, std::string sH
 
 std::vector<char> ReadBytesAll(char const* filename)
 {
-	int iFileSize = GetFileSize(filename);
+	int iFileSize = GETFILESIZE(filename);
 	if (iFileSize < 1)
 	{
 		std::vector<char> z(0);
@@ -2867,7 +2868,7 @@ std::string GetAttachmentData(std::string sPath, bool fEncrypted)
 	if (sPath.empty())
 		return "";
 
-	if (GetFileSize(sPath) == 0)
+	if (GETFILESIZE(sPath) == 0)
 	{
 		LogPrintf("IPFS::GetAttachmentData::Empty %f", 1);
 		return "";
@@ -3100,7 +3101,7 @@ int LoadResearchers()
 
 	if (vResearchers.size() < MIN_RESEARCH_SZ)
 	{
-		int64_t nSz = GetFileSize(sTarget);
+		int64_t nSz = GETFILESIZE(sTarget);
 		int64_t nAge = GetDCCFileAge();
 		// Fall back to POBH & Cameroon-One if WCG is down:
 		if (nSz > 100 && nAge < (60 * 60 * 24))
@@ -4151,7 +4152,7 @@ std::vector<char> HexToBytes(const std::string& hex)
 
 bool EncryptFile(std::string sPath, std::string sTargetPath)
 {
-	int iFileSize = GetFileSize(sPath);
+	int iFileSize = GETFILESIZE(sPath);
 	if (iFileSize < 1)
 	{
 		return false;
@@ -4196,8 +4197,7 @@ bool EncryptFile(std::string sPath, std::string sTargetPath)
 
 bool DecryptFile(std::string sPath, std::string sTargetPath)
 {
-
-	int iFileSize = GetFileSize(sPath);
+	int iFileSize = GETFILESIZE(sPath);
 	if (iFileSize < 1)
 	{
 		return false;
@@ -4248,7 +4248,7 @@ std::string SplitFile(std::string sPath)
 	{
 		boost::filesystem::create_directory(pathSAN);
 	}
-	int iFileSize = GetFileSize(sPath);
+	int iFileSize = GETFILESIZE(sPath);
     std::ifstream ifs(sPath, std::ios::binary|std::ios::ate);
 	int iPos = 0;		
 	int iPart = 0;	
@@ -4317,10 +4317,10 @@ DACResult BIPFS_UploadFile(std::string sLocalPath, std::string sWebPath, std::st
 		return d;
 	}
 	boost::filesystem::path p(sLocalPath);
-	std::string sOriginalName = p.filename().c_str();
+	std::string sOriginalName = p.filename().string();
 	std::string sURL = "https://" + GetSporkValue("bms");
 	boost::filesystem::path pathDir = sDir;
-	int iFileSize = GetFileSize(sLocalPath);
+	int iFileSize = GETFILESIZE(sLocalPath);
 	if (iFileSize < 1)
 	{
 		d.ErrorCode = "FILE_MISSING";
@@ -4343,9 +4343,7 @@ DACResult BIPFS_UploadFile(std::string sLocalPath, std::string sWebPath, std::st
     {
 		  std::string sPartial = RoundToString(i, 0) + ".dat";
           boost::filesystem::path pPath = pathDir / sPartial;
-		  int iFileSize = GetFileSize(pPath.c_str());
-		  LogPrintf("File size %f for %s ", iFileSize, pPath.c_str());
-
+		  int iFileSize = GETFILESIZE(pPath.string());
 		  if (iFileSize > 0)
 		  {
 		      iTotalParts = i;
@@ -4360,7 +4358,7 @@ DACResult BIPFS_UploadFile(std::string sLocalPath, std::string sWebPath, std::st
     {
 		 std::string sPartial = RoundToString(i, 0) + ".dat";
 		 boost::filesystem::path pPath = pathDir / sPartial;
-		 int iFileSize = GetFileSize(pPath.c_str());
+		 int iFileSize = GETFILESIZE(pPath.string());
 		 if (iFileSize > 0)
 		 {
 			 LogPrintf(" Submitting # %f", i);
@@ -4368,7 +4366,7 @@ DACResult BIPFS_UploadFile(std::string sLocalPath, std::string sWebPath, std::st
 			 if (!fDryRun)
 			 {
 				 // ToDo - ensure WebPath is robust enough to handle the Name+Orig Name
-				 dInd = SubmitIPFSPart(iPort, sWebPath, sTXID, sURL, sPage, sOriginalName, pPath.c_str(), i, iTotalParts, iTargetDensity, nDurationDays, fEncrypted, nFee);
+				 dInd = SubmitIPFSPart(iPort, sWebPath, sTXID, sURL, sPage, sOriginalName, pPath.string(), i, iTotalParts, iTargetDensity, nDurationDays, fEncrypted, nFee);
 			 }
 			 
 			 std::string sStatus = ExtractXML(dInd.Response, "<status>", "</status>");

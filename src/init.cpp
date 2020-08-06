@@ -2114,7 +2114,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 		// Bloat Prevention of governance.dat:
 		// During forensic analysis the DAC Team has discovered that this file will grow bigger each time we deserialize governance objects, therefore we need to clear it if its bigger than 25 megs, and let it get reindexed.
 		boost::filesystem::path pathGov = GetDataDir() / "governance.dat";
-		int64_t nGovSz = GetFileSize(pathGov.string());
+		int64_t nGovSz = GETFILESIZE(pathGov.string());
 		LogPrintf("Governance file size %f", nGovSz);
 		if (nGovSz > 25000000)
 		{

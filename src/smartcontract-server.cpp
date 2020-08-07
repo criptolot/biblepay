@@ -213,13 +213,13 @@ DACProposal GetProposalByHash(uint256 govObj, int nLastSuperblock)
 	UniValue obj = myGov->GetJSONObject();
 	DACProposal dacProposal;
 	// 8-6-2020 - R ANDREWS - Make resilient to prevent crashes
-	dacProposal.sName = obj["name"].get_str();
-	dacProposal.nStartEpoch = cdbl(obj["start_epoch"].get_str(), 0);
-	dacProposal.nEndEpoch = cdbl(obj["end_epoch"].get_str(), 0);
-	dacProposal.sURL = obj["url"].get_str();
-	dacProposal.sExpenseType = obj["expensetype"].get_str();
-	dacProposal.nAmount = cdbl(obj["payment_amount"].get_str(), 2);
-	dacProposal.sAddress = obj["payment_address"].get_str();
+	dacProposal.sName = obj["name"].getValStr();
+	dacProposal.nStartEpoch = cdbl(obj["start_epoch"].getValStr(), 0);
+	dacProposal.nEndEpoch = cdbl(obj["end_epoch"].getValStr(), 0);
+	dacProposal.sURL = obj["url"].getValStr();
+	dacProposal.sExpenseType = obj["expensetype"].getValStr();
+	dacProposal.nAmount = cdbl(obj["payment_amount"].getValStr(), 2);
+	dacProposal.sAddress = obj["payment_address"].getValStr();
 	dacProposal.uHash = myGov->GetHash();
 	dacProposal.nHeight = GetHeightByEpochTime(dacProposal.nStartEpoch);
 	dacProposal.nMinPassing = nMinPassing;
@@ -1088,9 +1088,10 @@ std::vector<std::pair<int64_t, uint256>> GetGSCSortedByGov(int nHeight, uint256 
 		if (nLocalHeight == nHeight)
 		{
 			iOffset++;
-			std::string sPAD = obj["payment_addresses"].get_str();
-			std::string sPAM = obj["payment_amounts"].get_str();
-			std::string sQTPhase = obj["qtphase"].get_str();
+			// 8-6-2020 - Resilience
+			std::string sPAD = obj["payment_addresses"].getValStr();
+			std::string sPAM = obj["payment_amounts"].getValStr();
+			std::string sQTPhase = obj["qtphase"].getValStr();
 			
 			int iVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
 			uint256 uPamHash = GetPAMHash(sPAD, sPAM, sQTPhase);
@@ -1355,9 +1356,9 @@ void GetGSCGovObjByHeight(int nHeight, uint256 uOptFilter, int& out_nVotes, uint
 		int nLocalHeight = obj["event_block_height"].get_int();
 		if (nLocalHeight == nHeight)
 		{
-			std::string sPAD = obj["payment_addresses"].get_str();
-			std::string sPAM = obj["payment_amounts"].get_str();
-			std::string sQT = obj["qtphase"].get_str();
+			std::string sPAD = obj["payment_addresses"].getValStr();
+			std::string sPAM = obj["payment_amounts"].getValStr();
+			std::string sQT = obj["qtphase"].getValStr();
 			int iVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
 			uint256 uHash = GetPAMHash(sPAD, sPAM, sQT);
 			/* LogPrintf("\n Found gscgovobj2 %s with votes %f with pad %s and pam %s , pam hash %s ", myGov->GetHash().GetHex(), (double)iVotes, sPAD, sPAM, uHash.GetHex()); */
@@ -1393,9 +1394,9 @@ void GetGovObjDataByPamHash(int nHeight, uint256 hPamHash, std::string& out_Data
 		int nLocalHeight = obj["event_block_height"].get_int();
 		if (nLocalHeight == nHeight)
 		{
-			std::string sPAD = obj["payment_addresses"].get_str();
-			std::string sPAM = obj["payment_amounts"].get_str();
-			std::string sQT = obj["qtphase"].get_str();
+			std::string sPAD = obj["payment_addresses"].getValStr();
+			std::string sPAM = obj["payment_amounts"].getValStr();
+			std::string sQT = obj["qtphase"].getValStr();
 			int iVotes = myGov->GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
 			uint256 uHash = GetPAMHash(sPAD, sPAM, sQT);
 			if (hPamHash == uHash) 

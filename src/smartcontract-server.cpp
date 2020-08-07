@@ -212,13 +212,14 @@ DACProposal GetProposalByHash(uint256 govObj, int nLastSuperblock)
 	CGovernanceObject* myGov = governance.FindGovernanceObject(govObj);
 	UniValue obj = myGov->GetJSONObject();
 	DACProposal dacProposal;
-	dacProposal.sName = obj["name"].getValStr();
-	dacProposal.nStartEpoch = cdbl(obj["start_epoch"].getValStr(), 0);
-	dacProposal.nEndEpoch = cdbl(obj["end_epoch"].getValStr(), 0);
-	dacProposal.sURL = obj["url"].getValStr();
-	dacProposal.sExpenseType = obj["expensetype"].getValStr();
-	dacProposal.nAmount = cdbl(obj["payment_amount"].getValStr(), 2);
-	dacProposal.sAddress = obj["payment_address"].getValStr();
+	// 8-6-2020 - R ANDREWS - Make resilient to prevent crashes
+	dacProposal.sName = obj["name"].get_str();
+	dacProposal.nStartEpoch = cdbl(obj["start_epoch"].get_str(), 0);
+	dacProposal.nEndEpoch = cdbl(obj["end_epoch"].get_str(), 0);
+	dacProposal.sURL = obj["url"].get_str();
+	dacProposal.sExpenseType = obj["expensetype"].get_str();
+	dacProposal.nAmount = cdbl(obj["payment_amount"].get_str(), 2);
+	dacProposal.sAddress = obj["payment_address"].get_str();
 	dacProposal.uHash = myGov->GetHash();
 	dacProposal.nHeight = GetHeightByEpochTime(dacProposal.nStartEpoch);
 	dacProposal.nMinPassing = nMinPassing;

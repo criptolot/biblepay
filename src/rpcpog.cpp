@@ -4452,9 +4452,10 @@ DACResult BIPFS_UploadFolder(std::string sDirPath, std::string sWebPath, std::st
 	return dOverall;
 }
 
-std::string GetHowey()
+std::string GetHowey(int iType)
 {
-	std::string sHowey = "By typing I_AGREE in uppercase, you agree to the following conditions:"
+	std::string sPrefix = iType == 0 ? "clicking [YES]," : "typing I_AGREE in uppercase,";
+	std::string sHowey = "By " + sPrefix + " you agree to the following conditions:"
 			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THESE COINS, AND DO NOT EXPECT AN INCREASE IN VALUE."
 			"\n2.  I HAVE NOT BEEN PROMISED A PROFIT, AND THIS ACTION IS NOT PROMISING ME ANY HOPES OF PROFIT IN ANY WAY NOR IS THE COMMUNITY OR ORGANIZATION."
 			"\n3.  " + CURRENCY_NAME + " IS NOT ACTING AS A COMMON ENTERPRISE OR THIRD PARTY IN THIS ENDEAVOR."

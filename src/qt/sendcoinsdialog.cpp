@@ -350,7 +350,8 @@ bool SendCoinsDialog::ConfirmDWS(QList<SendCoinsRecipient> recipients, CAmount& 
         .arg(alternativeUnits.join("<br />= ")));
 
     questionString.append("<hr />");
-
+	std::string sHowey = GetHowey(0);
+	questionString.append(QString::fromStdString(sHowey));
     // Display message box
     SendConfirmationDialog confirmationDialog(tr("Confirm sending dynamic whale stake"),
         questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);

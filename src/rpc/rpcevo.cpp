@@ -1545,7 +1545,7 @@ UniValue dws(const JSONRPCRequest& request)
 	// dws amount duration_in_days 0=test/1=authorize
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 		
-	std::string sHelp = "You must specify dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + GetHowey();
+	std::string sHelp = "You must specify dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + GetHowey(1);
 	
 	if (request.fHelp || (request.params.size() != 3 && request.params.size() != 4))
 		throw std::runtime_error(sHelp.c_str());
@@ -1587,7 +1587,7 @@ UniValue dws(const JSONRPCRequest& request)
 	else
 	{
 		// Dry Run
-		results.push_back(Pair("Test Mode", GetHowey()));
+		results.push_back(Pair("Test Mode", GetHowey(1)));
 	}
 	return results;
 }

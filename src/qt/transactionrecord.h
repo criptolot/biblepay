@@ -97,7 +97,9 @@ public:
 		SuperBlockPayment,
 		GSCTransmission,
 		WhaleStake,
-		WhaleReward
+		WhaleReward,
+		DashStake,
+		DashReward
     };
 
     /** Number of confirmation recommended for accepting a transaction */
@@ -148,9 +150,11 @@ public:
 
 	/** If this is a Dynamic Whale Reward */
 	bool IsWhaleReward;
+	bool IsDashReward;
 
 	/** If this is a Dynamic Whale Stake */
 	bool IsWhaleStake;
+	bool IsDashStake;
 
 	/** If this is a PODC Research Payment */
 	bool IsGSCPayment;

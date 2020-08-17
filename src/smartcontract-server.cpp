@@ -580,7 +580,7 @@ std::string ExtractBlockMessage(int nHeight)
 double ExtractAPM(int nHeight)
 {
 	double nAPMHeight = GetSporkDouble("APM", 0);
-	if (nHeight < nAPMHeight)
+	if (nHeight < nAPMHeight || nAPMHeight == 0)
 		return 0;
 	
     const CBlockIndex* pindex;
@@ -607,7 +607,7 @@ double CalculateAPM(int nHeight)
 {
 	// Automatic Price Mooning - July 21, 2020
 	double nAPMHeight = GetSporkDouble("APM", 0);
-	if (nHeight < nAPMHeight || nHeight < 1)
+	if (nHeight < nAPMHeight || nHeight < 1 || nAPMHeight == 0)
 		return 0;
 	double out_BTC = 0;
 	double out_BBP = 0;
@@ -648,6 +648,9 @@ double CalculateAPM(int nHeight)
 
 std::string AssessBlocks(int nHeight, bool fCreatingContract)
 {
+
+	LogPrintf("\nAssessBlocks Height %f ", nHeight);
+
 	CAmount nPaymentsLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
 
 	nPaymentsLimit -= MAX_BLOCK_SUBSIDY * COIN;
@@ -939,8 +942,6 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 	if (fCreatingContract)
 	{
 		// Add the QT Phase
-		//double out_PriorPrice = 0;
-		//double out_PriorPhase = 0;
 		double out_BTC = 0;
 		double out_BBP = 0;
 		double dPrice = GetPBase(out_BTC, out_BBP);
@@ -951,7 +952,6 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		// Dynamic Whale Staking - R Andrews - 11/11/2019
 		double dTotalWhalePayments = 0;
 		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
-		//CAmount nTotalWhalePayments = dTotalWhalePayments * COIN;
 		for (int iWhale = 0; iWhale < dws.size(); iWhale++)
 		{
 			WhaleStake ws = dws[iWhale];
@@ -968,6 +968,26 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		QTData += DWSData;
 		LogPrintf("\nCreating GSC Contract with Whale Payments=%f over %f recs.", dTotalWhalePayments, dws.size());
 		// End of Dynamic Whale Staking 
+		// Dash Staking - R Andrews - 8/16/2020
+		std::string DSData;
+		double dTotalDashPayments = 0;
+		std::vector<DashStake> dash = GetPayableDashStakes(nHeight, dTotalDashPayments);
+		for (int iDash = 0; iDash < dash.size(); iDash++)
+		{
+			DashStake ws1 = dash[iDash];
+			if (ws1.found && ws1.MonthlyEarnings > 0 && !ws1.ReturnAddress.empty())
+			{
+				sAddresses += ws1.ReturnAddress + "|";
+				sPayments += RoundToString(ws1.MonthlyEarnings, 4) + "|";
+				DSData += "<DSADDR>" + ws1.ReturnAddress + "</DSADDR><DSAMT>" + RoundToString(ws1.MonthlyEarnings, 4) + "</DSAMT>";
+			}
+		}
+		DSData += "<DSTOTAL>" + RoundToString(dTotalDashPayments, 4) + "</DSTOTAL>";
+		QTData += DSData;
+	
+		LogPrintf("\nCreating GSC With Dash Payments=%f over %f recs", dTotalDashPayments, dash.size());
+
+		// End of Dash Staking
 
 		// Sanctuary Spork Voting
 		// For each winning Sanctuary Spork proposal
@@ -1002,26 +1022,9 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 		sAddresses = sAddresses.substr(0, sAddresses.length() - 1);
 
 	std::string sCPKList = "<CPKLIST>";
-	if (false)
-	{
-		std::map<std::string, CPK> mAllC = GetGSCMap("cpk", "", true);
-		for (std::pair<std::string, CPK> a : mAllC)
-		{ 
-			sCPKList += "<C>" + a.second.sAddress + "|" + a.second.sNickName + "</C>";
-		}
-	}
 	sCPKList += "</CPKLIST>";
 	// The Daily Export should also send a list of registered stratis nodes in this XML report.
 	std::string sStratisNodes = "<STRATISNODES>";
-	if (false)
-	{
-		std::map<std::string, CPK> mAllStratis = GetGSCMap("stratis", "", true);
-		for (std::pair<std::string, CPK> a : mAllStratis)
-		{
-			// ToDo:  The stratis public IP field must be added to our campaign object and to the daily export
-			sStratisNodes += "<NODE>" + a.second.sAddress + "|" + a.second.sNickName + "</NODE>";
-		}
-	}
 	sStratisNodes += "</STRATISNODES>";
 	double nTotalPayments = nTotalProminence * (double)nPaymentsLimit / COIN;
 

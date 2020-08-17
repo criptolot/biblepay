@@ -151,12 +151,15 @@ std::string GetGithubVersion()
 double GetCryptoPrice(std::string sSymbol)
 {
 	boost::to_lower(sSymbol);
+
+	double nLast = cdbl(ReadCacheWithMaxAge("price", sSymbol, (60 * 30)), 12);
+	if (nLast > 0)
+		return nLast;
+	
 	std::string sC1 = Uplink(false, "", GetSporkValue("bms"), GetSporkValue("getbmscryptoprice" + sSymbol), SSL_PORT, 15, 1);
-	double dDebugLevel = cdbl(GetArg("-debuglevel", "0"), 0);
-	if (dDebugLevel == 1)
-		LogPrintf("CryptoPrice %s %s", sSymbol, sC1);
 	std::string sPrice = ExtractXML(sC1, "<MIDPOINT>", "</MIDPOINT>");
 	double dMid = cdbl(sPrice, 12);
+	WriteCache("price", sSymbol, RoundToString(dMid, 12), GetAdjustedTime());
 	return dMid;
 }
 

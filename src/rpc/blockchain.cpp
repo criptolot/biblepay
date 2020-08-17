@@ -182,7 +182,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 	result.push_back(Pair("blockversion", GetBlockVersion(block.vtx[0]->vout[0].sTxOutMessage)));
 	if (block.vtx.size() > 1)
 		result.push_back(Pair("sanctuary_reward", block.vtx[0]->vout[1].nValue/COIN));
-	// DAC
+	// BiblePay
 	bool bShowPrayers = true;
     if (blockindex->pprev)
 	{
@@ -194,6 +194,20 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 		result.push_back(Pair("chaindata", block.vtx[0]->vout[0].sTxOutMessage));
 		bool fChainLock = llmq::chainLocksHandler->HasChainLock(blockindex->nHeight, blockindex->GetBlockHash());
 		result.push_back(Pair("chainlock", fChainLock));
+		UniValue objIPFS(UniValue::VOBJ);
+		// BIPFS - R Andrews	
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, mapSidechainTransactions)
+		{
+			if (item.second.nHeight == blockindex->nHeight)
+			{
+				std::string sDesc = "FileName: " + item.second.FileName + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(item.second.nSize, 2) 
+					+ ", Duration=" + RoundToString(item.second.nDuration, 0)
+					+ ", Density=" + RoundToString(item.second.nDensity, 0) + ", BlockHash=" + item.second.BlockHash + ", URL=" + item.second.URL + ", Network=" + item.second.Network 
+					+ ", Height=" + RoundToString(item.second.nHeight, 0);
+				objIPFS.push_back(Pair(item.second.TXID, sDesc));
+			}
+		}
+		result.push_back(Pair("bipfs", objIPFS));
     }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
@@ -1827,6 +1841,21 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("error","block not found"));
 		}
 	}
+	else if (sItem == "lockstakes")
+	{
+		LockDashStakes();
+		results.push_back(Pair("lock", 1));
+	}
+	else if (sItem == "dashtest00")
+	{
+		ProcessDashUTXOData();
+		std::string sTXID = request.params[1].get_str();
+		double nType = cdbl(request.params[2].get_str(), 0);
+		CAmount nValue = 0;
+		std::string sAddress = GetUTXO(sTXID, nType, nValue);
+		results.push_back(Pair("address", sAddress));
+		results.push_back(Pair("value", (double)nValue/COIN));
+	}
 	else if (sItem == "pinfo")
 	{
 		// Used by the Pools
@@ -2840,7 +2869,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "price")
 	{
-		double dDacPrice = GetCryptoPrice("bbp"); // For now, we must force the ticker to be BBP, otherwise we will not have a leaderboard consensus (for cameroon-one and Kairos etc).
+		double dDacPrice = GetCryptoPrice("bbp"); 
 		double dBTC = GetCryptoPrice("btc");
 		double dDASH = GetCryptoPrice("dash");
 		double dXMR = GetCryptoPrice("xmr");
@@ -3388,46 +3417,30 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("TXID", sResult));
 		results.push_back(Pair("Error", sError));
 	}
+	else if (sItem == "getdashstakereport")
+	{
+		double nHeight = cdbl(request.params[1].get_str(), 0);
+		double dTotal = 0;
+		std::vector<DashStake> dws = GetPayableDashStakes(nHeight, dTotal);
+		for (int i = 0; i < dws.size(); i++)
+		{
+			DashStake ws = dws[i];
+			results.push_back(Pair("bbputxo", ws.BBPUTXO));
+			results.push_back(Pair("bbpamt", ws.nBBPQty));
+			results.push_back(Pair("monthlyearnings", ws.MonthlyEarnings));
+		}
+		results.push_back(Pair("earnings", dTotal));
+	}
 	else if (sItem == "getdwsreport")
 	{
-
 		CBlock block;
 		int iNextSuperblock = 0;
 		int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
 		const Consensus::Params& consensusParams = Params().GetConsensus();
-		/*
-		if (false)
-		{
-			results.push_back(Pair("GetGovLimit", "Report v1.1"));
-			for (int nHeight = nLastSuperblock; nHeight > 0; nHeight -= BLOCKS_PER_DAY)
-			{
-
-				CBlockIndex* pindex = FindBlockByHeight(nHeight);
-				if (pindex) 
-				{
-					CAmount nTotal = 0;
-		
-					if (ReadBlockFromDisk(block, pindex, consensusParams)) 
-					{
-						for (unsigned int i = 0; i < block.vtx[0]->vout.size(); i++)
-    					{
-							nTotal += block.vtx[0]->vout[i].nValue;
-						}
-						if (nTotal/COIN > MAX_BLOCK_SUBSIDY && block.vtx[0]->vout.size() < 7)
-						{
-							std::string sRow = "Total: " + RoundToString(nTotal/COIN, 2) + ", Size: " + RoundToString(block.vtx.size(), 0);
-							results.push_back(Pair(RoundToString(nHeight, 0), sRow));
-						}
-					}
-				}
-			}
-		}
-		*/
 		for (int nHeight = iLastSuperblock; nHeight > 0; nHeight -= BLOCKS_PER_DAY)
 		{
 			CBlockIndex* pindex = FindBlockByHeight(nHeight);
 			CAmount nLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
-
 			if (pindex) 
 			{
 				CAmount nTotal = 0;
@@ -3490,6 +3503,10 @@ UniValue exec(const JSONRPCRequest& request)
 		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
 		results.push_back(Pair("DWS payables owed", dTotalWhalePayments));
 		results.push_back(Pair("DWS quantity", (int)dws.size()));
+		double dTotalDashPayments = 0;
+		std::vector<DashStake> dash = GetPayableDashStakes(nHeight, dTotalDashPayments);
+		results.push_back(Pair("DASH payables owed", dTotalDashPayments));
+		results.push_back(Pair("DASH quantity", (int)dash.size()));
 	}
 	else if (sItem == "hexblocktojson")
 	{

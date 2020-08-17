@@ -259,8 +259,10 @@ extern std::map<std::pair<std::string, std::string>, std::pair<std::string, int6
 struct IPFSTransaction;
 struct POSEScore;
 struct Researcher;
+struct DashUTXO;
 
 extern std::map<std::string, IPFSTransaction> mapSidechainTransactions;
+extern std::map<std::string, DashUTXO> mapDashUTXO;
 extern std::map<std::string, POSEScore> mvPOSEScore;
 extern std::atomic<bool> fDIP0001ActiveAtTip;
 extern std::map<std::string, Researcher> mvResearchers;

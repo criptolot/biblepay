@@ -1539,6 +1539,82 @@ UniValue getpobhhash(const JSONRPCRequest& request)
 	return results;
 }
 
+UniValue dashstake(const JSONRPCRequest& request)
+{
+	// Dash Staking
+	// This allows you to lock up Y amount of Dash + Z amount of BBP in a contract, and receive monthly rewards on this amount.
+	// Starting initially as of September 15th, 2020, we will start with 6 month contracts (this is primarily to ensure the prices of each underlying currency do not change significatly since the start date of the contract).
+	// IE, assets will need to be re-locked once every 6 months to ensure fresh price quotes (as we strive to lock roughly equal amounts of BBP with equal amounts of DASH).
+	// However, we do tolerate price changes during the duration of the contract.
+	// But, if either asset is spent, the contract is cancelled (cancelled during our next GSC height after an asset is spent).
+	// You can see if a contract is in force by looking at the "expiration" and the "expired" and the "spent" fields of each contract.
+	// Contracts pay interest rewards MONTHLY.  At the contract height + 30*205 successively, for each period.
+	// To get a dashstake quote, type 'dashstakequote' first.
+	// Example:
+	// dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE 0=test/1=authorize
+	// To create a signature, from DASH type:  signmessage dash_public_key DASH-UTXO-ORDINAL <enter>.  Copy the Dash signature into the BiblePay 'dashstake' command.
+
+	// NOTE:  UTXOs cannot be re-used until a contract expires.
+	// The lower stake amount denominated in BBP is used to assess the MonthlyEarnings based on the market value of Dash and BBP at the time the contract is created.
+	// You may r-lock after expiration.
+
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+		
+	std::string sHelp = "You must specify dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE 0=test/1=Authorize.\n";
+	
+	if (request.fHelp || (request.params.size() != 4))
+		throw std::runtime_error(sHelp.c_str());
+		
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	std::string sBBPUTXO = request.params[0].get_str();
+	std::string sDashUTXO = request.params[1].get_str();
+	std::string sDashSig = request.params[2].get_str();
+
+	std::string sError;
+
+	std::string sBBPSig = SignBBPUTXO(sBBPUTXO, sError);
+	UniValue results(UniValue::VOBJ);
+
+	if (!sError.empty())
+	{
+		results.push_back(Pair("BBP Signing Error", sError));
+		return results;
+	}
+
+	double nDryRun = cdbl(request.params[3].get_str(), 0);
+
+	// TODO: print the bbp utxo amount, bbp exchange rate val, dash val, dash utxo val
+	// if spent throw special error
+
+	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
+	results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(30 * 6.5, wm.DWU) * 100, 4)));
+	std::string sTXID;
+	DashStake ds;
+	if (nDryRun == 1)
+	{
+		bool fSent = SendDashStake(sCPK, sTXID, sError, sBBPUTXO, sDashUTXO, sBBPSig, sDashSig, 30 * 6.5, sCPK, false, ds);
+		if (!fSent || !sError.empty())
+		{
+			results.push_back(Pair("Error (Not Sent)", sError));
+		}
+		else
+		{
+			results.push_back(Pair("Monthly Earnings", ds.MonthlyEarnings));
+			results.push_back(Pair("DWU", ds.ActualDWU * 100));
+			results.push_back(Pair("Next Payment Height", ds.Height + BLOCKS_PER_DAY));
+			results.push_back(Pair("BBP Value USD", ds.nBBPValueUSD));
+			results.push_back(Pair("Dash Value USD", ds.nDashValueUSD));
+			results.push_back(Pair("BBP Qty", ds.nBBPQty));
+			results.push_back(Pair("BBP Amount", (double)ds.nBBPAmount/COIN));
+			results.push_back(Pair("Dash Amount", (double)ds.nDashAmount/COIN));
+			results.push_back(Pair("Results", "The Dash Stake Contract was created successfully.  Thank you for using BIBLEPAY and DASH. "));
+			results.push_back(Pair("TXID", sTXID));
+		}
+	}
+	return results;
+}
+
+
 UniValue dws(const JSONRPCRequest& request)
 {
 	// Dynamic Whale Staking
@@ -1589,6 +1665,77 @@ UniValue dws(const JSONRPCRequest& request)
 		// Dry Run
 		results.push_back(Pair("Test Mode", GetHowey(1)));
 	}
+	return results;
+}
+
+UniValue dashstakequote(const JSONRPCRequest& request)
+{
+	// Dash Whale Staking
+	if (request.fHelp || (request.params.size() != 0 && request.params.size() != 1 && request.params.size() != 2 && request.params.size() != 3))
+		throw std::runtime_error("You must specify dashstakequote [optional 1=my dash stakes only, 2=all whale stakes] [optional 1=Include Expired, 2=Include Non-Expired only (default)].");
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	UniValue results(UniValue::VOBJ);
+	double dDetails = 0;
+	double dAdvanced = 0;
+	if (request.params.size() > 0)
+		dDetails = cdbl(request.params[0].get_str(), 0);
+	double dExpired = 2;
+	if (request.params.size() > 1)
+		dExpired = cdbl(request.params[1].get_str(), 0);
+
+	if (request.params.size() > 2)
+		dAdvanced = cdbl(request.params[2].get_str(), 0);
+
+	if (dDetails == 1 || dDetails == 2)
+	{
+		std::vector<DashStake> w = GetDashStakes(true);
+		results.push_back(Pair("Total Dash Stake Quantity", (int)w.size()));
+		for (int i = 0; i < w.size(); i++)
+		{
+			DashStake ws = w[i];
+			bool fIncExpired = (!ws.expired && dExpired == 2) || (dExpired == 1);
+			if (ws.found && fIncExpired && ((dDetails == 2) || (dDetails==1 && ws.CPK == sCPK)))
+			{
+				std::string sRow = "BBPQty: "+ RoundToString(ws.nBBPQty, 2) + ", BBPAmount: " + RoundToString((double)ws.nBBPAmount/COIN, 2) 
+					+ ", DashAmount: "+ RoundToString((double)ws.nDashAmount/COIN, 2)
+					+ ", MonthlyReward: " + RoundToString(ws.MonthlyEarnings, 2) 
+					+ ", DWU: " + RoundToString(GetDWUBasedOnMaturity(ws.Duration, ws.DWU) * 100, 4) 
+					+ ", Duration: " + RoundToString(ws.Duration, 0) 
+					+ ", Height: " + RoundToString(ws.Height, 0) 
+					+ ", Time: " + TimestampToHRDate(ws.Time)
+					+ ", Expiration: " + TimestampToHRDate(ws.MaturityTime)
+					+ ", BBPUTXO: "+ ws.BBPUTXO + ", DASHUTXO: "+ ws.DashUTXO + ", BBPSIG: "+ ws.BBPSignature + ", DashSig: "+ ws.DashSignature 
+					+ ", BBPPrice: "+ RoundToString(ws.nBBPPrice, 12) + ", DashPrice: "+ RoundToString(ws.nDashPrice, 12) + ", BTCPrice: "
+					+ RoundToString(ws.nBTCPrice, 12) + ", BBP_VALUE_USD: "+ RoundToString(ws.nBBPValueUSD, 4) + ", DASH_VALUE_USD: "
+					+ RoundToString(ws.nDashValueUSD, 4) + ", BBPAddress: "+ ws.BBPAddress + ", DashAddress: "+ ws.DashAddress;
+				// Found, Not Expired, Not Spent, and SignatureValue, and MonthlyEarnings > 0
+				bool fPassesPaymentRequirements = ws.found && !ws.expired && ws.MonthlyEarnings > 0 && ws.SignatureValid && !ws.spent;
+				sRow += "Expired: " + ToYesNo(ws.expired) + ", SigValid: "+ ToYesNo(ws.SignatureValid) + ", BBPSig: " + ToYesNo(ws.BBPSignatureValid) 
+					+ ", DashSig: " + ToYesNo(ws.DashSignatureValid) + ", Spent: "+ ToYesNo(ws.spent) + ", Payable: " + ToYesNo(fPassesPaymentRequirements);
+
+				std::string sKey = ws.CPK + "-" + RoundToString(i + 1, 0) + "-" + ws.BBPUTXO + "-" + ws.DashUTXO;
+
+				results.push_back(Pair(sKey, sRow));
+			}
+		}
+	}
+	results.push_back(Pair("Metrics", "v1.3"));
+	// Call out for Dash Stake Metrics
+	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
+	if (dAdvanced == 1)
+	{
+		results.push_back(Pair("Total Gross Commitments Due Today", wm.nTotalGrossCommitmentsDueToday));
+		results.push_back(Pair("Total Future Commitments", wm.nTotalFutureCommitments));
+		results.push_back(Pair("Total Gross Future Commitments", wm.nTotalGrossFutureCommitments));
+		results.push_back(Pair("Total Commitments Due Today", wm.nTotalCommitmentsDueToday));
+		results.push_back(Pair("Total Monthly Commitments", wm.nTotalMonthlyCommitments));
+		results.push_back(Pair("Total Gross Monthly Commitments", wm.nTotalGrossMonthlyCommitments));
+		results.push_back(Pair("Total Annual Reward", wm.nTotalAnnualReward));
+		results.push_back(Pair("Saturation Percent Annual", RoundToString(wm.nSaturationPercentAnnual * 100, 8)));
+		results.push_back(Pair("Saturation Percent Monthly", RoundToString(wm.nSaturationPercentMonthly * 100, 8)));
+	}
+	results.push_back(Pair("Total Stakes Today", wm.nTotalBurnsToday));
+	results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(180, wm.DWU) * 100, 4)));
 	return results;
 }
 
@@ -1849,6 +1996,8 @@ static const CRPCCommand commands[] =
 	{ "evo",                "books",                        &books,                         false, {}  },
 	{ "evo",                "datalist",                     &datalist,                      false, {}  },
 	{ "evo",                "dashpay",                      &dashpay,                       false, {}  },
+	{ "evo",                "dashstakequote",               &dashstakequote,                false, {}  },
+	{ "evo",                "dashstake",                    &dashstake,                     false, {}  },
 	{ "evo",                "dws",                          &dws,                           false, {}  },
 	{ "evo",                "dwsquote",                     &dwsquote,                      false, {}  },
 	{ "evo",                "hexblocktocoinbase",           &hexblocktocoinbase,            false, {}  },

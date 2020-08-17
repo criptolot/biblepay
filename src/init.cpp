@@ -1962,6 +1962,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 
 	// If the last block is old, maybe the chain needs re-assessed:
+	/*
 	if (chainActive.Tip())
 	{
 		int64_t nAge = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();
@@ -1971,6 +1972,8 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 			ReassessAllChains();
 		}
 	}
+	*/
+
 
     // As LoadBlockIndex can take several minutes, it's possible the user
     // requested to kill the GUI during the last operation. If so, exit.
@@ -2027,7 +2030,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 			LogPrintf("\nSetting masternodeprivkey. %f", 1);
 		}
 	}
-
+	
     if(fMasternodeMode) {
         LogPrintf("MASTERNODE:\n");
 		
@@ -2218,6 +2221,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 	// Load Researchers into RAM
 	uiInterface.InitMessage(_("Loading PODC Researchers..."));
 	LoadResearchers();
+	LockDashStakes();
 
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 

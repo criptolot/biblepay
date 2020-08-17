@@ -63,6 +63,16 @@ struct IPFSTransaction
 	std::map<std::string, std::string> mapRegions = std::map<std::string, std::string>();
 };
 
+struct DashUTXO
+{
+	std::string TXID = std::string();
+	CAmount Amount = 0;
+	std::string Address = std::string();
+	std::string Network = std::string();
+	bool Spent = false;
+	bool Found = false;
+};
+
 struct DACResult
 {
 	std::string Response;
@@ -146,8 +156,47 @@ struct WhaleStake
 	bool paid = false;
 };
 
+struct DashStake
+{
+	std::string XML = std::string();
+	CAmount nBBPAmount = 0;
+	CAmount nDashAmount = 0;
+	double MonthlyEarnings = 0;
+	int64_t Time = 0;
+	int64_t MaturityTime = 0;
+	int MaturityHeight = 0;
+	int Height = 0;
+	int Duration = 0;
+	std::string CPK = std::string();
+	std::string ReturnAddress = std::string();
+	bool found = false;
+	bool expired = false;
+	bool spent = false;
+	double DWU = 0;
+	double ActualDWU = 0;
+	std::string BBPUTXO = std::string();
+	std::string DashUTXO = std::string();
+	std::string BBPAddress = std::string();
+	std::string DashAddress = std::string();
+	std::string BBPSignature = std::string();
+	std::string DashSignature = std::string();
+	double nBBPPrice = 0;
+	double nDashPrice = 0;
+	double nBTCPrice = 0;
+	double nBBPValueUSD = 0;
+	double nDashValueUSD = 0;
+	double nBBPQty = 0;
+	bool BBPSignatureValid = false;
+	bool DashSignatureValid = false;
+	bool SignatureValid = false;
+	uint256 TXID = uint256S("0x0");
+};
+
 static double MAX_DAILY_WHALE_COMMITMENTS = 5000000;
 static double MAX_WHALE_DWU = 2.0;
+static double MAX_DASH_DWU = 1.0;
+static double MAX_DAILY_DASH_STAKE_COMMITMENTS = 50000000;
+
 struct WhaleMetric
 {
 	double nTotalFutureCommitments = 0;
@@ -367,5 +416,17 @@ bool EncryptFile(std::string sPath, std::string sTargetPath);
 bool DecryptFile(std::string sPath, std::string sTargetPath);
 std::string FormatURL(std::string URL, int iPart);
 void SyncSideChain(int nHeight);
+std::string GetUTXO(std::string sHash, int nOrdinal, CAmount& nValue);
+WhaleMetric GetDashStakeMetrics(int nHeight, bool fIncludeMemoryPool);
+std::vector<DashStake> GetDashStakes(bool fIncludeMemoryPool);
+bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& sError, std::string sBBPUTXO, std::string sDashUTXO, std::string sBBPSig, std::string sDashSig, double nDuration, std::string sCPK, bool fDryRun, DashStake& out_ds);
+bool VerifyDashStakeSignature(std::string sAddress, std::string sUTXO, std::string sSig, int nKeyType);
+void ProcessInnerUTXOData(std::string sInnerData);
+std::string SignBBPUTXO(std::string sUTXO, std::string& sError);
+void ProcessDashUTXOData();
+bool IsDuplicateUTXO(std::string UTXO);
+std::vector<DashStake> GetPayableDashStakes(int nHeight, double& nOwed);
+void LockDashStakes();
+DashStake GetDashStakeByUTXO(std::string sDashStake);
 
 #endif

@@ -1600,6 +1600,10 @@ TxMessage GetTxMessage(std::string sMessage, int64_t nTime, int iPosition, std::
 	{
 		t.fPassedSecurityCheck = false;
 	}
+	else if (t.sMessageType == "DASH-BURN")
+	{
+		t.fPassedSecurityCheck = false;
+	}
 	else if (t.sMessageType == "PRAYER" && t.fPrayersMustBeSigned)
 	{
 		double dMinimumUnsignedPrayerDonation = GetSporkDouble("minimumunsignedprayerdonationamount", 3000);
@@ -1776,7 +1780,15 @@ void MemorizeBlockChainPrayers(bool fDuringConnectBlock, bool fSubThread, bool f
 						// Memorize each DWS txid-vout and burn amount (later the sancs will audit each one to ensure they are mature and in the main chain). 
 						// NOTE:  This data is automatically persisted during shutdowns and reboots and loaded efficiently into memory.
 						std::string sXML = ExtractXML(sPrayer, "<dws>", "</dws>");
-						WriteCache("dws-burn", block.vtx[n]->GetHash().GetHex(), sXML, GetAdjustedTime());
+						if (!sXML.empty())
+						{
+							WriteCache("dws-burn", block.vtx[n]->GetHash().GetHex(), sXML, GetAdjustedTime());
+						}
+						std::string sDashStake = ExtractXML(sPrayer, "<dashstake>", "</dashstake>");
+						if (!sDashStake.empty())
+						{
+							WriteCache("dash-burn", block.vtx[n]->GetHash().GetHex(), sDashStake, GetAdjustedTime());
+						}
 					}
 					// For Coin-Age voting:  This vote cannot be falsified because we require the user to vote with coin-age (they send the stake back to their own address):
 					std::string sGobjectID = ExtractXML(sPrayer, "<gobject>", "</gobject>");
@@ -2892,6 +2904,15 @@ std::string GetAttachmentData(std::string sPath, bool fEncrypted)
 	return s64;
 }
 
+std::string ConstructCall(std::string sCallName, std::string sArgs)
+{
+	std::string s1 = "Server";
+	std::string sActName = "action=";
+	std::string s2 = s1 + "?" + sActName + sCallName;
+	s2 += "&";
+	s2 += sArgs;
+	return s2;
+}
 
 std::string DSQL_Ansi92Query(std::string sSQL)
 {
@@ -2917,6 +2938,43 @@ DACResult DSQL_ReadOnlyQuery(std::string sEndpoint, std::string sXML)
 	DACResult b;
 	b.Response = Uplink(true, sXML, sDomain, sEndpoint, SSL_PORT, iTimeout, 4);
 	return b;
+}
+
+DACResult DSQL_ReadOnlyQuery2(std::string sEndpoint, std::string sXML)
+{
+	std::string sDomain = "https://" + GetSporkValue("bms");
+	int iTimeout = 30;
+	DACResult b;
+	b.Response = Uplink(true, sXML, sDomain, sEndpoint, 443, iTimeout, 4);
+	return b;
+}
+
+void GetDashUTXO(std::string sHash)
+{
+	DACResult d = DSQL_ReadOnlyQuery2(ConstructCall("GetUTXO", "hash=" + sHash), "");
+	if (!d.Response.empty())
+	{
+		ProcessInnerUTXOData(d.Response);
+		d.fError = false;
+	}
+	else
+	{
+		d.fError = true;
+	}
+}
+
+DACResult GetUTXOData(int nHeight)
+{
+	DACResult d = DSQL_ReadOnlyQuery2(ConstructCall("GetUTXOData", "height=" + RoundToString(nHeight, 0)), "");
+	if (!d.Response.empty())
+	{
+		d.fError = false;
+	}
+	else
+	{
+		d.fError = true;
+	}
+	return d;
 }
 
 DACResult GetSideChainData(int nHeight)
@@ -3312,6 +3370,128 @@ bool GetTxDAC(uint256 txid, CTransactionRef& tx1)
 	return GetTransaction(txid, tx1, Params().GetConsensus(), hashBlock1, true);
 }
 
+DashUTXO RetrieveDashUTXO(std::string sHash)
+{
+	DashUTXO u = mapDashUTXO[sHash];
+	if (u.Found)
+		return u;
+	GetDashUTXO(sHash);
+	u = mapDashUTXO[sHash];
+	return u;
+}
+
+std::string GetUTXO(std::string sHash, int nOrdinal, CAmount& nValue)
+{
+	nValue = 0;
+	Coin coin;
+	int nTypeOrdinal = nOrdinal;
+	std::string sOriginalHash = sHash;
+
+	if (nTypeOrdinal < 0)
+	{
+		std::vector<std::string> vU = Split(sHash.c_str(), "-");
+		if (vU.size() < 2)
+			return "";
+		sHash = vU[0];
+		nOrdinal = (int)cdbl(vU[1], 0);
+		if (nTypeOrdinal == -2)
+		{
+			DashUTXO u = RetrieveDashUTXO(sOriginalHash);
+			nValue = u.Amount;
+			return u.Address;
+		}
+	}
+
+	uint256 hash(uint256S(sHash));
+    COutPoint out(hash, nOrdinal);
+	nValue = -1;
+	if (GetUTXOCoin(out, coin)) 
+	{
+		CTxDestination txDest;
+		CKeyID keyID;
+		if (!ExtractDestination(coin.out.scriptPubKey, txDest) || !CBitcoinAddress(txDest).GetKeyID(keyID)) 
+		{
+			return "";
+		}
+		nValue = coin.out.nValue;
+        std::string sAddress = CBitcoinAddress(txDest).ToString();
+		return sAddress;
+	}
+	return "";
+}
+
+DashStake GetDashStake(CTransactionRef tx1)
+{
+	DashStake w;
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+	
+	for (unsigned int i = 0; i < tx1->vout.size(); i++)
+	{
+		std::string sPK = PubKeyToAddress(tx1->vout[i].scriptPubKey);
+		if (sPK == consensusParams.BurnAddress)
+		{
+			w.XML = tx1->vout[i].sTxOutMessage;
+			int nHeight = 0;
+			w.Time = (int)cdbl(ExtractXML(w.XML, "<time>", "</time>"), 0);
+			w.Height = (int)cdbl(ExtractXML(w.XML, "<height>", "</height>"), 0);
+			w.Duration = (int)cdbl(ExtractXML(w.XML, "<duration>", "</duration>"), 0);
+			w.CPK = ExtractXML(w.XML, "<cpk>", "</cpk>");
+			w.DWU = cdbl(ExtractXML(w.XML, "<dwu>", "</dwu>"), 4);
+			w.BBPUTXO = ExtractXML(w.XML, "<bbputxo>", "</bbputxo>");
+			w.DashUTXO = ExtractXML(w.XML, "<dashutxo>", "</dashutxo>");
+			w.BBPSignature = ExtractXML(w.XML, "<bbpsig>", "</bbpsig>");
+			w.DashSignature = ExtractXML(w.XML, "<dashsig>", "</dashsig>");
+			w.ReturnAddress = ExtractXML(w.XML, "<returnaddress>", "</returnaddress>");
+			w.nBBPPrice = cdbl(ExtractXML(w.XML, "<bbpprice>", "</bbpprice>"), 12);
+			w.nDashPrice = cdbl(ExtractXML(w.XML, "<dashprice>", "</dashprice>"), 12);
+			w.nBTCPrice = cdbl(ExtractXML(w.XML, "<btcprice>", "</btcprice>"), 12);
+			w.nBBPValueUSD = cdbl(ExtractXML(w.XML, "<bbpvalue>", "</bbpvalue>"), 2);
+			w.nDashValueUSD = cdbl(ExtractXML(w.XML, "<dashvalue>", "</dashvalue>"), 2);
+			w.nBBPAmount = cdbl(ExtractXML(w.XML, "<bbpamount>", "</bbpamount>"), 2) * COIN;
+			w.nDashAmount = cdbl(ExtractXML(w.XML, "<dashamount>", "</dashamount>"), 2) * COIN;
+			CAmount nBBPAmount = 0;
+			CAmount nDashAmount = 0;
+			w.BBPAddress = GetUTXO(w.BBPUTXO, -1, nBBPAmount);
+			w.DashAddress = GetUTXO(w.DashUTXO, -2, nDashAmount);
+			LogPrintf("GetDashStake::Using bbpaddr %s and dash addr %s dash amount %f ", 
+				w.BBPAddress, w.DashAddress, (double)nDashAmount/COIN);
+			w.MaturityTime = (w.Duration * 86400) + w.Time;
+			if (w.DWU > MAX_DASH_DWU) 
+				w.DWU = 0;
+			if (w.DWU < 0) 
+				w.DWU = 0;
+			// Calculate the lower of the two market values first:
+			double nValueUSD = std::min(w.nBBPValueUSD, w.nDashValueUSD);
+			double nBBPUSD = w.nBTCPrice * w.nBBPPrice;
+			// Note that w.nBBPAmount is a CAmount, and nBBPQty is a double 
+			double n0 = nValueUSD / (nBBPUSD + .000000001);
+			double n2 = nBBPAmount / COIN;
+			w.nBBPQty = std::min(n0, n2);
+			LogPrintf("\nDeciding between bbpvalusd %f and dashvalueusd %f and qty of %f and %f = %f ", w.nBBPValueUSD, w.nDashValueUSD, n0, n2, w.nBBPQty);
+			w.ActualDWU = GetDWUBasedOnMaturity(w.Duration, w.DWU);
+			w.MonthlyEarnings = cdbl(RoundToString(w.nBBPQty * w.ActualDWU / 12, 0) + ".1528", 4);
+			// Note this is probably going to be 6 months at first.
+			w.MaturityHeight = (w.Duration * BLOCKS_PER_DAY) + w.Height;
+			w.TXID = tx1->GetHash();
+			if (w.Height > 0 && w.Duration > 0)
+			{
+				w.found = true;
+				w.spent = false;
+				if (w.nBBPAmount == 0 || w.nDashAmount == 0)
+					w.spent = true;
+				w.expired = GetAdjustedTime() > w.MaturityTime;
+				int nKeyType = fProd ? 25 : 140;
+				w.BBPSignatureValid = VerifyDashStakeSignature(w.BBPAddress, w.BBPUTXO, w.BBPSignature, nKeyType);
+				w.DashSignatureValid = VerifyDashStakeSignature(w.DashAddress, w.DashUTXO, w.DashSignature, 76);
+				w.SignatureValid = w.BBPSignatureValid && w.DashSignatureValid;
+			}
+			return w;
+		}
+	}
+	return w;
+}
+
+
 WhaleStake GetWhaleStake(CTransactionRef tx1)
 {
 	// Pull up the actual burn
@@ -3353,6 +3533,62 @@ WhaleStake GetWhaleStake(CTransactionRef tx1)
 	}
 	return w;
 }
+
+std::vector<DashStake> GetDashStakes(bool fIncludeMemoryPool)
+{
+	std::vector<DashStake> wStakes;
+	ProcessDashUTXOData();
+
+	for (auto ii : mvApplicationCache) 
+	{
+		if (ii.first.first == "DASH-BURN")
+		{
+			std::pair<std::string, int64_t> v = mvApplicationCache[std::make_pair(ii.first.first, ii.first.second)];
+			int64_t nTimestamp = v.second;
+			std::string sTXID = ii.first.second;
+			uint256 hashInput = uint256S(sTXID);
+			CTransactionRef tx1;
+			bool fGot = GetTxDAC(hashInput, tx1);
+			if (fGot)
+			{
+				DashStake w = GetDashStake(tx1);
+				if (w.found && w.nBBPAmount > 0 && w.DWU > 0 && w.MonthlyEarnings > 0)
+				{
+					wStakes.push_back(w);
+				}
+			}
+		}
+	}
+
+	if (fIncludeMemoryPool)
+	{
+		BOOST_FOREACH(const CTxMemPoolEntry& e, mempool.mapTx)
+		{
+			const CTransaction& tx = e.GetTx();
+			CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
+			DashStake w = GetDashStake(tx1);
+			if (w.found && w.nBBPAmount > 0 && w.DWU > 0)
+				wStakes.push_back(w);
+		}
+	}
+	return wStakes;
+}
+
+bool IsDuplicateUTXO(std::string UTXO)
+{
+	if (UTXO.empty())
+		return false;
+	// If the DashStake is not expired
+	std::vector<DashStake> dashStakes = GetDashStakes(true);
+	for (int i = 0; i < dashStakes.size(); i++)
+	{
+		DashStake d = dashStakes[i];
+		if (!d.expired && (d.BBPUTXO == UTXO || d.DashUTXO == UTXO))
+			return true;
+	}
+	return false;
+}
+
 
 std::vector<WhaleStake> GetDWS(bool fIncludeMemoryPool)
 {
@@ -3396,7 +3632,7 @@ std::vector<WhaleStake> GetDWS(bool fIncludeMemoryPool)
 	return wStakes;
 }
 
-CAmount GetAnnualDWSReward(int nHeight)
+CAmount GetAnnualDWSReward(int nHeight, int nType)
 {
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 
@@ -3420,9 +3656,10 @@ CAmount GetAnnualDWSReward(int nHeight)
 	else if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT)
 	{
 		nDWS = nTotal * .64;
+		double nDWSFactor = GetSporkDouble("DWSFactor"+ RoundToString(nType, 0), 0);
+		if (nDWSFactor > 0 && nDWSFactor < .99)
+			nDWS = nDWSFactor;
 	}
-	if (fDebugSpam)
-		LogPrintf("Annual Emission %f, DWS %f", (double)nTotal/COIN, (double)nDWS/COIN);
 
 	return nDWS;
 }
@@ -3462,6 +3699,68 @@ double GetMaxWhaleDWU(int nBurnHeight)
 	}
 }
 
+WhaleMetric GetDashStakeMetrics(int nHeight, bool fIncludeMemoryPool)
+{
+	std::vector<DashStake> wStakes = GetDashStakes(fIncludeMemoryPool);
+	WhaleMetric m;
+	int nStartHeight = nHeight - BLOCKS_PER_DAY;
+	int nMonthlyHeight = nHeight + (BLOCKS_PER_DAY * 30);
+	int nEndHeight = nHeight;
+	for (int i = 0; i < wStakes.size(); i++)
+	{
+		DashStake w = wStakes[i];
+		if (w.found && !w.spent)
+		{
+			if (w.MaturityHeight >= nStartHeight && w.MaturityHeight <= nEndHeight)
+			{
+				m.nTotalCommitmentsDueToday += w.MonthlyEarnings;
+				m.nTotalGrossCommitmentsDueToday += w.MonthlyEarnings;
+			}
+			if (w.Height >= nStartHeight && w.Height <= nEndHeight)
+			{
+				m.nTotalBurnsToday += w.MonthlyEarnings;
+				m.nTotalGrossBurnsToday += w.MonthlyEarnings;
+			}
+			if (w.MaturityHeight >= nHeight && w.MaturityHeight <= nMonthlyHeight)
+			{
+				m.nTotalMonthlyCommitments += w.MonthlyEarnings;
+				m.nTotalGrossMonthlyCommitments += w.MonthlyEarnings;
+			}
+			if (w.MaturityHeight >= nStartHeight)
+			{
+				m.nTotalFutureCommitments += (w.MonthlyEarnings * w.Duration/30);
+				m.nTotalGrossFutureCommitments += (w.MonthlyEarnings * w.Duration/30);
+			}
+		}
+
+	}
+	m.nTotalAnnualReward = (double)GetAnnualDWSReward(nHeight, 1)/COIN;
+	// Saturation Level percentage
+	if (m.nTotalAnnualReward < 1) 
+		m.nTotalAnnualReward = 1;
+	// Calculate % taken out in last 30 days
+	m.nSaturationPercentMonthly = m.nTotalMonthlyCommitments / (m.nTotalAnnualReward / 12);
+	m.nSaturationPercentAnnual = m.nTotalFutureCommitments / m.nTotalAnnualReward;
+
+	double nAvailable = 0;
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+
+	double nAvailableMonthly = 1 - (m.nSaturationPercentMonthly);
+	double nAvailableAnnual = 1 - (m.nSaturationPercentAnnual); 
+	nAvailable = std::min(nAvailableMonthly, nAvailableAnnual);
+
+	if (nAvailable > 1) nAvailable = 1;
+	if (nAvailable < 0) nAvailable = 0;
+	double nMaxWhaleDWU = GetMaxWhaleDWU(nHeight);
+
+	m.DWU = nMaxWhaleDWU * nAvailable;
+
+	if (m.nSaturationPercentAnnual > .99)
+		m.DWU = 0;
+
+	return m;
+}
+
 WhaleMetric GetWhaleMetrics(int nHeight, bool fIncludeMemoryPool)
 {
 	std::vector<WhaleStake> wStakes = GetDWS(fIncludeMemoryPool);
@@ -3497,7 +3796,7 @@ WhaleMetric GetWhaleMetrics(int nHeight, bool fIncludeMemoryPool)
 		}
 
 	}
-	m.nTotalAnnualReward = (double)GetAnnualDWSReward(nHeight)/COIN;
+	m.nTotalAnnualReward = (double)GetAnnualDWSReward(nHeight, 0)/COIN;
 	// Saturation Level percentage
 	if (m.nTotalAnnualReward < 1) 
 		m.nTotalAnnualReward = 1;
@@ -3548,8 +3847,12 @@ std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
 			{
 				if (w.BurnHeight > consensusParams.PODC2_CUTOVER_HEIGHT)
 				{
-					wReturnStakes.push_back(w);
-					nOwed += w.TotalOwed;
+					CBitcoinAddress returnAddress(w.ReturnAddress);
+					if (returnAddress.IsValid())
+					{
+						wReturnStakes.push_back(w);
+						nOwed += w.TotalOwed;
+					}
 				}
 			}
 		}
@@ -3565,7 +3868,41 @@ std::vector<WhaleStake> GetPayableWhaleStakes(int nHeight, double& nOwed)
 			wReturnStakes[i].TotalOwed = cdbl(RoundToString(wReturnStakes[i].TotalOwed, 0) + ".1527", 4);
 		}
 	}
+	return wReturnStakes;
+}
 
+std::vector<DashStake> GetPayableDashStakes(int nHeight, double& nOwed)
+{
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+	std::vector<DashStake> wStakes = GetDashStakes(false);
+	std::vector<DashStake> wReturnStakes;
+	int nStartHeight = nHeight - BLOCKS_PER_DAY + 1;
+	int nEndHeight = nHeight;
+	int nMonth = BLOCKS_PER_DAY * 30;
+	LogPrintf("\nDashStake::GetPayableDashStakes %f to %f ", nStartHeight, nEndHeight);
+	for (int i = 0; i < wStakes.size(); i++)
+	{
+		DashStake w = wStakes[i];
+		if (w.found && !w.expired)
+		{
+			// If the stake is not spent (on both the Dash side and the bbp side), and the contract falls within this monthly payment height:
+			if (!w.spent && w.SignatureValid && w.MonthlyEarnings > 0)
+			{
+				for (int iStart = w.Height; iStart < w.MaturityHeight; iStart += nMonth)
+				{
+					if (iStart >= nStartHeight && iStart <= nEndHeight)
+					{
+						CBitcoinAddress returnAddress(w.ReturnAddress);
+						if (returnAddress.IsValid())
+						{
+							wReturnStakes.push_back(w);
+							nOwed += w.MonthlyEarnings;
+						}
+					}
+				}
+			}
+		}
+	}
 	return wReturnStakes;
 }
 
@@ -3674,6 +4011,219 @@ bool VerifyDynamicWhaleStake(CTransactionRef tx, std::string& sError)
 		w.Amount, w.Duration, wm.nSaturationPercentAnnual, wm.nSaturationPercentMonthly, wm.DWU, w.DWU);
 	return true;
 }
+
+bool Tolerance(double nActualPrice, double nPurported, double nTolerance)
+{
+	if (nPurported >= nActualPrice * (1-nTolerance) && nPurported <= nActualPrice * (1+nTolerance))
+		return true;
+	return false;
+}
+
+bool VerifyDashStake(CTransactionRef tx, std::string& sError)
+{
+    std::string sXML = tx->GetTxMessage();
+	DashStake w = GetDashStake(tx);
+	if (!w.found)
+		return true;
+
+	// Verify the bounds 
+	if (w.Duration < 90 || w.Duration > 270)
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, Duration out of bounds. %f", w.Duration);
+		sError = "Duration out of bounds.";
+		return false;
+	}
+
+	CBitcoinAddress returnAddress(w.ReturnAddress);
+	if (!returnAddress.IsValid())
+	{
+		sError = "Invalid Return Address "+ w.ReturnAddress;
+		return false;
+	}
+	
+	if (w.nBBPAmount < 1000*COIN || w.nBBPAmount > 10000000*COIN)
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, Amount out of bounds.  Amount=%f\r\n", (double)w.nBBPAmount/COIN);
+		sError = "Amount out of bounds.";
+		return false;
+	}
+
+	if (w.nDashAmount < .000001 * COIN)
+	{
+		sError = "Dash amount too low.";
+		LogPrintf("VerifyDashStake::REJECTED %s", sError);
+		return false;
+	}
+
+	if (IsDuplicateUTXO(w.BBPUTXO) || IsDuplicateUTXO(w.DashUTXO))
+	{
+		sError = "Sorry, we found a non-expired contract containing this UTXO.  ";
+		LogPrintf("\nVerifyDashStake::REJECTED::%s", sError);
+		return false;
+	}
+
+	// Verify the BBP price as compared to the DASH price here
+	double dBBPPrice = 0;
+	double dDashPrice = 0;
+
+	if (w.Height < (chainActive.Tip()->nHeight - 1) || w.Height > (chainActive.Tip()->nHeight + 1))
+	{
+		if (fDebugSpam)
+			LogPrintf("\nVerifyDashStake::REJECTED, Height out of bounds. Current Height %f, Height %f", chainActive.Tip()->nHeight, w.Height);
+		sError = "Height out of bounds.";
+		return false;
+	}
+
+	if (w.DWU < 0.01 || w.DWU > MAX_DASH_DWU)
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, DWU out of bounds = %f.", w.DWU);
+		sError = "DWU Out of bounds.";
+		return false;
+	}
+
+	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
+	WhaleMetric wm_history = GetDashStakeMetrics(chainActive.Tip()->nHeight, false);
+	// screen quote
+	if (w.DWU > (std::max(wm_history.DWU + .025, wm.DWU + .025)) || w.DWU < (std::min(wm_history.DWU - .025, wm.DWU - .025)))
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, DWU [%f] does not equal current screen quote of [%f].", w.DWU, wm_history.DWU);
+		sError = "DWU does not equal current offered DWU of " + RoundToString(wm_history.DWU, 4);
+		return false;
+	}
+	
+	// Verify the crypto prices 
+
+	double nDashPrice = GetCryptoPrice("dash"); 
+	double nBTCPrice = GetCryptoPrice("btc");
+	double nBBPPrice = GetCryptoPrice("bbp");
+	CAmount nBBPAmount = 0;
+	std::string sBBPAddress = GetUTXO(w.BBPUTXO, -1, nBBPAmount);
+
+	if (nBBPAmount <= 0 || sBBPAddress.empty())
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, the BBP is either spent, or, we can't find the UTXO. UTXO Address=%s", sBBPAddress);
+		sError = "Sorry, the BBP UTXO has been spent. ";
+		return false;
+	}
+
+	CAmount nDashAmount = 0;
+	std::string sDashAddress = GetUTXO(w.DashUTXO, -2, nDashAmount);
+
+	if (nDashAmount <= 0 || sDashAddress.empty())
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, the Dash is either spent, or, we can't find the UTXO. UTXO Address=%s", sDashAddress);
+		sError = "Sorry, the Dash UTXO has been spent. ";
+		return false;
+	}
+	
+	// Verify Signatures
+	if (!w.SignatureValid)
+	{
+		sError = "Sorry, one of the signatures are invalid.  BBP=" + RoundToString(w.BBPSignatureValid, 0) + ", DASH="+ RoundToString(w.DashSignatureValid, 0) + ".";
+		return false;
+	}
+
+	std::string BBPUTXO = std::string();
+	std::string DashUTXO = std::string();
+	
+	double nUSDBBP = nBTCPrice * nBBPPrice;
+	double nUSDDash = nBTCPrice * nDashPrice;
+	double nBBPValueUSD = nUSDBBP * (double)nBBPAmount / COIN;
+	double nDashValueUSD = nUSDDash * (double)nDashAmount / COIN;
+	
+	if (nBBPPrice == 0)
+	{
+		LogPrintf("VerifyDashStake::Error, Unable to verify this dash stake- BBP price is zero.  %f", 8152020);
+		sError = "Unable to verify price with BBP price at zero.";
+		return false;
+	}
+
+	double nMinimumAcceptableStake = GetSporkDouble("MinimumAcceptableStakeAmount", .10);
+	if (nBBPValueUSD < nMinimumAcceptableStake)
+	{
+		sError = "Sorry, the dash stake must be worth more than $1 USD.";
+		LogPrintf("VerifyDashStake::%s", sError);
+		return false;
+	}
+
+	// Verify the prices
+	if (!Tolerance(nBBPPrice, w.nBBPPrice, .25) || !Tolerance(nDashPrice, w.nDashPrice, .10) || !Tolerance(nBTCPrice, w.nBTCPrice, .10))
+	{
+		LogPrintf("VerifyDashStake::Error, The exchange prices differ from the purported rates: BBPPrice==%s, ContractPrice==%s,  BTCPrice==%s, ContractBTCPrice==%s", 
+			RoundToString(w.nBBPPrice, 12), RoundToString(nBBPPrice, 12),
+			RoundToString(w.nBTCPrice, 12), RoundToString(nBTCPrice, 12));
+		sError = "Sorry, the exchange prices differ from the quoted prices.";
+		return false;
+	}
+
+	// We handle this below by using the std::min of the market value between the USD BBP price and the USD Dash Price - hence the WARNING instead of ERROR
+	if (nBBPValueUSD < nDashValueUSD)
+	{
+		LogPrintf("VerifyDashStake::Warning, the BBP Value in USD %f is less than the Dash value in USD %f.  ", nBBPValueUSD, nDashValueUSD);
+		//sError = "Sorry, the BBP value in USD ["+ RoundToString(nBBPValueUSD, 4) + "] is less than the Dash value in USD ["+ RoundToString(nDashValueUSD, 4) + "].";
+		//return false;
+	}
+
+	if (!Tolerance(nBBPValueUSD, w.nBBPValueUSD, .25) || !Tolerance(nDashValueUSD, w.nDashValueUSD, .25))
+	{
+		sError = "Sorry, the BBP Value in USD [" + RoundToString(w.nBBPValueUSD, 2) + "] differs from the purported value in USD [" + RoundToString(nBBPValueUSD, 2) + "].";
+		sError += " Or, the Dash Value in USD [" + RoundToString(w.nDashValueUSD, 2) + "] differs from the purported value in USD [" + RoundToString(nDashValueUSD, 2) + "].";
+		LogPrintf("VerifyDashStake::Error, %s", sError);
+		return false;
+	}
+
+
+	if (w.Time > (GetAdjustedTime() + (60 * 60 * 2)) || w.Time < (GetAdjustedTime() - (60 * 60 * 1)))
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, time out of bounds. %f", w.Time);
+		sError = "Time out of bounds";
+		return false;
+	}
+
+	if (wm.nSaturationPercentAnnual > .95)
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, Sorry, our annual saturation is [%f]pct., we must reject stakes until we free up more room.", wm.nSaturationPercentAnnual);
+		sError = "Sorry, our annual saturation level is too great to accept this until we free up more room.";
+		return false;
+	}
+
+	if (wm.nSaturationPercentMonthly > .95)
+	{
+		LogPrintf("\nVerifyDashStakeStake::REJECTED, Sorry, our monthly saturation is [%f]pct., we must reject until we free up more room.", wm.nSaturationPercentMonthly);
+		sError = "Sorry, our monthly saturation level is too high to accept this until we free up more room.";
+		return false;
+	}
+
+	if (wm.nTotalGrossBurnsToday + (double)(w.nBBPAmount/COIN) + 1 > MAX_DAILY_DASH_STAKE_COMMITMENTS)
+	{
+		LogPrintf("\nVerifyDashStake::REJECTED, Sorry, our daily commitments of %f are higher than the acceptable maximum of %f, please wait until tomorrow.", 
+			wm.nTotalGrossBurnsToday, MAX_DAILY_DASH_STAKE_COMMITMENTS);
+		sError = "Sorry, our daily commitments are too high today.  Please try again tomorrow.";
+		return false;
+	}
+	int nMonth = BLOCKS_PER_DAY * 30;
+	for (int iHeight = w.Height; iHeight <= w.MaturityHeight; iHeight += nMonth)
+	{
+		// We need to do this as of the GSC height (not the maturity height)
+		int iNextSuperblock = 0;
+		int iLastSuperblock = GetLastGSCSuperblockHeight(iHeight, iNextSuperblock);
+		// The following GSC superblock after the maturity height:
+		iNextSuperblock += BLOCKS_PER_DAY; 
+		WhaleMetric wmFuture = GetDashStakeMetrics(iNextSuperblock, true);
+		if (wmFuture.nTotalGrossBurnsToday + w.MonthlyEarnings + 1 > MAX_DAILY_DASH_STAKE_COMMITMENTS)
+		{
+			LogPrintf("\nVerifyDashStake::REJECTED, Sorry, our future dash stake commitments of %f at the future height is higher than the acceptable maximum of %f, please try a different duration.", 
+				wmFuture.nTotalGrossBurnsToday, MAX_DAILY_DASH_STAKE_COMMITMENTS);
+			sError = "Sorry, our daily dash stake commitments are too high on this future date.  Please try a different duration.";
+			return false;
+		}
+	}
+
+	LogPrintf("\nVerifyDashStake ACCEPTED::BBPAmount %f, Duration %f, SatPercentAnnual %f, SatPercentMonthly %f, DWU %f", 
+		(double)w.nBBPAmount/COIN, w.Duration, wm.nSaturationPercentAnnual, wm.nSaturationPercentMonthly, w.DWU);
+	return true;
+}
+
 
 double GetDWUBasedOnMaturity(double nDuration, double dDWU)
 {
@@ -4464,6 +5014,187 @@ std::string GetHowey(int iType)
 	return sHowey;
 }
 
+std::string SignBBPUTXO(std::string sUTXO, std::string& sError)
+{
+	CAmount nValue = 0;
+	std::string sAddress = GetUTXO(sUTXO, -1, nValue);
+	if (sAddress.empty() || nValue == 0)
+	{
+		sError = "CANT-FIND-UTXO";
+		return "";
+	}
+	
+    CBitcoinAddress addr(sAddress);
+    CKeyID keyID;
+	if (!addr.GetKeyID(keyID))
+	{
+		sError = "Address does not refer to key";
+		return "";
+	}
+	CKey key;
+	if (!pwalletMain->GetKey(keyID, key)) 
+	{
+		sError = "Private key not available";
+		return "";
+	}
+	CHashWriter ss(SER_GETHASH, 0);
+	ss << strMessageMagic;
+	ss << sUTXO;
+
+	std::vector<unsigned char> vchSig;
+	if (!key.SignCompact(ss.GetHash(), vchSig))
+	{
+		sError = "Sign failed";
+		return "";
+	}
+
+	std::string sSig = EncodeBase64(&vchSig[0], vchSig.size());
+	return sSig;
+}
+
+
+bool VerifyDashStakeSignature(std::string sAddress, std::string sUTXO, std::string sSig, int nKeyType)
+{
+	if (sAddress.empty() || sUTXO.empty() || sSig.empty())
+		return false;
+
+	CBitcoinAddress addr(sAddress);
+	CKeyID keyID;
+    // BBP-PROD=25, Dash-Prod=76
+
+	// Address does not refer to a key
+	if (!addr.GetNonStandardKeyID(keyID, nKeyType))
+		return false;
+
+	bool fInvalid = false;
+	std::vector<unsigned char> vchSig2 = DecodeBase64(sSig.c_str(), &fInvalid);
+
+	// Bad signature format
+	if (fInvalid)
+		return false;
+
+	CHashWriter ss2(SER_GETHASH, 0);
+	ss2 << strMessageMagic;
+	ss2 << sUTXO;
+
+	CPubKey pubkey;
+	
+	if (!pubkey.RecoverCompact(ss2.GetHash(), vchSig2))
+		return false;
+
+	bool fGood = (pubkey.GetID() == keyID);
+	return fGood;
+
+}
+
+
+bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& sError, std::string sBBPUTXO, std::string sDashUTXO, std::string sBBPSig, std::string sDashSig, 
+	double nDuration, std::string sCPK, bool fDryRun, DashStake& out_dashstake)
+{
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+		
+	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
+	int64_t nStakeTime = GetAdjustedTime();
+    int64_t nExpiration = (86400 * nDuration) + nStakeTime;
+	// Critical to do - ensure it is impossible to re-lock a duplicate bbp vin or a duplicate dash vin (even in the memory pool)
+
+	double nDashPrice = GetCryptoPrice("dash"); // Dash->BTC price
+	double nBTCPrice = GetCryptoPrice("btc");
+	double nBBPPrice = GetCryptoPrice("bbp");
+	CAmount nBBPAmount = 0;
+	GetUTXO(sBBPUTXO, -1, nBBPAmount);
+	CAmount nDashAmount = 0;
+	GetUTXO(sDashUTXO, -2, nDashAmount);
+	LogPrintf(" CryptoPrice BBP %s , Dash %s  ", RoundToString(nBBPPrice, 12), RoundToString(nDashPrice, 12));
+
+	double nUSDBBP = nBTCPrice * nBBPPrice;
+	double nUSDDash = nBTCPrice * nDashPrice;
+	double nBBPValueUSD = nUSDBBP * ((double)nBBPAmount / COIN);
+	double nDashValueUSD = nUSDDash * ((double)nDashAmount / COIN);
+	
+	std::string sPK = "DASHSTAKE-" + sBBPUTXO + "-" + sDashUTXO + "-" + RoundToString(nExpiration, 0);
+	std::string sPayload = "<MT>DASHSTAKE</MT><MK>" + sPK + "</MK><MV><dashstake><bbputxo>" + sBBPUTXO + "</bbputxo><height>" 
+			+ RoundToString(chainActive.Tip()->nHeight, 0) 
+			+ "</height><dashutxo>"+ sDashUTXO + "</dashutxo><cpk>" + sCPK + "</cpk><bbpsig>"+ sBBPSig + "</bbpsig><dashsig>"+ sDashSig 
+			+ "</dashsig><time>" + RoundToString(GetAdjustedTime(), 0) + "</time><dwu>" 
+			+ RoundToString(wm.DWU, 4) + "</dwu><duration>" 
+			+ RoundToString(nDuration, 0) + "</duration><returnaddress>" + sReturnAddress + "</returnaddress><expiration>" + TimestampToHRDate(nExpiration) + "</expiration>"
+			+ "<bbpamount>" + RoundToString((double)nBBPAmount / COIN, 2) + "</bbpamount><dashamount>" + RoundToString((double)nDashAmount / COIN, 4) + "</dashamount><bbpprice>"
+			+ RoundToString(nBBPPrice, 12) + "</bbpprice><dashprice>" + RoundToString(nDashPrice, 12)
+			+ "</dashprice><btcprice>"+ RoundToString(nBTCPrice, 12) + "</btcprice>"
+			+ "<bbpvalue>" + RoundToString(nBBPValueUSD, 2) + "</bbpvalue><dashvalue>"+ RoundToString(nDashValueUSD, 2) + "</dashvalue></dashstake></MV>";
+	// TODO LOCK THE STAKES ON REBOOT
+
+	CBitcoinAddress toAddress(consensusParams.BurnAddress);
+	if (!toAddress.IsValid())
+	{
+		sError = "Invalid Burn-To Address: " + consensusParams.BurnAddress;
+		return false;
+	}
+
+	CBitcoinAddress returnAddress(sReturnAddress);
+	if (!returnAddress.IsValid())
+	{
+		sError = "Invalid Return Address "+ sReturnAddress;
+		return false;
+	}
+
+	if (nDuration < 90 || nDuration > 270)
+	{
+		sError = "Sorry, the duration must be between 90 days and 270 days.";
+		return false;
+	}
+
+
+	bool fSubtractFee = false;
+	bool fInstantSend = false;
+	CWalletTx wtx;
+	// Dry Run step 1:
+	std::vector<CRecipient> vecDryRun;
+	int nChangePosRet = -1;
+	CScript scriptDryRun = GetScriptForDestination(toAddress.Get());
+	CAmount nSend = 1 * COIN;
+	CRecipient recipientDryRun = {scriptDryRun, nSend, false, fSubtractFee};
+	vecDryRun.push_back(recipientDryRun);
+	double dMinCoinAge = 1;
+	CAmount nFeeRequired = 0;
+	CReserveKey reserveKey(pwalletMain);
+	LogPrintf("\nCreating contract %s", sPayload);
+
+	bool fSent = pwalletMain->CreateTransaction(vecDryRun, wtx, reserveKey, nFeeRequired, nChangePosRet, sError, NULL, true, 
+				ALL_COINS, fInstantSend, 0, sPayload, dMinCoinAge, 0, 0, "");
+	if (!fSent)
+	{
+		sError += "Unable to Create Transaction.";
+		return false;
+	}
+	// Verify the transaction first:
+	std::string sError2;
+	bool fSent2 = VerifyDashStake(wtx.tx, sError2);
+	sError += sError2;
+	if (!fSent2)
+	{
+		sError += " Unable to verify Dash Stake. ";
+		return false;
+	}
+
+	out_dashstake = GetDashStakeByUTXO(sBBPUTXO);
+		
+	if (!fDryRun)
+	{
+		CValidationState state;
+		if (!pwalletMain->CommitTransaction(wtx, reserveKey, g_connman.get(), state, NetMsgType::TX))
+		{
+			sError += "Dash-Stake-Commit failed.";
+			return false;
+		}
+	
+		sTXID = wtx.GetHash().GetHex();	
+	}
+	return true;
+}
+
+
 bool SendDWS(std::string& sTXID, std::string& sError, std::string sReturnAddress, std::string sCPK, double nAmt, double nDuration, bool fDryRun)
 {
 	const Consensus::Params& consensusParams = Params().GetConsensus();
@@ -4492,7 +5223,6 @@ bool SendDWS(std::string& sTXID, std::string& sError, std::string sReturnAddress
 		sError = "Invalid return address: " + sReturnAddress;
 		return false;
 	}
-
 	
 	if (nAmt < 100 || nAmt > 1000000)
 	{
@@ -4581,8 +5311,57 @@ std::string FormatURL(std::string URL, int iPart)
 		return sPage;
 }
 
+bool IntToBool(int nValue)
+{
+	if (nValue == 1)
+	{
+		return true;
+	}
+	else 
+		return false;
+}
+
+void ProcessInnerUTXOData(std::string sInnerData)
+{
+	std::vector<std::string> vI = Split(sInnerData.c_str(), "<utxo>");
+	for (int i = 0; i < (int)vI.size(); i++)
+	{
+		DashUTXO u;
+		u.TXID = ExtractXML(vI[i], "<hash>", "</hash>");
+		u.Amount = cdbl(ExtractXML(vI[i], "<amount>", "</amount>"), 4) * COIN;
+		u.Address = ExtractXML(vI[i], "<address>", "</address>");
+		u.Network = ExtractXML(vI[i], "<network>", "</network>");
+		u.Spent = IntToBool((int)cdbl(ExtractXML(vI[i], "<spent>", "</spent>"), 0));
+		if (u.TXID.length() > 31)
+		{
+			u.Found = true;
+			LogPrintf("\nFound UTXO txid %s, Amount %f, Addr %s, Spent %f ", u.TXID, (double)u.Amount/COIN, u.Address, u.Spent);
+			mapDashUTXO[u.TXID] = u;
+		}
+	}
+}
+
+static int64_t nLastUTXOData = 0;
+void ProcessDashUTXOData()
+{
+	int64_t nElapsed = GetAdjustedTime() - nLastUTXOData;
+	// We check each utxo once per four hours, but for efficiency sake, we only process the data (into a payments list once per GSC contract (this is once per day)).
+	if (nElapsed < (60 * 60 * 1))
+		return;
+	nLastUTXOData = GetAdjustedTime();
+	const CChainParams& chainparams = Params();
+	DACResult d = GetUTXOData(chainActive.Tip()->nHeight);
+	if (d.fError)
+	{
+		LogPrintf("Error retrieving Dash UTXO Data %s", d.ErrorCode);
+		return;
+	}
+	ProcessInnerUTXOData(d.Response);
+}
+
 void ProcessSidechainData(std::string sData, int nSyncHeight)
 {
+	const CChainParams& chainparams = Params();
 	std::vector<std::string> vInput = Split(sData.c_str(), "<data>");
 	for (int i = 0; i < (int)vInput.size(); i++)
 	{
@@ -4592,8 +5371,8 @@ void ProcessSidechainData(std::string sData, int nSyncHeight)
 			IPFSTransaction i;
 			i.TXID = vDataRow[1];
 			i.nHeight = (int)cdbl(vDataRow[9], 0);
-
-			if (i.nHeight > 0 && !i.TXID.empty())
+			i.Network = vDataRow[8];
+			if (i.nHeight > 0 && !i.TXID.empty() && i.Network == chainparams.NetworkIDString())
 			{
 				i.BlockHash = vDataRow[0];
 				i.FileName = vDataRow[2];
@@ -4602,7 +5381,6 @@ void ProcessSidechainData(std::string sData, int nSyncHeight)
 				i.CPK = vDataRow[5];
 				i.nDuration = cdbl(vDataRow[6], 0);
 				i.nDensity = (int)cdbl(vDataRow[7], 0);
-				i.Network = vDataRow[8];
 				i.nSize = cdbl(vDataRow[10], 0);
 				mapSidechainTransactions[i.TXID] = i;
 				if (i.nHeight > nSideChainHeight)
@@ -4622,4 +5400,44 @@ void SyncSideChain(int nHeight)
 	}
 }
 
+COutPoint OutPointFromUTXO(std::string sUTXO)
+{
+	std::vector<std::string> vU = Split(sUTXO.c_str(), "-");
+	COutPoint c;
+	if (vU.size() < 2)
+		return c;
 
+	std::string sHash = vU[0];
+	int nOrdinal = (int)cdbl(vU[1], 0);
+	c = COutPoint(uint256S(sHash), nOrdinal);
+	return c;
+}
+
+void LockDashStakes()
+{
+	// Lock any dash stakes in force (non-expired, owned by me, unspent)
+	std::vector<DashStake> wStakes = GetDashStakes(false);
+    LOCK(pwalletMain->cs_wallet);
+	for (int i = 0; i < wStakes.size(); i++)
+	{
+		DashStake d = wStakes[i];
+		if (d.found && !d.expired && !d.spent && d.MonthlyEarnings > 0 && !d.BBPUTXO.empty())
+		{
+			COutPoint c = OutPointFromUTXO(d.BBPUTXO);
+			pwalletMain->LockCoin(c);
+		}
+	}
+}
+
+DashStake GetDashStakeByUTXO(std::string sDashStake)
+{
+	std::vector<DashStake> wStakes = GetDashStakes(true);
+	DashStake e;
+	for (int i = 0; i < wStakes.size(); i++)
+	{
+		DashStake d = wStakes[i];
+		if (d.found && d.BBPUTXO == sDashStake)
+			return d;
+	}
+	return e;
+}

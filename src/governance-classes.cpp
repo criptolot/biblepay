@@ -751,6 +751,7 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 		nPaymentsLimit += nTotalWhalePayments;
 		*/
 		nPaymentsLimit += (MAX_DAILY_WHALE_COMMITMENTS * COIN);
+		nPaymentsLimit += (MAX_DAILY_DASH_STAKE_COMMITMENTS * COIN);
 	}
 	// End of Dynamic Whale Staking
 	

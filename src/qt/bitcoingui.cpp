@@ -110,6 +110,7 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
     verifyMessageAction(0),
     aboutAction(0),
 	orphanAction(0),
+	exchangeAction(0),
 	webAction(0),
 	proposalListAction(0),
 	proposalAddMenuAction(0),
@@ -395,6 +396,13 @@ void BitcoinGUI::createActions()
 	orphanAction->setCheckable(true);
 	tabGroup->addAction(orphanAction);
 	connect(orphanAction, SIGNAL(triggered()), this, SLOT(showAccountability()));
+
+	exchangeAction = new QAction(QIcon(":/icons/" + theme + "/notsynced"), tr("Show &Exchange"), this);
+	exchangeAction->setStatusTip(tr("Show Exchange"));
+	exchangeAction->setToolTip(exchangeAction->statusTip());
+	exchangeAction->setCheckable(true);
+	tabGroup->addAction(exchangeAction);
+	connect(exchangeAction, SIGNAL(triggered()), this, SLOT(showExchange()));
 
 	webAction = new QAction(QIcon(":/icons/" + theme + "/account32"), tr("&Web"), this);
 	webAction->setStatusTip(tr("Web"));
@@ -695,6 +703,7 @@ void BitcoinGUI::createToolBars()
 		toolbar->addAction(proposalListAction);
 		toolbar->addAction(businessObjectListMenuAction);
 		toolbar->addAction(orphanAction);
+		toolbar->addAction(exchangeAction);
 		toolbar->addAction(webAction);
 
 		toolbar->setOrientation(Qt::Vertical);
@@ -1016,6 +1025,12 @@ void BitcoinGUI::showDecentralizedWeb()
 void BitcoinGUI::showAccountability()
 {
 	std::string sURL = "https://web.biblepay.org/Accountability";
+	QDesktopServices::openUrl(QUrl(GUIUtil::TOQS(sURL)));
+}
+
+void BitcoinGUI::showExchange()
+{
+	std::string sURL = "https://www.southxchange.com/Market/Book/BBP/BTC";
 	QDesktopServices::openUrl(QUrl(GUIUtil::TOQS(sURL)));
 }
 

@@ -402,6 +402,10 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
 		return tr("Dynamic Whale Stake");
 	case TransactionRecord::WhaleReward:
 		return tr("Dynamic Whale Reward");
+	case TransactionRecord::DashStake:
+		return tr("Dash Stake");
+	case TransactionRecord::DashReward:
+		return tr("Dash Reward");
 	case TransactionRecord::GSCTransmission:
 		return tr("GSC Transmission");
     case TransactionRecord::SendToAddress:
@@ -441,6 +445,10 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
 		case TransactionRecord::WhaleReward:
 			return QIcon(":/icons/drkblue/whale3232");
 		case TransactionRecord::WhaleStake:
+			return QIcon(":/icons/drkblue/whale3232");
+		case TransactionRecord::DashReward:
+			return QIcon(":/icons/drkblue/whale3232");
+		case TransactionRecord::DashStake:
 			return QIcon(":/icons/drkblue/whale3232");
 		case TransactionRecord::SuperBlockPayment:
 			return QIcon(":/icons/drkblue/account32");

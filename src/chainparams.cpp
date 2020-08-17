@@ -130,19 +130,19 @@ static Consensus::LLMQParams llmq5_60 = {
 static Consensus::LLMQParams llmq50_60 = {
         .type = Consensus::LLMQ_50_60,
         .name = "llmq_50_60",
-        .size = 70,
-        .minSize = 7,
-        .threshold = 4,
+        .size = 50,
+        .minSize = 8,
+        .threshold = 5,
 
         .dkgInterval = 49, // one DKG per 7 hours (4 per day)
         .dkgPhaseBlocks = 2,
         .dkgMiningWindowStart = 10, // dkgPhaseBlocks * 5 = after finalization
         .dkgMiningWindowEnd = 18,
-        .dkgBadVotesThreshold = 4, // 75% of the active quorum
+        .dkgBadVotesThreshold = 5, // 75% of the active quorum
 
         .signingActiveQuorumCount = 1, // A Full day of LLMQs
 
-        .keepOldConnections = 2,
+        .keepOldConnections = 9,
 };
 
 // FUTURE
@@ -202,10 +202,7 @@ public:
         strNetworkID = "main";
 
 		consensus.POOM_PHASEOUT_HEIGHT = 199000;  // GO LIVE HEIGHT - JUNE 2020 MANDATORY UPGRADE
-		consensus.POOS_HEIGHT = 250000; // Critical Todo - Set the height for the September 2020 Mandatory Upgrade
-
-		consensus.LLMQHeight = 199000; // Lets set this height at the go-live height for .14; as our current .13 branch is not producing fully acceptable LLMQ quorums yet.
-
+		
 		consensus.FPOG_CUTOVER_HEIGHT = 100001;   // Feb 7th, 2019 (100,001)
 		consensus.PODC2_CUTOVER_HEIGHT = 166075;  // Go live height for PODC 2.0, DWS (Christmas 2019) (166050=monthly superblock, 166070=daily GSC)
 		consensus.PODC_LAST_BLOCK = 107000; // March 13th, 2019
@@ -247,14 +244,17 @@ public:
 		consensus.BIP66Height = 123200; // 00000000000b1fa2dfa312863570e13fae9ca7b5566cb27e55422620b469aefa
 
 		consensus.DIP0001Height = 280000;
-		// The correct DIP3 height in PROD
+		// The correct DIP3 height in PROD (this is the height where sanctuaries are initially registered in DM mode)
 		consensus.DIP0003Height = 133891;
-		consensus.DIP0003EnforcementHeight = 133891;
-		consensus.DIP0008Height = 200000;
-		consensus.DIP0003HeightPhase2 = 133891;
-		
-		consensus.nSanctuaryPaymentsPhaseIIHeight = 166075; // Set this at the Go-Live height for .14 
+		// September 2020 Go-Live (POOS)
+		consensus.POOS_HEIGHT = 217000; // Sept 2020 Mandatory Upgrade height
+		consensus.LLMQHeight = 217000; // The first attempt at llmq quorums that conform to voting out bad quorum members
+		consensus.DIP0003EnforcementHeight = 217000;
+		consensus.DIP0003HeightPhase2 = 217000;
+		consensus.DIP0008Height = 217000;
+		// End of September 2020 Go-Live (POOS)
 
+		consensus.nSanctuaryPaymentsPhaseIIHeight = 166075; // Set this at the Go-Live height for .14 
 		consensus.QTHeight = 124000;  // Note to future forkers of DACs!  This height must be > (BLOCKS_PER_DAY * 32)!  Thank you for your support!
 		consensus.powLimit = uint256S("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); 
 		consensus.FoundationAddress = "BB2BwSbDCqCqNsfc7FgWFJn4sRgnUt4tsM";
@@ -404,7 +404,7 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
 		consensus.POOM_PHASEOUT_HEIGHT = 38000; 
-		consensus.POOS_HEIGHT = 55720; // Critical Todo - Set the height for the September 2020 Mandatory Upgrade
+		consensus.POOS_HEIGHT = 55720; // Set the height for the September 2020 Mandatory Upgrade
 
 		consensus.PODC_LAST_BLOCK = 100; // March 13th, 2019
 		consensus.PODC2_CUTOVER_HEIGHT = 21000;  // Go live height for PODC 2.0, DWS (Christmas 2019)

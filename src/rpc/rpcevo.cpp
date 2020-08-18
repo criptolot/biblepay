@@ -1600,7 +1600,7 @@ UniValue dashstake(const JSONRPCRequest& request)
 		else
 		{
 			ds = GetDashStakeByUTXO(sBBPUTXO);
-
+			LockDashStakes();
 			results.push_back(Pair("Monthly Earnings", ds.MonthlyEarnings));
 			results.push_back(Pair("DWU", ds.ActualDWU * 100));
 			results.push_back(Pair("Next Payment Height", ds.Height + BLOCKS_PER_DAY));

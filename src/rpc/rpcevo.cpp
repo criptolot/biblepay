@@ -1556,7 +1556,7 @@ UniValue dashstake(const JSONRPCRequest& request)
 
 	// NOTE:  UTXOs cannot be re-used until a contract expires.
 	// The lower stake amount denominated in BBP is used to assess the MonthlyEarnings based on the market value of Dash and BBP at the time the contract is created.
-	// You may r-lock after expiration.
+	// You may re-lock after expiration.
 
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 		
@@ -1587,7 +1587,6 @@ UniValue dashstake(const JSONRPCRequest& request)
 	// if spent throw special error
 
 	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
-	results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(30 * 6.5, wm.DWU) * 100, 4)));
 	std::string sTXID;
 	DashStake ds;
 	if (nDryRun == 1)
@@ -1595,10 +1594,13 @@ UniValue dashstake(const JSONRPCRequest& request)
 		bool fSent = SendDashStake(sCPK, sTXID, sError, sBBPUTXO, sDashUTXO, sBBPSig, sDashSig, 30 * 6.5, sCPK, false, ds);
 		if (!fSent || !sError.empty())
 		{
+			results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(30 * 6.5, wm.DWU) * 100, 4)));
 			results.push_back(Pair("Error (Not Sent)", sError));
 		}
 		else
 		{
+			ds = GetDashStakeByUTXO(sBBPUTXO);
+
 			results.push_back(Pair("Monthly Earnings", ds.MonthlyEarnings));
 			results.push_back(Pair("DWU", ds.ActualDWU * 100));
 			results.push_back(Pair("Next Payment Height", ds.Height + BLOCKS_PER_DAY));
@@ -1710,7 +1712,7 @@ UniValue dashstakequote(const JSONRPCRequest& request)
 					+ RoundToString(ws.nDashValueUSD, 4) + ", BBPAddress: "+ ws.BBPAddress + ", DashAddress: "+ ws.DashAddress;
 				// Found, Not Expired, Not Spent, and SignatureValue, and MonthlyEarnings > 0
 				bool fPassesPaymentRequirements = ws.found && !ws.expired && ws.MonthlyEarnings > 0 && ws.SignatureValid && !ws.spent;
-				sRow += "Expired: " + ToYesNo(ws.expired) + ", SigValid: "+ ToYesNo(ws.SignatureValid) + ", BBPSig: " + ToYesNo(ws.BBPSignatureValid) 
+				sRow += ", Expired: " + ToYesNo(ws.expired) + ", SigValid: "+ ToYesNo(ws.SignatureValid) + ", BBPSig: " + ToYesNo(ws.BBPSignatureValid) 
 					+ ", DashSig: " + ToYesNo(ws.DashSignatureValid) + ", Spent: "+ ToYesNo(ws.spent) + ", Payable: " + ToYesNo(fPassesPaymentRequirements);
 
 				std::string sKey = ws.CPK + "-" + RoundToString(i + 1, 0) + "-" + ws.BBPUTXO + "-" + ws.DashUTXO;

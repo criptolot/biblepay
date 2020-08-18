@@ -5096,8 +5096,7 @@ bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& 
 	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
 	int64_t nStakeTime = GetAdjustedTime();
     int64_t nExpiration = (86400 * nDuration) + nStakeTime;
-	// Critical to do - ensure it is impossible to re-lock a duplicate bbp vin or a duplicate dash vin (even in the memory pool)
-
+	
 	double nDashPrice = GetCryptoPrice("dash"); // Dash->BTC price
 	double nBTCPrice = GetCryptoPrice("btc");
 	double nBBPPrice = GetCryptoPrice("bbp");
@@ -5123,8 +5122,7 @@ bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& 
 			+ RoundToString(nBBPPrice, 12) + "</bbpprice><dashprice>" + RoundToString(nDashPrice, 12)
 			+ "</dashprice><btcprice>"+ RoundToString(nBTCPrice, 12) + "</btcprice>"
 			+ "<bbpvalue>" + RoundToString(nBBPValueUSD, 2) + "</bbpvalue><dashvalue>"+ RoundToString(nDashValueUSD, 2) + "</dashvalue></dashstake></MV>";
-	// TODO LOCK THE STAKES ON REBOOT
-
+	
 	CBitcoinAddress toAddress(consensusParams.BurnAddress);
 	if (!toAddress.IsValid())
 	{
@@ -5177,8 +5175,6 @@ bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& 
 		sError += " Unable to verify Dash Stake. ";
 		return false;
 	}
-
-	out_dashstake = GetDashStakeByUTXO(sBBPUTXO);
 		
 	if (!fDryRun)
 	{

@@ -324,6 +324,14 @@ public:
 		return (nDecPart == 1527);
 	}
 
+	bool IsDashReward() const
+	{
+		double nWhaleReward = (double)GetValueOut()/COIN;
+		double nWholePart = floor(nWhaleReward);
+		double nDecPart = nWhaleReward - nWholePart;
+		return (nDecPart == 1528);
+	}
+
 	bool IsSuperblockPayment() const
 	{
 		// Determine if this is a monthly governance superblock payment
@@ -374,6 +382,12 @@ public:
 	{
 		std::string sMyData = GetTxMessage();
 		return (sMyData.find("<MT>DWS") != std::string::npos);
+	}
+
+	bool IsDashStake() const
+	{
+		std::string sMyData = GetTxMessage();
+		return (sMyData.find("<MT>DASHSTAKE") != std::string::npos);
 	}
 
 	bool IsABN() const

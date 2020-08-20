@@ -176,6 +176,7 @@ struct CRecipient
 	// DAC:
 	bool fTithe;
 	bool fDonate;
+	bool fDWS;
 	bool fPrayer;
 	bool fDiary;
 	std::string txtMessage;

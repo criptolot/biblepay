@@ -154,7 +154,7 @@ bool CDKGSessionHandler::InitNewQuorum(const CBlockIndex* pindexQuorum)
     auto mns = CLLMQUtils::GetAllQuorumMembers(params.type, pindexQuorum);
 
     if (!curSession->Init(pindexQuorum, mns, activeMasternodeInfo.proTxHash)) {
-        LogPrintf("CDKGSessionManager::%s -- quorum initialiation failed\n", __func__);
+        LogPrintf("CDKGSessionManager::%s -- quorum initiation failed\n", __func__);
         return false;
     }
 
@@ -266,10 +266,12 @@ void CDKGSessionHandler::HandlePhase(QuorumPhase curPhase,
     WaitForNextPhase(curPhase, nextPhase, expectedQuorumHash, runWhileWaiting);
 }
 
+
 // returns a set of NodeIds which sent invalid messages
 template<typename Message>
 std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<std::pair<NodeId, std::shared_ptr<Message>>>& messages)
 {
+
     if (messages.empty()) {
         return {};
     }
@@ -316,6 +318,10 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
         pubKeys.emplace_back(member->dmn->pdmnState->pubKeyOperator.Get());
         messageHashes.emplace_back(msgHash);
     }
+
+	// POOS
+	// revertToSingleVerification = true;
+
     if (!revertToSingleVerification) {
         bool valid = aggSig.VerifyInsecureAggregated(pubKeys, messageHashes);
         if (valid) {
@@ -346,6 +352,17 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
         // different nodes, let's figure out who are the bad ones
     }
 
+	// POOS
+	/*
+	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
+	double nMaximumSanctuaryBanPercentage = GetSporkDouble("MaxSancBanPercentage", .50);
+	int nPunished = 0;
+	int64_t nStartTime = GetAdjustedTime();
+	bool fConnectivity = OrphanTest("status");
+	*/
+
+	auto mnList = deterministicMNManager->GetListAtChainTip();
+	
     for (const auto& p : messages) {
         if (ret.count(p.first)) {
             continue;
@@ -354,10 +371,28 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
         const auto& msg = *p.second;
         auto member = session.GetMember(msg.proTxHash);
         bool valid = msg.sig.VerifyInsecure(member->dmn->pdmnState->pubKeyOperator.Get(), msg.GetSignHash());
-        if (!valid) {
+		bool fPoosValid = true;
+		
+		/*
+		// 7-10-2020 - POOS - R ANDREWS (Proof of Orphan Sponsorship)
+		int64_t nElapsed = GetAdjustedTime() - nStartTime;
+		
+		if (fConnectivity && nOrphanBanning == 1 && nElapsed < (60 * 7) && member->dmn->pdmnState->nPoSeBanHeight == -1 && nPunished < nMaxPunishments)
+		{
+			fPoosValid = OrphanTest(member->dmn->pdmnState->pubKeyOperator.Get().ToString());
+			if (!fPoosValid)
+			{
+				nPunished++;
+				LogPrintf("POOS::Punishing %s %f", member->dmn->pdmnState->pubKeyOperator.Get().ToString(), nPunished);
+			}
+		}
+		*/
+
+        if (!valid || !fPoosValid) {
             ret.emplace(p.first);
         }
     }
+
     return ret;
 }
 

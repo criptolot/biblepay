@@ -103,7 +103,7 @@ extern void ThreadPOSE(CConnman& connman);
 
 bool fFeeEstimatesInitialized = false;
 static const bool DEFAULT_PROXYRANDOMIZE = true;
-static const bool DEFAULT_REST_ENABLE = false;
+static const bool DEFAULT_REST_ENABLE = true;
 static const bool DEFAULT_DISABLE_SAFEMODE = false;
 static const bool DEFAULT_STOPAFTERBLOCKIMPORT = false;
 
@@ -1773,10 +1773,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 	uiInterface.InitMessage(_("Loading Ukrainian (UTO) Bible..."));
 	inituto();
 	
-	// Load Researchers into RAM
-	uiInterface.InitMessage(_("Loading PODC Researchers..."));
-	LoadResearchers();
-
+	
     // ********************************************************* Step 7a: check lite mode and load sporks
 
     // lite mode disables all DAC-specific functionality
@@ -1965,6 +1962,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 
 	// If the last block is old, maybe the chain needs re-assessed:
+	/*
 	if (chainActive.Tip())
 	{
 		int64_t nAge = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();
@@ -1974,6 +1972,8 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 			ReassessAllChains();
 		}
 	}
+	*/
+
 
     // As LoadBlockIndex can take several minutes, it's possible the user
     // requested to kill the GUI during the last operation. If so, exit.
@@ -2030,7 +2030,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 			LogPrintf("\nSetting masternodeprivkey. %f", 1);
 		}
 	}
-
+	
     if(fMasternodeMode) {
         LogPrintf("MASTERNODE:\n");
 		
@@ -2117,7 +2117,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 		// Bloat Prevention of governance.dat:
 		// During forensic analysis the DAC Team has discovered that this file will grow bigger each time we deserialize governance objects, therefore we need to clear it if its bigger than 25 megs, and let it get reindexed.
 		boost::filesystem::path pathGov = GetDataDir() / "governance.dat";
-		int64_t nGovSz = GetFileSize(pathGov.string());
+		int64_t nGovSz = GETFILESIZE(pathGov.string());
 		LogPrintf("Governance file size %f", nGovSz);
 		if (nGovSz > 25000000)
 		{
@@ -2217,8 +2217,23 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     // Memorize Prayers
     uiInterface.InitMessage(_("Memorizing Prayers..."));
     MemorizeBlockChainPrayers(false, false, true, false);
+
+	// Load Researchers into RAM
+	uiInterface.InitMessage(_("Loading PODC Researchers..."));
+	LoadResearchers();
+	LockDashStakes();
+
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+
+	// Sync older sidechain blocks
+	for (int nHeight = consensusParams.POOS_HEIGHT / 4; nHeight < chainActive.Tip()->nHeight + 10000; nHeight += 10000)
+	{
+		SyncSideChain(nHeight);
+		std::string sNarr = "Syncing Sidechain " + RoundToString(nHeight, 0) + "...";
+		uiInterface.InitMessage(_("Syncing sidechain..."));
+	}
+
     uiInterface.InitMessage(_("Discovering Peers..."));
-    
     Discover(threadGroup);
 
     // Map ports with UPnP

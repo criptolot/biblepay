@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>813</width>
+    <width>1082</width>
     <height>457</height>
    </rect>
   </property>
@@ -105,6 +105,12 @@
          </item>
          <item row="1" column="0">
           <widget class="QTableWidget" name="tableWidgetMasternodesDIP3">
+           <property name="minimumSize">
+            <size>
+             <width>1052</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="editTriggers">
             <set>QAbstractItemView::NoEditTriggers</set>
            </property>
@@ -135,7 +141,7 @@
            </column>
            <column>
             <property name="text">
-             <string>PoSe Score</string>
+             <string>POOS Score</string>
             </property>
            </column>
            <column>
@@ -161,6 +167,11 @@
            <column>
             <property name="text">
              <string>Operator Reward</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Child Biography URL</string>
             </property>
            </column>
           </widget>

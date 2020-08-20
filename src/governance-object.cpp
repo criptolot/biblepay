@@ -220,7 +220,7 @@ bool CGovernanceObject::ProcessVote(CNode* pfrom,
         return false;
     }
 
-    voteInstanceRef = vote_instance_t(vote.GetOutcome(), nVoteTimeUpdate, vote.GetTimestamp());
+    voteInstanceRef = vote_instance_t(vote.GetOutcome(), nVoteTimeUpdate, vote.GetTimestamp(), vote.GetMultipleChoiceData());
     fileVotes.AddVote(vote);
     fDirtyCache = true;
     return true;
@@ -260,7 +260,7 @@ std::set<uint256> CGovernanceObject::RemoveInvalidVotes(const COutPoint& mnOutpo
 
     auto nParentHash = GetHash();
     for (auto jt = it->second.mapInstances.begin(); jt != it->second.mapInstances.end(); ) {
-        CGovernanceVote tmpVote(mnOutpoint, nParentHash, (vote_signal_enum_t)jt->first, jt->second.eOutcome);
+        CGovernanceVote tmpVote(mnOutpoint, nParentHash, (vote_signal_enum_t)jt->first, jt->second.eOutcome, "0");
         tmpVote.SetTime(jt->second.nCreationTime);
         if (removedVotes.count(tmpVote.GetHash())) {
             jt = it->second.mapInstances.erase(jt);
@@ -631,6 +631,28 @@ int CGovernanceObject::CountMatchingVotes(vote_signal_enum_t eVoteSignalIn, vote
     return nCount;
 }
 
+std::string CGovernanceObject::ReturnWinner() const
+{
+    LOCK(cs);
+	
+    std::string sOut;
+    
+	auto fileVotes = GetVoteFile();
+
+    for (const auto& vote : fileVotes.GetVotes()) 
+	{
+        //uint256 nVoteHash = vote.GetHash();
+
+        //bool onlyVotingKeyAllowed = govobj.GetObjectType() == GOVERNANCE_OBJECT_PROPOSAL && vote.GetSignal() == VOTE_SIGNAL_FUNDING;
+
+        sOut += vote.GetMultipleChoiceData() + " ";
+		LogPrintf("returnwinner %s ", vote.GetMultipleChoiceData());
+
+    }
+
+	return sOut;
+	
+}
 /**
 *   Get specific vote counts for each outcome (funding, validity, etc)
 */

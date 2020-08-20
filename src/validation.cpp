@@ -116,6 +116,8 @@ std::map<uint256, int64_t> mapRejectedBlocks GUARDED_BY(cs_main);
 
 // DAC
 std::map<std::pair<std::string, std::string>, std::pair<std::string, int64_t>> mvApplicationCache;
+std::map<std::string, IPFSTransaction> mapSidechainTransactions;
+std::map<std::string, DashUTXO> mapDashUTXO;
 std::map<std::string, POSEScore> mvPOSEScore;
 std::map<std::string, Researcher> mvResearchers;
 
@@ -127,6 +129,8 @@ std::string msSessionID;
 std::string sOS;
 bool fEnforceSanctuaryPort = false;
 int PRAYER_MODULUS = 0;
+int nSideChainHeight = 0;
+
 int miGlobalPrayerIndex = 0;
 int miGlobalDiaryIndex = 0;
 int iMinerThreadCount = 0;
@@ -906,7 +910,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             return state.DoS(0, false, REJECT_DUPLICATE, "protx-dup");
         }
 
-		// DAC
+		// BiblePay Memory Pool
 		if (chainActive.Tip() != NULL)
 		{
 			// If this is a PODC association, user must prove ownership of the CPID, otherwise reject the transaction
@@ -919,11 +923,19 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 
 			CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
 			std::string sError2;
+			// Dynamic Whale Staking Verification
 			if (!VerifyDynamicWhaleStake(tx1, sError2))
 			{
 				LogPrintf("AcceptToMemoryPool::Dynamic Whale Burn rejected %s [%s]\n", tx.GetHash().GetHex(), sError2);
 				return false;
 			}
+			// Verify Sanctuary Revival Txes
+			if (!ApproveSanctuaryRevivalTransaction(tx))
+			{
+				LogPrintf("\nAcceptToMemoryPool::Sanctuary Revival Tx Rejected %s\n", tx.GetHash().GetHex());
+				return false;
+			}
+
 		}
 		
         // If we aren't going to actually accept it but just we're verifying it, we are fine already
@@ -1327,7 +1339,12 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 	// In Phase 2: https://forum.bible[pay].org/index.php?topic=435.0 : GSC budget is reduced to 25% from 30%
 
 	double dGovernancePercent = 0;
-	if (nPrevHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight)
+
+	if (nPrevHeight > consensusParams.POOS_HEIGHT)
+	{
+		dGovernancePercent = .3625;
+	}
+	else if (nPrevHeight > consensusParams.nSanctuaryPaymentsPhaseIIHeight && nPrevHeight <= consensusParams.POOS_HEIGHT)
 	{
 		dGovernancePercent = .45;
 	}
@@ -1345,6 +1362,14 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 
 	CAmount nSuperblockPart = (nPrevHeight > consensusParams.nBudgetPaymentsStartBlock) ? nSubsidy * dGovernancePercent : 0;
 	CAmount nNetSubsidy = nSubsidy - nSuperblockPart;
+	// APM (Automatic Price Mooning)
+	double nAPM = ExtractAPM(nPrevHeight);
+	// 0 = OFF, -1 = PRICE MISSING, 1 = UNCHANGED, 2 = INCREASED, 3 = DECREASED
+	if (nAPM == 3 || nAPM == 1)
+	{
+		// With Automatic Price Mooning, we decrease the block subsidy down to 7 if our Price has decreased over the last 24 hours.  (Otherwise, normal emissions occur).
+		nNetSubsidy = APM_REWARD * COIN;
+	}
 
 	return fSuperblockPartOnly ? nSuperblockPart : nNetSubsidy;
 }
@@ -1359,7 +1384,12 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 	// In POOM-phaseout, sanctuaries receive 57% (32.5% of the gross block reward)
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	CAmount ret = 0;
-	if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT)
+	if (nHeight > consensusParams.POOS_HEIGHT)
+	{
+		// https://forum.biblepay.org/index.php?topic=583.0
+		ret = .6575 * blockValue;
+	}
+	else if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT && nHeight <= consensusParams.POOS_HEIGHT)
 	{
 		ret = .57 * blockValue;
 	}
@@ -2426,7 +2456,8 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
             }	
         }	
     } else {	
-        LogPrintf("ConnectBlock::ERROR::Spork is off, skipping transaction locking checks\n");	
+		if (fDebugSpam)
+			LogPrintf("ConnectBlock::ERROR::Spork is off, skipping transaction locking checks\n");	
     }	
 
     // DAC : MODIFIED TO CHECK MASTERNODE PAYMENTS AND SUPERBLOCKS	
@@ -3748,7 +3779,7 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
 					if (!fFound)
 					{
 						if (fDebugSpam)
-							LogPrintf("\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
+							LogPrint("llmq", "\nContextualCheckBlock::Check_RX_Pool_Recipients::ERROR, Block Height %f, Block rejected: Block with prior difficulty %f [Threshhold=%f] and Recipient %s is not in our pool list %s", 
 									nHeight, nDiff, nMinRXDiff, sRecip, sPoolList);
 						return false; 
 					}
@@ -5093,11 +5124,8 @@ void SetOverviewStatus()
 		double dDiff = GetDifficulty(chainActive.Tip());
 		std::string sPrayer = "N/A";
 		GetDataList("PRAYER", 30, miGlobalPrayerIndex, "", sPrayer);
-		msGlobalStatus = "Blocks: " + RoundToString((double)chainActive.Tip()->nHeight, 0);
-		msGlobalStatus += "<br>Difficulty: " + RoundToString(GetDifficulty(chainActive.Tip()), 2);
-		msGlobalStatus += "<br>";
-		std::string sVersionAlert = GetVersionAlert();
-		if (!sVersionAlert.empty()) msGlobalStatus += " <font color=purple>" + sVersionAlert + "</font> ;";
+		msGlobalStatus = "Blocks: " + RoundToString((double)chainActive.Tip()->nHeight, 0) + ", Difficulty: " + RoundToString(GetDifficulty(chainActive.Tip()), 2);
+		msGlobalStatus += "<br>APM: " + GetAPMNarrative();
 		std::string sPrayers = FormatHTML(sPrayer, 20, "<br>");
 		if (!sPrayer.empty())
 			msGlobalStatus2 = "<br><b>Prayer Requests:</b><br><font color=maroon><b>" + sPrayer + "</font></b><br>&nbsp;";
@@ -5130,6 +5158,8 @@ void KillBlockchainFiles()
 	boost::filesystem::remove_all(pathChainstate);
 	boost::filesystem::path pathEvo = GetDataDir() / "evodb";
 	boost::filesystem::remove_all(pathEvo);
+	boost::filesystem::path pathLLMQ = GetDataDir() / "llmq";
+	boost::filesystem::remove_all(pathLLMQ);
 	boost::filesystem::path pathMnpayments = GetDataDir() / "mnpayments.dat";
 	if(boost::filesystem::exists(pathMnpayments)) boost::filesystem::remove(pathMnpayments); 
 	boost::filesystem::path pathIS = GetDataDir() / "instantsend.dat";
@@ -5145,7 +5175,9 @@ void KillBlockchainFiles()
 void ConnectNonFinancialTransactions(const CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams)
 {
     int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
-    bool fDIP0003Active_context = VersionBitsState(pindexPrev, consensusParams, Consensus::DEPLOYMENT_DIP0003, versionbitscache) == THRESHOLD_ACTIVE;
+	
+	bool fDIP0003Active_context = nHeight >= consensusParams.DIP0003Height;
+
     if (fDIP0003Active_context) 
 	{
 		for (const auto& tx : block.vtx) 

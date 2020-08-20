@@ -415,13 +415,14 @@ std::string GetQTPhaseXML(uint256 gObj)
 			std::string sPrice = obj["price"].getValStr();
 			std::string sQTPhase = obj["qtphase"].getValStr();
 			std::string sBTC = obj["btcprice"].getValStr();
+			std::string sBBP = obj["bbpprice"].getValStr();
 			std::string sSporkData = obj["spork_data"].getValStr();
-			std::string sXML = "<price>" + sPrice + "</price><qtphase>" + sQTPhase + "</qtphase><btcprice>" + sBTC + "</btcprice>";
+			std::string sXML = "<price>" + sPrice + "</price><bbpprice>" + sBBP + "</bbpprice><qtphase>" + sQTPhase + "</qtphase><btcprice>" + sBTC + "</btcprice>";
 			sXML += sSporkData;
 			return sXML;
 		}
 	}
-	return "<price>-0.00</price><qtphase>-0.00</qtphase><btcprice>-0</btcprice>";
+	return "<price>-0.00</price><bbpprice>-0.00</bbpprice><qtphase>-0.00</qtphase><btcprice>-0</btcprice>";
 }
 
 
@@ -688,13 +689,27 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 		nSuperblockCycle = consensusParams.nDCCSuperblockCycle;
  		nBudgetFactor = .65;
 		nType = 1;
-		if (fProd && nBlockHeight > 33600 && nBlockHeight < consensusParams.PODC_LAST_BLOCK) nBudgetFactor = 1.0; // Early DC Superblocks paid the entire budget.
+		if (fProd && nBlockHeight > 33600 && nBlockHeight < consensusParams.PODC_LAST_BLOCK) 
+			nBudgetFactor = 1.0; // Early DC Superblocks paid the entire budget.
 	}
 	else if (IsSmartContract(nBlockHeight))
 	{
 		// Active - Daily
 		nSuperblockCycle = consensusParams.nDCCSuperblockCycle;
-		nBudgetFactor  = nBlockHeight > consensusParams.POOM_PHASEOUT_HEIGHT ? .42 : .65;
+		if (nBlockHeight > consensusParams.POOS_HEIGHT)
+		{
+			// https://forum.biblepay.org/index.php?topic=583.0
+			// This leaves PODC the same, but reduces the monthly budget
+			nBudgetFactor = .5075;
+		}
+		else if (nBlockHeight > consensusParams.POOM_PHASEOUT_HEIGHT && nBlockHeight <= consensusParams.POOS_HEIGHT)
+		{
+			nBudgetFactor = .42;
+		}
+		else
+		{
+			nBudgetFactor = .65;
+		}
 		nType = 2;
 		// LogPrintf(" AssessmentHeight %f, BlockHeight %f, 24HrAvgBits %f \n", (double)nAssessmentHeight, (double)nBlockHeight, (double)nBits);
 	}
@@ -713,9 +728,7 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 		nAssessmentHeight -= (BLOCKS_PER_DAY * 32);
     CAmount nSuperblockPartOfSubsidy = GetBlockSubsidy(nBits, nAssessmentHeight, consensusParams, true);
     CAmount nPaymentsLimit = nSuperblockPartOfSubsidy * nSuperblockCycle * nBudgetFactor;
-	CAmount nAbsoluteMaxMonthlyBudget = MAX_BLOCK_SUBSIDY * BLOCKS_PER_DAY * 30 * .20 * COIN; // Ensure monthly budget is never > 20% of avg monthly total block emission regardless of low difficulty in PODC
-	if (nPaymentsLimit > nAbsoluteMaxMonthlyBudget) nPaymentsLimit = nAbsoluteMaxMonthlyBudget;
-	
+
 	if (Params().NetworkIDString() == "main")
 	{
 		if (nType == 0 && nBlockHeight > (consensusParams.EVOLUTION_CUTOVER_HEIGHT - 6150) && nPaymentsLimit > nMaxMonthlyBudget)
@@ -738,6 +751,7 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 		nPaymentsLimit += nTotalWhalePayments;
 		*/
 		nPaymentsLimit += (MAX_DAILY_WHALE_COMMITMENTS * COIN);
+		nPaymentsLimit += (MAX_DAILY_DASH_STAKE_COMMITMENTS * COIN);
 	}
 	// End of Dynamic Whale Staking
 	

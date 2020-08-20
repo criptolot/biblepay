@@ -151,7 +151,7 @@
      </widget>
     </item>
     <item row="2" column="1">
-     <layout class="QHBoxLayout" name="horizontalLayoutAmount" stretch="0,0,0,0">
+     <layout class="QHBoxLayout" name="horizontalLayoutAmount" stretch="0,0,0,0,0">
       <item>
        <widget class="BitcoinAmountField" name="payAmount">
         <property name="minimumSize">
@@ -167,21 +167,24 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Maximum</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>150</width>
+          <width>35</width>
           <height>20</height>
          </size>
         </property>
        </spacer>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkboxSubtractFeeFromAmount">
+       <widget class="QCheckBox" name="chkDWS">
         <property name="toolTip">
-         <string>The fee will be deducted from the amount being sent. The recipient will receive a lower amount of coins than you enter in the amount field. If multiple recipients are selected, the fee is split equally.</string>
+         <string>Burn this amount of BiblePay as a Dynamic Whale Stake for 90 days.  You will receive the stake back at the end plus a stake reward (quoted when you click send).</string>
         </property>
         <property name="text">
-         <string>S&amp;ubtract fee from amount?</string>
+         <string>Dynamic Whale Stake?</string>
         </property>
        </widget>
       </item>
@@ -197,6 +200,16 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkboxSubtractFeeFromAmount">
+        <property name="toolTip">
+         <string>The fee will be deducted from the amount being sent. The recipient will receive a lower amount of coins than you enter in the amount field. If multiple recipients are selected, the fee is split equally.</string>
+        </property>
+        <property name="text">
+         <string>S&amp;ubtract fee from amount?</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

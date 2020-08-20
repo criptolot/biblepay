@@ -109,6 +109,7 @@ private:
     QAction *aboutAction;
 	// DAC - Add Read Bible
 	QAction *orphanAction;
+	QAction *exchangeAction;
 	QAction *webAction;
 	QAction *OneClickMiningAction;
 	QAction *sinnerAction;
@@ -282,6 +283,7 @@ private Q_SLOTS:
 	
 	void showAccountability();
 	void showDecentralizedWeb();
+	void showExchange();
 
     /** Show debug window */
     void showDebugWindow();

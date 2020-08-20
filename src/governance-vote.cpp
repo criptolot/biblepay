@@ -45,6 +45,7 @@ std::string CGovernanceVoting::ConvertSignalToString(vote_signal_enum_t nSignal)
 }
 
 
+
 vote_outcome_enum_t CGovernanceVoting::ConvertVoteOutcome(const std::string& strVoteOutcome)
 {
     static const std::map<std::string, vote_outcome_enum_t> mapStringOutcome = {
@@ -90,7 +91,7 @@ CGovernanceVote::CGovernanceVote() :
 {
 }
 
-CGovernanceVote::CGovernanceVote(const COutPoint& outpointMasternodeIn, const uint256& nParentHashIn, vote_signal_enum_t eVoteSignalIn, vote_outcome_enum_t eVoteOutcomeIn) :
+CGovernanceVote::CGovernanceVote(const COutPoint& outpointMasternodeIn, const uint256& nParentHashIn, vote_signal_enum_t eVoteSignalIn, vote_outcome_enum_t eVoteOutcomeIn, std::string sMultiChoiceData) :
     fValid(true),
     fSynced(false),
     nVoteSignal(eVoteSignalIn),
@@ -98,7 +99,8 @@ CGovernanceVote::CGovernanceVote(const COutPoint& outpointMasternodeIn, const ui
     nParentHash(nParentHashIn),
     nVoteOutcome(eVoteOutcomeIn),
     nTime(GetAdjustedTime()),
-    vchSig()
+    vchSig(),
+	sMultipleChoiceData(sMultiChoiceData)
 {
     UpdateHash();
 }
@@ -160,6 +162,12 @@ uint256 CGovernanceVote::GetSignatureHash() const
 {
     return SerializeHash(*this);
 }
+
+std::string CGovernanceVote::GetMultipleChoiceData() const
+{
+	return sMultipleChoiceData;
+}
+
 
 bool CGovernanceVote::Sign(const CKey& key, const CKeyID& keyID)
 {

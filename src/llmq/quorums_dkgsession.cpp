@@ -91,6 +91,7 @@ CDKGMember::CDKGMember(CDeterministicMNCPtr _dmn, size_t _idx) :
 bool CDKGSession::Init(const CBlockIndex* _pindexQuorum, const std::vector<CDeterministicMNCPtr>& mns, const uint256& _myProTxHash)
 {
     if (mns.size() < params.minSize) {
+		LogPrintf("QuorumInit quorum=%s size too small mn-count=%f params_minSize=%f", params.name.c_str(), (double)mns.size(), (double)params.minSize);
         return false;
     }
 
@@ -119,11 +120,18 @@ bool CDKGSession::Init(const CBlockIndex* _pindexQuorum, const std::vector<CDete
         }
     }
 
+	LogPrintf("QuorumInit %f", 851);
+
+
     if (!myProTxHash.IsNull()) {
         quorumDKGDebugManager->InitLocalSessionStatus(params.type, pindexQuorum->GetBlockHash(), pindexQuorum->nHeight);
     }
 
+	LogPrintf("QuorumInit %f", 852);
+
     CDKGLogger logger(*this, __func__);
+
+	LogPrintf("QuorumInit %f", 853);
 
     if (myProTxHash.IsNull()) {
         logger.Batch("initialized as observer. mns=%d", mns.size());

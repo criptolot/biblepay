@@ -61,6 +61,7 @@ public:
 	// DAC message or prayer
 	QString txtMessage;
 	bool fDonate;
+	bool fDWS;
 	bool fPrayer;
 	bool fTithe;
 	bool fDiary;

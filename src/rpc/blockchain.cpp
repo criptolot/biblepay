@@ -39,6 +39,8 @@
 #include <univalue.h>
 #include "randomx_bbp.h"
 #include "validation.h"
+#include "llmq/quorums_chainlocks.h"
+#include "llmq/quorums_instantsend.h"
 
 #include <boost/thread/thread.hpp> // boost::thread::interrupt
 #include <boost/algorithm/string.hpp> // boost::trim
@@ -180,7 +182,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 	result.push_back(Pair("blockversion", GetBlockVersion(block.vtx[0]->vout[0].sTxOutMessage)));
 	if (block.vtx.size() > 1)
 		result.push_back(Pair("sanctuary_reward", block.vtx[0]->vout[1].nValue/COIN));
-	// DAC
+	// BiblePay
 	bool bShowPrayers = true;
     if (blockindex->pprev)
 	{
@@ -190,7 +192,23 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 		if (bShowPrayers) 
 			result.push_back(Pair("verses", sVerses));
 		result.push_back(Pair("chaindata", block.vtx[0]->vout[0].sTxOutMessage));
-	}
+		bool fChainLock = llmq::chainLocksHandler->HasChainLock(blockindex->nHeight, blockindex->GetBlockHash());
+		result.push_back(Pair("chainlock", fChainLock));
+		UniValue objIPFS(UniValue::VOBJ);
+		// BIPFS - R Andrews	
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, mapSidechainTransactions)
+		{
+			if (item.second.nHeight == blockindex->nHeight)
+			{
+				std::string sDesc = "FileName: " + item.second.FileName + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(item.second.nSize, 2) 
+					+ ", Duration=" + RoundToString(item.second.nDuration, 0)
+					+ ", Density=" + RoundToString(item.second.nDensity, 0) + ", BlockHash=" + item.second.BlockHash + ", URL=" + item.second.URL + ", Network=" + item.second.Network 
+					+ ", Height=" + RoundToString(item.second.nHeight, 0);
+				objIPFS.push_back(Pair(item.second.TXID, sDesc));
+			}
+		}
+		result.push_back(Pair("bipfs", objIPFS));
+    }
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));
@@ -1369,9 +1387,12 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
     softforks.push_back(SoftForkDesc("bip34", 2, tip, consensusParams));
     softforks.push_back(SoftForkDesc("bip66", 3, tip, consensusParams));
     softforks.push_back(SoftForkDesc("bip65", 4, tip, consensusParams));
-
-	bool fDIP0008Active = VersionBitsState(chainActive.Tip()->pprev, Params().GetConsensus(), Consensus::DEPLOYMENT_DIP0008, versionbitscache) == THRESHOLD_ACTIVE;
+	
+	bool fDIP0008Active = chainActive.Tip()->pprev->nHeight > consensusParams.DIP0008Height;
+	
 	bool fChainLocksActive = sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED);
+	bool fDIP0003Legacy_context = VersionBitsState(chainActive.Tip(), consensusParams, Consensus::DEPLOYMENT_DIP0003, versionbitscache) == THRESHOLD_ACTIVE;
+	obj.push_back(Pair("legacy_dip0003_versionbitsstate", fDIP0003Legacy_context));
 
 	obj.push_back(Pair("dip0008active", fDIP0008Active));
 	obj.push_back(Pair("chainlocks_active", fChainLocksActive));
@@ -1820,6 +1841,21 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("error","block not found"));
 		}
 	}
+	else if (sItem == "lockstakes")
+	{
+		LockDashStakes();
+		results.push_back(Pair("lock", 1));
+	}
+	else if (sItem == "dashtest00")
+	{
+		ProcessDashUTXOData();
+		std::string sTXID = request.params[1].get_str();
+		double nType = cdbl(request.params[2].get_str(), 0);
+		CAmount nValue = 0;
+		std::string sAddress = GetUTXO(sTXID, nType, nValue);
+		results.push_back(Pair("address", sAddress));
+		results.push_back(Pair("value", (double)nValue/COIN));
+	}
 	else if (sItem == "pinfo")
 	{
 		// Used by the Pools
@@ -1889,12 +1925,10 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "versioncheck")
 	{
-		std::string sNarr = GetVersionAlert();
 		std::string sGithubVersion = GetGithubVersion();
 		std::string sCurrentVersion = FormatFullVersion();
 		results.push_back(Pair("Github_version", sGithubVersion));
 		results.push_back(Pair("Current_version", sCurrentVersion));
-		if (!sNarr.empty()) results.push_back(Pair("Alert", sNarr));
 	}
 	else if (sItem == "sins")
 	{
@@ -1946,68 +1980,185 @@ UniValue exec(const JSONRPCRequest& request)
 			}
 		}
 	}
-	else if (sItem == "dsql_select")
+	else if (sItem == "testenc")
 	{
-		if (request.params.size() != 2)
-			throw std::runtime_error("You must specify dsql_select \"query\".");
-		std::string sSQL = request.params[1].get_str();
-		std::string sJson = DSQL_Ansi92Query(sSQL);
-		UniValue u(UniValue::VOBJ);
-		u.read(sJson);
-		std::string sSerialized = u.write().c_str();
-		results.push_back(Pair("dsql_query", sJson));
+		std::string sPath = request.params[1].get_str();
+		bool fTest = EncryptFile(sPath, sPath + ".enc");
+		results.push_back(Pair("res", fTest));
+	}
+	else if (sItem == "testdec")
+	{
+		std::string sPath = request.params[1].get_str();
+		bool fTest = DecryptFile(sPath, sPath + ".dec");
+		results.push_back(Pair("res", fTest));
+	}
+	else if (sItem == "bipfs_list")
+	{
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, mapSidechainTransactions)
+		{
+			std::string sDesc = "FileName: " + item.second.FileName + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(item.second.nSize, 2) 
+				+ ", Duration=" + RoundToString(item.second.nDuration, 0)
+				+ ", Density=" + RoundToString(item.second.nDensity, 0) + ", BlockHash=" + item.second.BlockHash + ", URL=" + item.second.URL + ", Network=" + item.second.Network 
+				+ ", Height=" + RoundToString(item.second.nHeight, 0);
+			results.push_back(Pair(item.second.TXID, sDesc));
+		}
+	}
+	else if (sItem == "bipfs_get")
+	{
+		if (request.params.size() != 4)
+			throw std::runtime_error("You must specify exec bipfs_get web_path local_path 0=not_encrypted/1=encrypted.  IE: exec bipfs_get web_path local_path 0.  "
+			" ( The web_path is the web URL.  The file_path the target folder location on your machine.  ");
+		
+		std::string sWebPath = request.params[1].get_str();
+		std::string sDirPath = request.params[2].get_str();
+		double nEncrypted = cdbl(request.params[3].get_str(), 0);
+		bool fEncrypted = nEncrypted == 1 ? true : false;
+		std::string sURL = FormatURL(sWebPath, 0); 
+		std::string sPage = FormatURL(sWebPath, 1);
+		DACResult d = DownloadFile(sURL, sPage, 443, 30000, sDirPath, fEncrypted);
+		results.push_back(Pair("Domain", sURL));
+		results.push_back(Pair("Page", sPage));
+		results.push_back(Pair("Results", d.Response));
+		results.push_back(Pair("Error", d.ErrorCode));
 	}
 	else if (sItem == "bipfs_file")
 	{
-		if (request.params.size() != 3)
-			throw std::runtime_error("You must specify exec bipfs_file path webpath.  IE: exec bipfs_file armageddon.jpg mycpk/armageddon.jpg");
-		std::string sPath = request.params[1].get_str();
-		std::string sWebPath = request.params[2].get_str();
-		std::string sResponse = BIPFS_UploadSingleFile(sPath, sWebPath);
-		std::string sFee = ExtractXML(sResponse, "<FEE>", "</FEE>");
-		std::string sErrors = ExtractXML(sResponse, "<ERRORS>", "</ERRORS>");
-		std::string sSize = ExtractXML(sResponse, "<SIZE>", "</SIZE>");
+		if (request.params.size() != 7)
+			throw std::runtime_error("You must specify exec bipfs_file file_path webpath target_density lease_duration_in_days 0=not_encrypted/1=encrypted 0=dryrun/1=real.  IE: exec bipfs_file file_path mywebpath 1 30 0 0.  "
+			" ( The file_path is the location of the file on your machine.  The web_path is the target URL of the file.  "
+			" The target density is how many world regions you would like the file to be stored in (choose 1-4).  "
+			" The lease duration in days is the number of days you would like the file stored for.  Dry Run=0 means we will not charge for the transaction, we will test the outcome and send you a price quote.  "
+			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the BiblePay IPFS network. ");
 
-		results.push_back(Pair("Fee", sFee));
-		results.push_back(Pair("Size", sSize));
-		results.push_back(Pair("Errors", sErrors));
+		std::string sDirPath = request.params[1].get_str();
+		std::string sWebPath = request.params[2].get_str();
+		int nTargetDensity = cdbl(request.params[3].get_str(), 0);
+		int nDurationDays = cdbl(request.params[4].get_str(), 0);
+		if (nTargetDensity < 1 || nTargetDensity > 4)
+			throw std::runtime_error("Invalid density. (Must be 1-4).");
+		if (nDurationDays < 1 || nDurationDays > (365*10))
+			throw std::runtime_error("Invalid lease duration (must be 1-36,500 in days).");
+
+		int nEncrypted = cdbl(request.params[5].get_str(), 0);
+		bool fEncrypted = nEncrypted == 1 ? true : false;
+
+		int nDryRun = cdbl(request.params[6].get_str(), 0);
+		if (nDryRun < 0 || nDryRun > 1)
+			throw std::runtime_error("Invalid dry run value (must be 0 or 1).");
+		bool fDryRun = nDryRun == 0 ? true : false;
+		std::string sTXID;
+		if (!fDryRun)
+		{
+			// Persist TXID
+			DACResult dDry = BIPFS_UploadFile(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, true, fEncrypted);
+			if (dDry.nFee/COIN < 1)
+				throw std::runtime_error("Unable to calculate fee. ");
+
+			std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+			std::string sHash = RetrieveMd5(sDirPath);
+			std::string sXML = "<bipfs>" + sHash + "</bipfs>";
+			std::string sError;
+			std::string sExtraPayload = "<size>" + RoundToString(dDry.nSize, 0) + "</size>";
+			sTXID = SendBlockchainMessage("bipfs", sCPK, sXML, dDry.nFee/COIN, false, sExtraPayload, sError);
+			if (!sError.empty())
+			{
+				throw std::runtime_error("IPFS::" + sError);
+			}
+			SyncSideChain(chainActive.Tip()->nHeight);
+			results.push_back(Pair("TXID", sTXID));
+		}
+		else
+		{
+			sTXID = RetrieveMd5(sDirPath);
+		}
+
+		DACResult d = BIPFS_UploadFile(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, fDryRun, fEncrypted);
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, d.mapResponses)
+		{
+			std::string sDesc = "File: " + item.second.File + ", Response: " + item.second.Response + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(d.nSize, 2) + "] [Error=" + d.ErrorCode + "]";
+			results.push_back(Pair(item.second.TXID, sDesc));
+			// For each Density 
+			BOOST_FOREACH(PAIRTYPE(std::string, std::string) region, item.second.mapRegions)
+			{
+				results.push_back(Pair(region.first, region.second));
+			}
+		}
+
 	}
 	else if (sItem == "bipfs_folder")
 	{
-		if (request.params.size() != 3)
-			throw std::runtime_error("You must specify exec bipfs_folder path webpath.  IE: exec bipfs_folder foldername mycpk/mywebpath");
+		if (request.params.size() != 7)
+			throw std::runtime_error("You must specify exec bipfs_folder file_path webpath target_density lease_duration_in_days 0=unencrypted/1=encrypted 0=dryrun/1=real.  IE: exec bipfs_folder foldername mywebpath 1 30 0 0.  "
+			" ( The file_path is the location of the file on your machine.  The web_path is the target URL of the file.  "
+			" The target density is how many world regions you would like the file to be stored in (choose 1-4).  "
+			" The lease duration in days is the number of days you would like the file stored for.  Dry Run=0 means we will not charge for the transaction, we will test the outcome and send you a price quote.  "
+			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the BiblePay IPFS network. ");
+
 		std::string sDirPath = request.params[1].get_str();
 		std::string sWebPath = request.params[2].get_str();
-		std::vector<std::string> skipList;
-		std::vector<std::string> g = GetVectorOfFilesInDirectory(sDirPath, skipList);
-		for (auto sFileName : g)
+		int nTargetDensity = cdbl(request.params[3].get_str(), 0);
+		int nDurationDays = cdbl(request.params[4].get_str(), 0);
+		if (nTargetDensity < 1 || nTargetDensity > 4)
+			throw std::runtime_error("Invalid density. (Must be 1-4).");
+		if (nDurationDays < 1 || nDurationDays > (365*10))
+			throw std::runtime_error("Invalid lease duration (must be 1-36,500 in days).");
+
+		int nEncrypted = cdbl(request.params[5].get_str(), 0);
+		bool fEncrypted = nEncrypted == 1 ? true : false;
+
+		if (nEncrypted < 0 || nEncrypted > 1)
+			throw std::runtime_error("Invalid encrypted (must be 0 or 1)");
+
+		int nDryRun = cdbl(request.params[6].get_str(), 0);
+		if (nDryRun < 0 || nDryRun > 1)
+			throw std::runtime_error("Invalid dry run value (must be 0 or 1).");
+		bool fDryRun = nDryRun == 0 ? true : false;
+
+		std::string sTXID;
+		if (!fDryRun)
 		{
-			results.push_back(Pair("Processing File", sFileName));
-			std::string sRelativeFileName = strReplace(sFileName, sDirPath, "");
+			// Persist TXID
+			DACResult dDry = BIPFS_UploadFolder(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, true, fEncrypted);
+			if (dDry.nFee/COIN < 1)
+				throw std::runtime_error("Unable to calculate fee. ");
 
-			std::string sFullWebPath = Path_Combine(sWebPath, sRelativeFileName);
-			std::string sFullSourcePath = Path_Combine(sDirPath, sFileName);
-
-			LogPrintf("Iterated Filename %s, RelativeFile %s, FullWebPath %s", 
-				sFileName.c_str(), sRelativeFileName.c_str(), sFullWebPath.c_str());
-
-			std::string sResponse = BIPFS_UploadSingleFile(sFullSourcePath, sFullWebPath);
-			results.push_back(Pair("SourcePath", sFullSourcePath));
-
-			results.push_back(Pair("FileName", sFileName));
-			results.push_back(Pair("WebPath", sFullWebPath));
-			std::string sFee = ExtractXML(sResponse, "<FEE>", "</FEE>");
-			std::string sErrors = ExtractXML(sResponse, "<ERRORS>", "</ERRORS>");
-			std::string sSize = ExtractXML(sResponse, "<SIZE>", "</SIZE>");
-			std::string sHash = ExtractXML(sResponse, "<hash>", "</hash>");
-
-			results.push_back(Pair("Fee", sFee));
-			results.push_back(Pair("Size", sSize));
-			results.push_back(Pair("Hash", sHash));
-			results.push_back(Pair("Errors", sErrors));
+			std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+			std::string sHash = RetrieveMd5(sDirPath);
+			std::string sXML = "<bipfs>" + sHash + "</bipfs>";
+			std::string sError;
+			std::string sExtraPayload = "<size>" + RoundToString(dDry.nSize, 0) + "</size>";
+			sTXID = SendBlockchainMessage("bipfs", sCPK, sXML, dDry.nFee/COIN, false, sExtraPayload, sError);
+			if (!sError.empty())
+			{
+				throw std::runtime_error("IPFS::" + sError);
+			}
+			// Dry run succeeded
+			results.push_back(Pair("TXID", sTXID));
 		}
-	}
+		else
+		{
+			sTXID = RetrieveMd5(sDirPath);
+		}
 
+		DACResult d = BIPFS_UploadFolder(sDirPath, sWebPath, sTXID, nTargetDensity, nDurationDays, fDryRun, fEncrypted);
+
+
+		BOOST_FOREACH(PAIRTYPE(std::string, IPFSTransaction) item, d.mapResponses)
+		{
+			std::string sDesc = "File: " + item.second.File + ", Response: " + item.second.Response + ", Fee=" + RoundToString(item.second.nFee/COIN, 4) + ", Size=" + RoundToString(d.nSize, 2) + "] [Error=" + d.ErrorCode + "]";
+			results.push_back(Pair(item.second.TXID, sDesc));
+			// For each Density region
+			BOOST_FOREACH(PAIRTYPE(std::string, std::string) region, item.second.mapRegions)
+			{
+				results.push_back(Pair(region.first, region.second));
+			}
+		}
+
+		results.push_back(Pair("Total Size", d.nSize));
+		results.push_back(Pair("Total Fee", (double)(d.nFee / COIN)));
+		results.push_back(Pair("Results", d.Response));
+
+	}
 	else if (sItem == "testgscvote")
 	{
 		int iNextSuperblock = 0;
@@ -2017,16 +2168,18 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("contract", sContract));
 		std::string sAddresses;
 		std::string sAmounts;
+		std::string out_qtdata;
 		int iVotes = 0;
 		uint256 uGovObjHash = uint256S("0x0");
 		uint256 uPAMHash = GetPAMHashByContract(sContract);
 		results.push_back(Pair("pam_hash", uPAMHash.GetHex()));
 	
-		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
+		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts, out_qtdata);
 		std::string sError;
 		results.push_back(Pair("govobjhash", uGovObjHash.GetHex()));
 		results.push_back(Pair("Addresses", sAddresses));
 		results.push_back(Pair("Amounts", sAmounts));
+		results.push_back(Pair("QTData", out_qtdata));
 		double dTotal = AddVector(sAmounts, "|");
 		results.push_back(Pair("Total_Target_Spend", dTotal));
 		if (uGovObjHash == uint256S("0x0"))
@@ -2590,8 +2743,10 @@ UniValue exec(const JSONRPCRequest& request)
 		int iVotes = 0;
 		uint256 uGovObjHash = uint256S("0x0");
 		uint256 uPAMHash = uint256S("0x0");
-		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts);
-		uint256 hPam = GetPAMHash(sAddresses, sAmounts);
+		std::string out_qtdata;
+		GetGSCGovObjByHeight(iNextSuperblock, uPAMHash, iVotes, uGovObjHash, sAddresses, sAmounts, out_qtdata);
+
+		uint256 hPam = GetPAMHash(sAddresses, sAmounts, out_qtdata);
 		results.push_back(Pair("pam_hash", hPam.GetHex()));
 		std::string sContract = GetGSCContract(iLastSuperblock, true);
 		uint256 hPAMHash2 = GetPAMHashByContract(sContract);
@@ -2608,6 +2763,7 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("required_votes", iRequiredVotes));
 		results.push_back(Pair("last_superblock", iLastSuperblock));
 		results.push_back(Pair("next_superblock", iNextSuperblock));
+		results.push_back(Pair("qt_data", out_qtdata));
 		bool fTriggered = CSuperblockManager::IsSuperblockTriggered(iNextSuperblock);
 		results.push_back(Pair("next_superblock_triggered", fTriggered));
 		if (bImpossible)
@@ -2713,7 +2869,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "price")
 	{
-		double dDacPrice = GetCryptoPrice("bbp"); // For now, we must force the ticker to be BBP, otherwise we will not have a leaderboard consensus (for cameroon-one and Kairos etc).
+		double dDacPrice = GetCryptoPrice("bbp"); 
 		double dBTC = GetCryptoPrice("btc");
 		double dDASH = GetCryptoPrice("dash");
 		double dXMR = GetCryptoPrice("xmr");
@@ -2725,6 +2881,8 @@ UniValue exec(const JSONRPCRequest& request)
 		double nPrice = GetCoinPrice();
 		double nDashPriceUSD = dBTC * dDASH;
 		double nXMRPriceUSD = dBTC * dXMR;
+		std::string sAPM = GetAPMNarrative();
+		results.push_back(Pair("APM", sAPM));
 		results.push_back(Pair("DASH/USD", nDashPriceUSD));
 		results.push_back(Pair("XMR/USD", nXMRPriceUSD));
 		results.push_back(Pair(CURRENCY_TICKER + "/USD", nPrice));
@@ -3180,11 +3338,67 @@ UniValue exec(const JSONRPCRequest& request)
 			results.push_back(Pair("File", str));
 		}
 	}
+	else if (sItem == "votewithcoinage")
+	{
+		std::string sGobjectID = request.params[1].get_str();
+		std::string sOutcome = request.params[2].get_str();
+		std::string TXID_OUT;
+		std::string ERROR_OUT;
+		bool fVoted = VoteWithCoinAge(sGobjectID, sOutcome, TXID_OUT, ERROR_OUT);
+		results.push_back(Pair("vote-txid", TXID_OUT));
+		results.push_back(Pair("vote-error", ERROR_OUT));
+		results.push_back(Pair("vote-result", fVoted));
+		if (!TXID_OUT.empty())
+		{
+			double nCoinAge = GetCoinAge(TXID_OUT);
+			results.push_back(Pair("vote-coin-age", nCoinAge));
+		}
+	}
+	else if (sItem == "getgobjectvotingdata")
+	{
+		std::string sGobjectID = request.params[1].get_str();
+
+		CoinAgeVotingDataStruct c = GetCoinAgeVotingData(sGobjectID);
+		for (int i = 0; i < 3; i++)
+		{
+			results.push_back(Pair("Vote Type", i));
+			BOOST_FOREACH(const PAIRTYPE(const std::string, int)& myVote, c.mapsVoteCount[i])
+			{
+				results.push_back(Pair(myVote.first, myVote.second));
+			}
+			results.push_back(Pair("Total Votes Type " + RoundToString(i, 0), c.mapTotalVotes[i]));
+			BOOST_FOREACH(const PAIRTYPE(const std::string, double)& myAge, c.mapsVoteAge[i])
+			{
+				results.push_back(Pair(myAge.first, myAge.second));
+			}
+			results.push_back(Pair("Total Age Type " + RoundToString(i, 0), c.mapTotalCoinAge[i]));
+		}
+	}
+	else if (sItem == "apmtest")
+	{
+		int iNextSuperblock = 0;
+		int nHeight = cdbl(request.params[1].get_str(), 0);
+		int iLastSuperblock = GetLastGSCSuperblockHeight(nHeight, iNextSuperblock);
+		double dAPM = CalculateAPM(iLastSuperblock);
+		double dAPM2 = CalculateAPM(iNextSuperblock);
+		double dAPM3 = ExtractAPM(iLastSuperblock);
+
+		results.push_back(Pair("As of Height", iLastSuperblock));
+		results.push_back(Pair("APM", dAPM));
+		results.push_back(Pair("APM_Extract", dAPM3));
+		results.push_back(Pair("APM as of Next Superblock " + RoundToString(iNextSuperblock, 0), dAPM2));
+	}
+	else if (sItem == "poostest")
+	{
+		std::string sBio = request.params[1].get_str();
+		bool f1 = POOSOrphanTest(sBio, 60);
+		results.push_back(Pair("bio", f1));
+	}
 	else if (sItem == "testhttps")
 	{
 		std::string sURL = "https://" + GetSporkValue("bms");
 		std::string sRestfulURL = "BMS/LAST_MANDATORY_VERSION";
-		std::string sResponse = HTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 25, 10000, 1);
+		std::string sResponse = Uplink(false, "", sURL, sRestfulURL, SSL_PORT, 25, 1);
 		results.push_back(Pair(sRestfulURL, sResponse));
 	}
 	else if (sItem == "sendmessage")
@@ -3203,46 +3417,30 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("TXID", sResult));
 		results.push_back(Pair("Error", sError));
 	}
+	else if (sItem == "getdashstakereport")
+	{
+		double nHeight = cdbl(request.params[1].get_str(), 0);
+		double dTotal = 0;
+		std::vector<DashStake> dws = GetPayableDashStakes(nHeight, dTotal);
+		for (int i = 0; i < dws.size(); i++)
+		{
+			DashStake ws = dws[i];
+			results.push_back(Pair("bbputxo", ws.BBPUTXO));
+			results.push_back(Pair("bbpamt", ws.nBBPQty));
+			results.push_back(Pair("monthlyearnings", ws.MonthlyEarnings));
+		}
+		results.push_back(Pair("earnings", dTotal));
+	}
 	else if (sItem == "getdwsreport")
 	{
-
 		CBlock block;
 		int iNextSuperblock = 0;
 		int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
 		const Consensus::Params& consensusParams = Params().GetConsensus();
-		/*
-		if (false)
-		{
-			results.push_back(Pair("GetGovLimit", "Report v1.1"));
-			for (int nHeight = nLastSuperblock; nHeight > 0; nHeight -= BLOCKS_PER_DAY)
-			{
-
-				CBlockIndex* pindex = FindBlockByHeight(nHeight);
-				if (pindex) 
-				{
-					CAmount nTotal = 0;
-		
-					if (ReadBlockFromDisk(block, pindex, consensusParams)) 
-					{
-						for (unsigned int i = 0; i < block.vtx[0]->vout.size(); i++)
-    					{
-							nTotal += block.vtx[0]->vout[i].nValue;
-						}
-						if (nTotal/COIN > MAX_BLOCK_SUBSIDY && block.vtx[0]->vout.size() < 7)
-						{
-							std::string sRow = "Total: " + RoundToString(nTotal/COIN, 2) + ", Size: " + RoundToString(block.vtx.size(), 0);
-							results.push_back(Pair(RoundToString(nHeight, 0), sRow));
-						}
-					}
-				}
-			}
-		}
-		*/
 		for (int nHeight = iLastSuperblock; nHeight > 0; nHeight -= BLOCKS_PER_DAY)
 		{
 			CBlockIndex* pindex = FindBlockByHeight(nHeight);
 			CAmount nLimit = CSuperblock::GetPaymentsLimit(nHeight, false);
-
 			if (pindex) 
 			{
 				CAmount nTotal = 0;
@@ -3266,7 +3464,7 @@ UniValue exec(const JSONRPCRequest& request)
 							double nDWSStakes = 0;
 							// This superblock has whale stakes
 							double dTotalWhalePayments = 0;
-							std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight - 205, dTotalWhalePayments);
+							std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight - BLOCKS_PER_DAY, dTotalWhalePayments);
 							for (int i = 0; i < dws.size(); i++)
 							{
 								WhaleStake ws = dws[i];
@@ -3305,6 +3503,10 @@ UniValue exec(const JSONRPCRequest& request)
 		std::vector<WhaleStake> dws = GetPayableWhaleStakes(nHeight, dTotalWhalePayments);
 		results.push_back(Pair("DWS payables owed", dTotalWhalePayments));
 		results.push_back(Pair("DWS quantity", (int)dws.size()));
+		double dTotalDashPayments = 0;
+		std::vector<DashStake> dash = GetPayableDashStakes(nHeight, dTotalDashPayments);
+		results.push_back(Pair("DASH payables owed", dTotalDashPayments));
+		results.push_back(Pair("DASH quantity", (int)dash.size()));
 	}
 	else if (sItem == "hexblocktojson")
 	{
@@ -3390,182 +3592,6 @@ UniValue exec(const JSONRPCRequest& request)
 		int nID = GetWCGMemberID(sUN, sVC, nPoints);
 		results.push_back(Pair("ID", nID));
 	}
-	else if (sItem == "dws")
-	{
-		// Expirimental Feature:  Dynamic Whale Stake
-		// exec dws amount duration_in_days 0=test/1=authorize
-		const Consensus::Params& consensusParams = Params().GetConsensus();
-
-		std::string sHowey = "By typing I_AGREE in uppercase, you agree to the following conditions:"
-			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THESE COINS, AND DO NOT EXPECT AN INCREASE IN VALUE."
-			"\n2.  I HAVE NOT BEEN PROMISED A PROFIT, AND THIS ACTION IS NOT PROMISING ME ANY HOPES OF PROFIT IN ANY WAY NOR IS THE COMMUNITY OR ORGANIZATION."
-			"\n3.  " + CURRENCY_NAME + " IS NOT ACTING AS A COMMON ENTERPRISE OR THIRD PARTY IN THIS ENDEAVOR."
-			"\n4.  I HOLD " + CURRENCY_NAME + " AS A HARMLESS UTILITY."
-			"\n5.  I REALIZE I AM RISKING 100% OF MY CRYPTO-HOLDINGS BY BURNING IT, AND " + CURRENCY_NAME + " IS NOT OBLIGATED TO REFUND MY CRYPTO-HOLDINGS OR GIVE ME ANY REWARD.";
-			
-		std::string sHelp = "You must specify exec dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + sHowey;
-		
-		if (request.params.size() != 4 && request.params.size() != 5)
-			throw std::runtime_error(sHelp.c_str());
-
-		double nAmt = cdbl(request.params[1].get_str(), 2);
-		double nDuration = cdbl(request.params[2].get_str(), 0);
-		std::string sAuthorize = request.params[3].get_str();
-		std::string sReturnAddress = DefaultRecAddress("Christian-Public-Key");
-		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
-
-		CBitcoinAddress returnAddress(sReturnAddress);
-		if (request.params.size() == 5)
-		{
-			sReturnAddress = request.params[4].get_str();
-			returnAddress = CBitcoinAddress(sReturnAddress);
-		}
-		if (!returnAddress.IsValid())
-			throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid return address: ") + sReturnAddress);
-
-		if (nAmt < 100 || nAmt > 1000000)
-			throw std::runtime_error("Sorry, amount must be between 100 and 1,000,000 " + CURRENCY_NAME + ".");
-
-		if (nDuration < 7 || nDuration > 365)
-			throw std::runtime_error("Sorry, duration must be between 7 days and 365 days.");
-	
-		if (fProd && chainActive.Tip()->nHeight < consensusParams.PODC2_CUTOVER_HEIGHT)
-			throw std::runtime_error("Sorry, this feature is not available yet.  Please wait until the mandatory upgrade height passes. ");
-
-		double nTotalStakes = GetWhaleStakesInMemoryPool(sCPK);
-		if (nTotalStakes > 256000)
-			throw std::runtime_error("Sorry, you currently have " + RoundToString(nTotalStakes, 2) + CURRENCY_NAME + " in whale stakes pending at height " 
-			+ RoundToString(chainActive.Tip()->nHeight, 0) + ".  Please wait until the current block passes before issuing a new DWS. ");
-
-		results.push_back(Pair("Staking Amount", nAmt));
-		results.push_back(Pair("Duration", nDuration));
-		int64_t nStakeTime = GetAdjustedTime();
-		int64_t nReclaimTime = (86400 * nDuration) + nStakeTime;
-		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
-
-		results.push_back(Pair("Reclaim Date", TimestampToHRDate(nReclaimTime)));
-		results.push_back(Pair("Return Address", sReturnAddress));
-		
-		results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(nDuration, wm.DWU) * 100, 4)));
-		
-		std::string sPK = "DWS-" + sReturnAddress + "-" + RoundToString(nReclaimTime, 0);
-		std::string sPayload = "<MT>DWS</MT><MK>" + sPK + "</MK><MV><dws><returnaddress>" + sReturnAddress + "</returnaddress><burnheight>" 
-			+ RoundToString(chainActive.Tip()->nHeight, 0) 
-			+ "</burnheight><cpk>" + sCPK + "</cpk><burntime>" + RoundToString(GetAdjustedTime(), 0) + "</burntime><dwu>" + RoundToString(wm.DWU, 4) + "</dwu><duration>" 
-			+ RoundToString(nDuration, 0) + "</duration><duedate>" + TimestampToHRDate(nReclaimTime) + "</duedate><amount>" + RoundToString(nAmt, 2) + "</amount></dws></MV>";
-
-		CBitcoinAddress toAddress(consensusParams.BurnAddress);
-		if (!toAddress.IsValid())
-				throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Burn-To Address: ") + consensusParams.BurnAddress);
-
-		if (sAuthorize == "I_AGREE")
-		{
-			bool fSubtractFee = false;
-			bool fInstantSend = false;
-			std::string sError;
-		    CWalletTx wtx;
-			// Dry Run step 1:
-		    std::vector<CRecipient> vecDryRun;
-			int nChangePosRet = -1;
-			CScript scriptDryRun = GetScriptForDestination(toAddress.Get());
-			CAmount nSend = nAmt * COIN;
-			CRecipient recipientDryRun = {scriptDryRun, nSend, false, fSubtractFee};
-			vecDryRun.push_back(recipientDryRun);
-			double dMinCoinAge = 1;
-			CAmount nFeeRequired = 0;
-
-			CReserveKey reserveKey(pwalletMain);
-	
-			bool fSent = pwalletMain->CreateTransaction(vecDryRun, wtx, reserveKey, nFeeRequired, nChangePosRet, sError, NULL, true, 
-				ALL_COINS, fInstantSend, 0, sPayload, dMinCoinAge, 0, 0, "");
-
-			// Verify the transaction first:
-			std::string sError2;
-			bool fSent2 = VerifyDynamicWhaleStake(wtx.tx, sError2);
-			sError += sError2;
-			if (!fSent || !sError.empty())
-			{
-				results.push_back(Pair("Error (Not Sent)", sError));
-			}
-			else
-			{
-				CValidationState state;
-				if (!pwalletMain->CommitTransaction(wtx, reserveKey, g_connman.get(), state, NetMsgType::TX))
-				{
-					throw JSONRPCError(RPC_WALLET_ERROR, "Whale-Stake-Commit failed.");
-				}
-				
-				results.push_back(Pair("Results", "Burn was successful.  You will receive your original " + CURRENCY_NAME + " back on the Reclaim Date, plus the stake reward.  Please give the wallet an extra 48 hours after the reclaim date to process the return stake.  "));
-				results.push_back(Pair("TXID", wtx.GetHash().GetHex()));
-			}
-		}
-		else
-		{
-			results.push_back(Pair("Test Mode", sHowey));
-		}
-
-	}
-	else if (sItem == "dwsquote")
-	{
-		if (request.params.size() != 1 && request.params.size() != 2 && request.params.size() != 3)
-			throw std::runtime_error("You must specify exec dwsquote [optional 1=my whale stakes only, 2=all whale stakes] [optional 1=Include Paid/Unpaid, 2=Include Unpaid only (default)].");
-		std::string sCPK = DefaultRecAddress("Christian-Public-Key");
-	
-		double dDetails = 0;
-		if (request.params.size() > 1)
-			dDetails = cdbl(request.params[1].get_str(), 0);
-		double dPaid = 2;
-		if (request.params.size() > 2)
-			dPaid = cdbl(request.params[2].get_str(), 0);
-
-		if (dDetails == 1 || dDetails == 2)
-		{
-			std::vector<WhaleStake> w = GetDWS(true);
-			results.push_back(Pair("Total DWS Quantity", (int)w.size()));
-
-			for (int i = 0; i < w.size(); i++)
-			{
-				WhaleStake ws = w[i];
-				bool fIncForPayment = (!ws.paid && dPaid == 2) || (dPaid == 1);
-
-				if (ws.found && fIncForPayment && ((dDetails == 2) || (dDetails==1 && ws.CPK == sCPK)))
-				{
-					// results.push_back(Pair("Return Address", ws.ReturnAddress));
-					int nRewardHeight = GetWhaleStakeSuperblockHeight(ws.MaturityHeight);
-					std::string sRow = "Burned: " + RoundToString(ws.Amount, 2) + ", Reward: " + RoundToString(ws.TotalOwed, 2) + ", DWU: " 
-						+ RoundToString(ws.ActualDWU*100, 4) + ", Duration: " + RoundToString(ws.Duration, 0) + ", BurnHeight: " + RoundToString(ws.BurnHeight, 0) 
-						+ ", RewardHeight: " + RoundToString(nRewardHeight, 0) + " [" + RoundToString(ws.MaturityHeight, 0) + "], MaturityDate: " + TimestampToHRDate(ws.MaturityTime) + ", ReturnAddress: " + ws.ReturnAddress;
-
-					std::string sKey = ws.CPK + " " + RoundToString(i+1, 0);
-					// ToDo: Add parameter to show the return_to_address if user desires it
-					results.push_back(Pair(sKey, sRow));
-				}
-			}
-		}
-		results.push_back(Pair("Metrics", "v1.1"));
-		// Call out for Whale Metrics
-		WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
-		results.push_back(Pair("Total Future Commitments", wm.nTotalFutureCommitments));
-		results.push_back(Pair("Total Gross Future Commitments", wm.nTotalGrossFutureCommitments));
-
-		results.push_back(Pair("Total Commitments Due Today", wm.nTotalCommitmentsDueToday));
-		results.push_back(Pair("Total Gross Commitments Due Today", wm.nTotalGrossCommitmentsDueToday));
-
-		results.push_back(Pair("Total Burns Today", wm.nTotalBurnsToday));
-		results.push_back(Pair("Total Gross Burns Today", wm.nTotalGrossBurnsToday));
-
-		results.push_back(Pair("Total Monthly Commitments", wm.nTotalMonthlyCommitments));
-		results.push_back(Pair("Total Gross Monthly Commitments", wm.nTotalGrossMonthlyCommitments));
-
-		results.push_back(Pair("Total Annual Reward", wm.nTotalAnnualReward));
-		results.push_back(Pair("Saturation Percent Annual", RoundToString(wm.nSaturationPercentAnnual * 100, 8)));
-		results.push_back(Pair("Saturation Percent Monthly", RoundToString(wm.nSaturationPercentMonthly * 100, 8)));
-		results.push_back(Pair("30 day DWU", RoundToString(GetDWUBasedOnMaturity(30, wm.DWU) * 100, 4)));
-		results.push_back(Pair("90 day DWU", RoundToString(GetDWUBasedOnMaturity(90, wm.DWU) * 100, 4)));
-		results.push_back(Pair("180 day DWU", RoundToString(GetDWUBasedOnMaturity(180, wm.DWU) * 100, 4)));
-		results.push_back(Pair("365 day DWU", RoundToString(GetDWUBasedOnMaturity(365, wm.DWU) * 100, 4)));
-	}
-
 	else if (sItem == "boinc1")
 	{
 		// This command is only for dev debugging; will be removed soon.

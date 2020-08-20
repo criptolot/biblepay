@@ -135,7 +135,7 @@ static const int64_t DEFAULT_MAX_TIP_AGE = 24 * 60 * 60; // ~144 blocks behind -
 /** Maximum age of our tip in seconds for us to be considered current for fee estimation */
 static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
 
-/** DAC extern functions **/
+/** BiblePay extern functions **/
 void SetOverviewStatus();
 void KillBlockchainFiles();
 bool LateBlock(const CBlock& block, const CBlockIndex* pindexPrev, int iMinutes);
@@ -143,6 +143,8 @@ int64_t LateBlockIndex(const CBlockIndex* pindexPrev, int iMinutes);
 
 
 static const std::string BUSINESS_OBJECTS = "BUSINESS_OBJECTS";
+static const int SSL_PORT = 443;
+static const int APM_REWARD = 7;
 static const int MINIMUM_EMAIL_LENGTH = 5; 
 static const int BLOCKS_PER_DAY = 205;
 static const int SANCTUARY_COLLATERAL = 4500001;
@@ -249,13 +251,18 @@ extern int64_t nMaxTipAge;
 
 extern bool fLargeWorkForkFound;
 extern bool fLargeWorkInvalidChainFound;
+extern int nSideChainHeight;
 
 extern std::map<uint256, int64_t> mapRejectedBlocks;
 extern std::map<std::pair<std::string, std::string>, std::pair<std::string, int64_t>> mvApplicationCache;
 
+struct IPFSTransaction;
 struct POSEScore;
 struct Researcher;
+struct DashUTXO;
 
+extern std::map<std::string, IPFSTransaction> mapSidechainTransactions;
+extern std::map<std::string, DashUTXO> mapDashUTXO;
 extern std::map<std::string, POSEScore> mvPOSEScore;
 extern std::atomic<bool> fDIP0001ActiveAtTip;
 extern std::map<std::string, Researcher> mvResearchers;

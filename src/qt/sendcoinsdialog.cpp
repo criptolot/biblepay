@@ -309,6 +309,64 @@ void SendCoinsDialog::on_sendButton_clicked()
     send(recipients, strFee, strFunds);
 }
 
+bool SendCoinsDialog::ConfirmDWS(QList<SendCoinsRecipient> recipients, CAmount& nDWSAmount)
+{
+	WalletModelTransaction currentTransaction(recipients);
+    
+	// Format confirmation message
+    QStringList formatted;
+    Q_FOREACH(const SendCoinsRecipient &rcp, currentTransaction.getRecipients())
+    {
+		if (rcp.fDWS)
+			nDWSAmount += rcp.amount;
+    }
+
+	if (nDWSAmount < 1*COIN)
+		return false;
+
+    QString questionString = tr("Are you sure you want to send a Dynamic Whale Stake?");
+    questionString.append("<br /><br />%1");
+	questionString.append("<hr /><span style='color:#aa0000;'>");
+	questionString.append(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), nDWSAmount));
+	questionString.append("</span> ");
+	questionString.append(tr(" added as a Dynamic Whale Stake"));
+	// Add in the DWS Quote (for 90 days)
+	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
+	std::string sQuote = "<br>90 day DWU " + RoundToString(GetDWUBasedOnMaturity(90, wm.DWU) * 100, 4) + "%<br>";
+	questionString.append(QString::fromStdString(sQuote));
+    // add total amount in all subdivision units
+    questionString.append("<hr />");
+    CAmount totalAmount = currentTransaction.getTotalTransactionAmount();
+    QStringList alternativeUnits;
+    Q_FOREACH(BitcoinUnits::Unit u, BitcoinUnits::availableUnits())
+    {
+        if(u != model->getOptionsModel()->getDisplayUnit())
+            alternativeUnits.append(BitcoinUnits::formatHtmlWithUnit(u, totalAmount));
+    }
+
+    // Show total amount + all alternative units
+    questionString.append(tr("Total Amount = <b>%1</b><br />= %2")
+        .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), totalAmount))
+        .arg(alternativeUnits.join("<br />= ")));
+
+    questionString.append("<hr />");
+	std::string sHowey = GetHowey(false, true);
+	questionString.append(QString::fromStdString(sHowey));
+    // Display message box
+    SendConfirmationDialog confirmationDialog(tr("Confirm sending dynamic whale stake"),
+        questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
+    confirmationDialog.exec();
+    QMessageBox::StandardButton retval = (QMessageBox::StandardButton)confirmationDialog.result();
+
+    if(retval != QMessageBox::Yes)
+    {
+		return false;
+    }
+
+	return true;
+
+}
+
 void SendCoinsDialog::send(QList<SendCoinsRecipient> recipients, QString strFee, QString strFunds)
 {
     // prepare transaction for getting txFee earlier
@@ -332,6 +390,38 @@ void SendCoinsDialog::send(QList<SendCoinsRecipient> recipients, QString strFee,
 		clear();
 		return;
 	}
+	else if (prepareStatus.status == WalletModel::TransactionCommitFailed && prepareStatus.reasonCommitFailed == "DWS_FAIL")
+	{
+		CAmount nDWSAmount = 0;
+
+		bool fSend = ConfirmDWS(recipients, nDWSAmount);
+		if (fSend)
+		{
+			std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+			std::string sTXID;
+			std::string sError;
+			double nDuration = 90;
+			bool fSent = SendDWS(sTXID, sError, sCPK, sCPK, (double)nDWSAmount/COIN, nDuration, false);
+			std::string sNarr;
+			if (!fSent)
+			{
+				sNarr = "Unable to create dynamic whale stake: " + sError;
+			}
+			else
+			{
+				sNarr = "DWS Sent Successfully: TXID=" + sTXID;
+			}
+
+			QMessageBox::warning(this, "Send Dynamic Whale Stake", QString::fromStdString(sNarr));
+         
+			int iMsg = fSent ? CClientUIInterface::MSG_INFORMATION : CClientUIInterface::MSG_ERROR;
+			Q_EMIT message(tr("Create Dynamic Whale Stake"), QString::fromStdString(sNarr), iMsg);
+			clear();
+			return;
+		}
+
+	}
+
 
     // process prepareStatus and on error generate message shown to user
     processSendCoinsReturn(prepareStatus,

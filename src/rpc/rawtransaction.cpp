@@ -212,8 +212,8 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
         }
     }
     bool fLocked = instantsend.IsLockedInstantSendTransaction(txid);
-	bool fLLMQLocked = llmq::quorumInstantSendManager->IsLocked(txid);	    entry.push_back(Pair("instantlock", fLocked));
-    entry.push_back(Pair("instantlock", fLocked || fLLMQLocked || chainLock));	
+	bool fLLMQLocked = llmq::quorumInstantSendManager->IsLocked(txid);
+	entry.push_back(Pair("instantlock", fLocked || fLLMQLocked || chainLock));	
     entry.push_back(Pair("instantlock_internal", fLocked || fLLMQLocked));	
     entry.push_back(Pair("chainlock", chainLock));
 }

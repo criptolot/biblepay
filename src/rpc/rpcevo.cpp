@@ -1427,178 +1427,6 @@ UniValue dashpay(const JSONRPCRequest& request)
 	return results;
 }
 
-/*
-UniValue cancelsponsorship(const JSONRPCRequest& request)
-{
-	// Cancel a sponsorship
-	if (request.fHelp)
-		throw std::runtime_error(
-		"cancelsponsorship charityname childid authorize"
-		"\nCancels an existing sponsorship. \n "
-		"You must specify true to authorize the cancellation.  Example:  cancelsponsorship kairos childid authorize.");
-
-	if (request.params.size() != 3)
-			throw std::runtime_error("You must specify cancelsponsorship charityname childid 'authorize'.  ");
-
-	std::string sCharity = request.params[0].get_str();
-	std::string sChildID = request.params[1].get_str();
-	std::string sAuthorize = request.params[2].get_str();
-	if (sAuthorize != "authorize")
-		throw std::runtime_error("Request cancelled, child still active.");
-	if (sCharity != "cameroon-one" && sCharity != "kairos")
-		throw std::runtime_error("Charity name is not recognized.");
-
-	bool fGood = VerifyChild(sChildID, sCharity);
-	if (!fGood || sChildID.empty())
-		throw std::runtime_error("Invalid Child ID. (Not sponsored). ");
-
-	std::string sError;
-
-	if (!Enrolled(sCharity, sError))
-	{
-		sError = "Sorry, CPK is not enrolled in project. [" + sError + "].  Error 795.  To continue, please type 'exec join campaign_name', then wait 3 blocks, then continue. ";
-		throw std::runtime_error(sError);
-	}
-
-	std::string sProject = "cpk|" + sCharity;
-    EnsureWalletIsUnlocked(pwalletMain);
-
-	CAmount nFee = 1 * COIN;
-	std::string sKey = sProject + "|" + sChildID;
-
-	bool fForce = true;
-	std::string sNewId = "";
-	std::string sOptData = "";
-	
-	bool fAdv = AdvertiseChristianPublicKeypair(sKey,          "", sOptData,     "", true, true, nFee, sNewId, sError);
-	
-    UniValue results(UniValue::VOBJ);
-	if (!fAdv)
-	{
-		results.push_back(Pair("Error", sError));
-	}
-	else
-	{
-		results.push_back(Pair("Results", "Sponsorship cancelled.  Please wait 3 blocks to see if the child is removed from listchildren. "));
-	}
-	return results;
-}
-
-
-UniValue sponsorchild(const JSONRPCRequest& request)
-{
-	// Sponsor a Child
-	if (request.fHelp)
-		throw std::runtime_error(
-		"sponsorchild charityname authorize"
-		"\nSponsors a new child through one of our  charities.  You may have more than one child per CPK (Currently we do not have a limit).  \n"
-		"Note:  We will send 50,000 " + CURRENCY_NAME + " to the foundation as a donation each time you sponsor a child (this is to prevent abuse). \n "
-		"You must specify true to authorize the 50,000 " + CURRENCY_NAME + " tithe.  Example:  sponsorchild kairos authorize.");
-
-	if (request.params.size() != 2)
-			throw std::runtime_error("You must specify sponsorchild charityname 'authorize' in order to approve a 50,000 " + CURRENCY_NAME + " debit from your wallet to be tithed to the foundation.  ");
-
-	std::string sCharity = request.params[0].get_str();
-	std::string sAuthorize = request.params[1].get_str();
-	if (sAuthorize != "authorize")
-		throw std::runtime_error("Sponsorship cancelled.");
-	if (sCharity != "cameroon-one" && sCharity != "kairos")
-		throw std::runtime_error("Charity name is not recognized.");
-
-	double nNoChildrenAvailable = GetSporkDouble("NoChildrenAvailable" + sCharity, 0);
-	if (nNoChildrenAvailable == 1)
-		throw std::runtime_error("Sorry, " + sCharity + " has no children available to sponsor.");
-
-	std::string sError;
-
-	if (!Enrolled(sCharity, sError))
-	{
-		sError = "Sorry, CPK is not enrolled in project. [" + sError + "].  Error 795.  To continue, please type 'exec join campaign_name', then wait 3 blocks, then continue. ";
-		throw std::runtime_error(sError);
-	}
-
-	std::string sProject = "cpk|" + sCharity;
-    EnsureWalletIsUnlocked(pwalletMain);
-
-	CAmount nFee = 50000 * COIN;
-	std::string sChildId = GetRandHash().GetHex().substr(0,8);
-	std::string sKey = sProject + "|" + sChildId;
-	std::string sOptData = sChildId;
-	bool fForce = true;
-	bool fAdv = AdvertiseChristianPublicKeypair(sKey,          "", sOptData,     "", false, fForce, nFee, sChildId, sError);
-
-    UniValue results(UniValue::VOBJ);
-	results.push_back(Pair("Results", fAdv));
-	if (!fAdv)
-	{
-		results.push_back(Pair("Error", sError));
-	}
-	else
-	{
-		std::string sNarr = "Thank you for sponsoring a child through . "
-			"\nYour new child ID is: " + sChildId + "\nNOTE: You will not receive rewards for this child until our  charity posts a credit to your account for this child.  "
-			"\nIt can take 7-14 days to provision a new child, receive and post your payment, so please, be patient. "
-			"\nTo check the status of your child, type 'listchildren' into the RPC."
-			"\nPlease read this wiki page to know how to make a payment for your child:  https://wiki.bible[pay].org/Paying_For_a__Sponsored_Child"
-			"\n";
-
-		std::vector<std::string> vNarr = Split(sNarr.c_str(), "\n");
-		for (int i = 0; i < vNarr.size(); i++)
-		{
-			results.push_back(Pair("Notes " + RoundToString(i,0), vNarr[i]));
-		}
-	}
-	return results;
-}
-
-UniValue getchildbalance(const JSONRPCRequest& request)
-{
-	if (request.fHelp || request.params.size() != 2)	
-	{
-		throw std::runtime_error("getchildbalance:  Shows the balance in USD for a given child.  IE: getchildbalance childid charity.");
-	}
-    UniValue results(UniValue::VOBJ);
-	std::string sChildID = request.params[0].get_str();
-	std::string sCharity = request.params[1].get_str();
-	double dBal = GetChildBalance(sChildID, sCharity);	
-	results.push_back(Pair("Balance", dBal));
-	return results;
-}
-
-UniValue listchildren(const JSONRPCRequest& request)
-{
-	// List sponsored children by the User's CPK
-	if (request.fHelp)
-		throw std::runtime_error(
-		"listchildren"
-		"\nReturns a list of children sponsored by the users CPK."
-		"\nSpecify listchildren all to see all sponsored children."
-		"\nOtherwise, specify listchildren to see your sponsored children");
-	if (request.params.size() > 1)
-			throw std::runtime_error("You must specify listchildren or listchildren [optional=all]. ");
-	bool fAll = false;
-	if (request.params.size() > 0)
-		fAll = request.params[0].getValStr() == "true" || request.params[0].getValStr() == "all";
-
-    UniValue results(UniValue::VOBJ);
-	results.push_back(Pair("List Of", " Children"));
-	std::string sMyCPK = DefaultRecAddress("Christian-Public-Key");
-	std::string sCharity = "cameroon-one";
-	std::map<std::string, CPK> cp1 = GetChildMap("cpk|" + sCharity);
-	for (std::pair<std::string, CPK> a : cp1)
-	{
-		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
-	}
-	sCharity = "kairos";
-	cp1 = GetChildMap("cpk|" + sCharity);
-	for (std::pair<std::string, CPK> a : cp1)
-	{
-		EmitChild(a.second, sCharity, fAll, sMyCPK, results);
-	}
-	return results;
-}
-
-*/
 
 UniValue faucetcode(const JSONRPCRequest& request)
 {
@@ -1667,8 +1495,9 @@ UniValue sendgscc(const JSONRPCRequest& request)
 	WriteCache("gsc", "errors", "", GetAdjustedTime());
 	std::string sError;
 	std::string sWarning;
+	std::string TXID_OUT;
     UniValue results(UniValue::VOBJ);
-	bool fCreated = CreateGSCTransmission(true, sDiary, sError, sCampaignName, sWarning);
+	bool fCreated = CreateGSCTransmission("", "", true, sDiary, sError, sCampaignName, sWarning, TXID_OUT);
 
 	if (!sError.empty())
 		results.push_back(Pair("Error!", sError));
@@ -1707,6 +1536,274 @@ UniValue getpobhhash(const JSONRPCRequest& request)
     UniValue results(UniValue::VOBJ);
 	results.push_back(Pair("inhash", hSource.GetHex()));
 	results.push_back(Pair("outhash", h.GetHex()));
+	return results;
+}
+
+UniValue dashstake(const JSONRPCRequest& request)
+{
+	// Dash Staking
+	// This allows you to lock up Y amount of Dash + Z amount of BBP in a contract, and receive monthly rewards on this amount.
+	// Starting initially as of September 15th, 2020, we will start with 6 month contracts (this is primarily to ensure the prices of each underlying currency do not change significatly since the start date of the contract).
+	// IE, assets will need to be re-locked once every 6 months to ensure fresh price quotes (as we strive to lock roughly equal amounts of BBP with equal amounts of DASH).
+	// However, we do tolerate price changes during the duration of the contract.
+	// But, if either asset is spent, the contract is cancelled (cancelled during our next GSC height after an asset is spent).
+	// You can see if a contract is in force by looking at the "expiration" and the "expired" and the "spent" fields of each contract.
+	// Contracts pay interest rewards MONTHLY.  At the contract height + 30*205 successively, for each period.
+	// To get a dashstake quote, type 'dashstakequote' first.
+	// Example:
+	// dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE 0=test/1=authorize
+	// To create a signature, from DASH type:  signmessage dash_public_key DASH-UTXO-ORDINAL <enter>.  Copy the Dash signature into the BiblePay 'dashstake' command.
+
+	// NOTE:  UTXOs cannot be re-used until a contract expires.
+	// The lower stake amount denominated in BBP is used to assess the MonthlyEarnings based on the market value of Dash and BBP at the time the contract is created.
+	// You may re-lock after expiration.
+
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+		
+	std::string sHelp = "You must specify dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE I_AGREE=Authorize.\n" + GetHowey(true, false);
+	
+	if (request.fHelp || (request.params.size() != 4))
+		throw std::runtime_error(sHelp.c_str());
+		
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	std::string sBBPUTXO = request.params[0].get_str();
+	std::string sDashUTXO = request.params[1].get_str();
+	std::string sDashSig = request.params[2].get_str();
+
+	std::string sError;
+
+	std::string sBBPSig = SignBBPUTXO(sBBPUTXO, sError);
+	UniValue results(UniValue::VOBJ);
+
+	if (!sError.empty())
+	{
+		results.push_back(Pair("BBP Signing Error", sError));
+		return results;
+	}
+
+	std::string sAuth = request.params[3].get_str();
+
+	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
+	std::string sTXID;
+	DashStake ds;
+	if (sAuth == "I_AGREE")
+	{
+		bool fSent = SendDashStake(sCPK, sTXID, sError, sBBPUTXO, sDashUTXO, sBBPSig, sDashSig, 30 * 6.5, sCPK, false, ds);
+		if (!fSent || !sError.empty())
+		{
+			results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(30 * 6.5, wm.DWU) * 100, 4)));
+			results.push_back(Pair("Error (Not Sent)", sError));
+		}
+		else
+		{
+			ds = GetDashStakeByUTXO(sBBPUTXO);
+			LockDashStakes();
+			results.push_back(Pair("Monthly Earnings", ds.MonthlyEarnings));
+			results.push_back(Pair("DWU", ds.ActualDWU * 100));
+			results.push_back(Pair("Next Payment Height", ds.Height + BLOCKS_PER_DAY));
+			results.push_back(Pair("BBP Value USD", ds.nBBPValueUSD));
+			results.push_back(Pair("Dash Value USD", ds.nDashValueUSD));
+			results.push_back(Pair("BBP Qty", ds.nBBPQty));
+			results.push_back(Pair("BBP Amount", (double)ds.nBBPAmount/COIN));
+			results.push_back(Pair("Dash Amount", (double)ds.nDashAmount/COIN));
+			results.push_back(Pair("Results", "The Dash Stake Contract was created successfully.  Thank you for using BIBLEPAY and DASH. "));
+			results.push_back(Pair("TXID", sTXID));
+		}
+	}
+	else
+	{
+		throw std::runtime_error(sHelp.c_str());
+	}
+	return results;
+}
+
+
+UniValue dws(const JSONRPCRequest& request)
+{
+	// Dynamic Whale Staking
+	// dws amount duration_in_days 0=test/1=authorize
+	const Consensus::Params& consensusParams = Params().GetConsensus();
+		
+	std::string sHelp = "You must specify dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + GetHowey(true, true);
+	
+	if (request.fHelp || (request.params.size() != 3 && request.params.size() != 4))
+		throw std::runtime_error(sHelp.c_str());
+	double nAmt = cdbl(request.params[0].get_str(), 2);
+	double nDuration = cdbl(request.params[1].get_str(), 0);
+	std::string sAuthorize = request.params[2].get_str();
+	
+	std::string sReturnAddress = DefaultRecAddress("Christian-Public-Key");
+	if (request.params.size() > 3)
+	{
+		sReturnAddress = request.params[3].get_str();
+	}
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	UniValue results(UniValue::VOBJ);
+
+	results.push_back(Pair("Staking Amount", nAmt));
+	results.push_back(Pair("Duration", nDuration));
+	int64_t nStakeTime = GetAdjustedTime();
+	int64_t nReclaimTime = (86400 * nDuration) + nStakeTime;
+	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
+	results.push_back(Pair("Reclaim Date", TimestampToHRDate(nReclaimTime)));
+	results.push_back(Pair("Return Address", sReturnAddress));
+	results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(nDuration, wm.DWU) * 100, 4)));
+	std::string sTXID;
+	std::string sError;
+	if (sAuthorize == "I_AGREE")
+	{
+		bool fSent = SendDWS(sTXID, sError, sReturnAddress, sCPK, nAmt, nDuration, false);
+		if (!fSent || !sError.empty())
+		{
+			results.push_back(Pair("Error (Not Sent)", sError));
+		}
+		else
+		{
+			results.push_back(Pair("Results", "Burn was successful.  You will receive your original " + CURRENCY_NAME + " back on the Reclaim Date, plus the stake reward.  Please give the wallet an extra 48 hours after the reclaim date to process the return stake.  "));
+			results.push_back(Pair("TXID", sTXID));
+		}
+	}
+	else
+	{
+		// Dry Run
+		results.push_back(Pair("Test Mode", GetHowey(true, true)));
+	}
+	return results;
+}
+
+UniValue dashstakequote(const JSONRPCRequest& request)
+{
+	// Dash Whale Staking
+	if (request.fHelp || (request.params.size() != 0 && request.params.size() != 1 && request.params.size() != 2 && request.params.size() != 3))
+		throw std::runtime_error("You must specify dashstakequote [optional 1=my dash stakes only, 2=all whale stakes] [optional 1=Include Expired, 2=Include Non-Expired only (default)].");
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	UniValue results(UniValue::VOBJ);
+	double dDetails = 0;
+	double dAdvanced = 0;
+	if (request.params.size() > 0)
+		dDetails = cdbl(request.params[0].get_str(), 0);
+	double dExpired = 2;
+	if (request.params.size() > 1)
+		dExpired = cdbl(request.params[1].get_str(), 0);
+
+	if (request.params.size() > 2)
+		dAdvanced = cdbl(request.params[2].get_str(), 0);
+
+	if (dDetails == 1 || dDetails == 2)
+	{
+		std::vector<DashStake> w = GetDashStakes(true);
+		results.push_back(Pair("Total Dash Stake Quantity", (int)w.size()));
+		for (int i = 0; i < w.size(); i++)
+		{
+			DashStake ws = w[i];
+			bool fIncExpired = (!ws.expired && dExpired == 2) || (dExpired == 1);
+			if (ws.found && fIncExpired && ((dDetails == 2) || (dDetails==1 && ws.CPK == sCPK)))
+			{
+				std::string sRow = "BBPQty: "+ RoundToString(ws.nBBPQty, 2) + ", BBPAmount: " + RoundToString((double)ws.nBBPAmount/COIN, 2) 
+					+ ", DashAmount: "+ RoundToString((double)ws.nDashAmount/COIN, 2)
+					+ ", MonthlyReward: " + RoundToString(ws.MonthlyEarnings, 2) 
+					+ ", DWU: " + RoundToString(GetDWUBasedOnMaturity(ws.Duration, ws.DWU) * 100, 4) 
+					+ ", Duration: " + RoundToString(ws.Duration, 0) 
+					+ ", Height: " + RoundToString(ws.Height, 0) 
+					+ ", Time: " + TimestampToHRDate(ws.Time)
+					+ ", Expiration: " + TimestampToHRDate(ws.MaturityTime)
+					+ ", BBPUTXO: "+ ws.BBPUTXO + ", DASHUTXO: "+ ws.DashUTXO + ", BBPSIG: "+ ws.BBPSignature + ", DashSig: "+ ws.DashSignature 
+					+ ", BBPPrice: "+ RoundToString(ws.nBBPPrice, 12) + ", DashPrice: "+ RoundToString(ws.nDashPrice, 12) + ", BTCPrice: "
+					+ RoundToString(ws.nBTCPrice, 12) + ", BBP_VALUE_USD: "+ RoundToString(ws.nBBPValueUSD, 4) + ", DASH_VALUE_USD: "
+					+ RoundToString(ws.nDashValueUSD, 4) + ", BBPAddress: "+ ws.BBPAddress + ", DashAddress: "+ ws.DashAddress;
+				// Found, Not Expired, Not Spent, and SignatureValue, and MonthlyEarnings > 0
+				bool fPassesPaymentRequirements = ws.found && !ws.expired && ws.MonthlyEarnings > 0 && ws.SignatureValid && !ws.spent;
+				sRow += ", Expired: " + ToYesNo(ws.expired) + ", SigValid: "+ ToYesNo(ws.SignatureValid) + ", BBPSig: " + ToYesNo(ws.BBPSignatureValid) 
+					+ ", DashSig: " + ToYesNo(ws.DashSignatureValid) + ", Spent: "+ ToYesNo(ws.spent) + ", Payable: " + ToYesNo(fPassesPaymentRequirements);
+
+				std::string sKey = ws.CPK + "-" + RoundToString(i + 1, 0) + "-" + ws.BBPUTXO + "-" + ws.DashUTXO;
+
+				results.push_back(Pair(sKey, sRow));
+			}
+		}
+	}
+	results.push_back(Pair("Metrics", "v1.3"));
+	// Call out for Dash Stake Metrics
+	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
+	if (dAdvanced == 1)
+	{
+		results.push_back(Pair("Total Gross Commitments Due Today", wm.nTotalGrossCommitmentsDueToday));
+		results.push_back(Pair("Total Future Commitments", wm.nTotalFutureCommitments));
+		results.push_back(Pair("Total Gross Future Commitments", wm.nTotalGrossFutureCommitments));
+		results.push_back(Pair("Total Commitments Due Today", wm.nTotalCommitmentsDueToday));
+		results.push_back(Pair("Total Monthly Commitments", wm.nTotalMonthlyCommitments));
+		results.push_back(Pair("Total Gross Monthly Commitments", wm.nTotalGrossMonthlyCommitments));
+		results.push_back(Pair("Total Annual Reward", wm.nTotalAnnualReward));
+		results.push_back(Pair("Saturation Percent Annual", RoundToString(wm.nSaturationPercentAnnual * 100, 8)));
+		results.push_back(Pair("Saturation Percent Monthly", RoundToString(wm.nSaturationPercentMonthly * 100, 8)));
+	}
+	results.push_back(Pair("Total Stakes Today", wm.nTotalBurnsToday));
+	results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(30 * 6.5, wm.DWU) * 100, 4)));
+	return results;
+}
+
+UniValue dwsquote(const JSONRPCRequest& request)
+{
+	// Dynamic Whale Staking
+	if (request.fHelp || (request.params.size() != 0 && request.params.size() != 1 && request.params.size() != 2))
+		throw std::runtime_error("You must specify dwsquote [optional 1=my whale stakes only, 2=all whale stakes] [optional 1=Include Paid/Unpaid, 2=Include Unpaid only (default)].");
+	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
+	UniValue results(UniValue::VOBJ);
+	double dDetails = 0;
+	double dAdvanced = 0;
+	if (request.params.size() > 0)
+		dDetails = cdbl(request.params[0].get_str(), 0);
+	double dPaid = 2;
+	if (request.params.size() > 1)
+		dPaid = cdbl(request.params[1].get_str(), 0);
+
+	if (request.params.size() > 2)
+		dAdvanced = cdbl(request.params[2].get_str(), 0);
+
+	if (dDetails == 1 || dDetails == 2)
+	{
+		std::vector<WhaleStake> w = GetDWS(true);
+		results.push_back(Pair("Total DWS Quantity", (int)w.size()));
+			for (int i = 0; i < w.size(); i++)
+		{
+			WhaleStake ws = w[i];
+			bool fIncForPayment = (!ws.paid && dPaid == 2) || (dPaid == 1);
+				if (ws.found && fIncForPayment && ((dDetails == 2) || (dDetails==1 && ws.CPK == sCPK)))
+				{
+				// results.push_back(Pair("Return Address", ws.ReturnAddress));
+				int nRewardHeight = GetWhaleStakeSuperblockHeight(ws.MaturityHeight);
+				std::string sRow = "Burned: " + RoundToString(ws.Amount, 2) + ", Reward: " + RoundToString(ws.TotalOwed, 2) + ", DWU: " 
+					+ RoundToString(ws.ActualDWU*100, 4) + ", Duration: " + RoundToString(ws.Duration, 0) + ", BurnHeight: " + RoundToString(ws.BurnHeight, 0) 
+					+ ", RewardHeight: " + RoundToString(nRewardHeight, 0) + " [" + RoundToString(ws.MaturityHeight, 0) + "], MaturityDate: " + TimestampToHRDate(ws.MaturityTime) + ", ReturnAddress: " + ws.ReturnAddress;
+					std::string sKey = ws.CPK + " " + RoundToString(i+1, 0);
+				// ToDo: Add parameter to show the return_to_address if user desires it
+				results.push_back(Pair(sKey, sRow));
+			}
+		}
+	}
+	results.push_back(Pair("Metrics", "v1.2"));
+	// Call out for Whale Metrics
+	WhaleMetric wm = GetWhaleMetrics(chainActive.Tip()->nHeight, true);
+	if (dAdvanced == 1)
+	{
+		results.push_back(Pair("Total Gross Commitments Due Today", wm.nTotalGrossCommitmentsDueToday));
+		results.push_back(Pair("Total Future Commitments", wm.nTotalFutureCommitments));
+		results.push_back(Pair("Total Gross Future Commitments", wm.nTotalGrossFutureCommitments));
+		results.push_back(Pair("Total Commitments Due Today", wm.nTotalCommitmentsDueToday));
+		results.push_back(Pair("Total Monthly Commitments", wm.nTotalMonthlyCommitments));
+		results.push_back(Pair("Total Gross Monthly Commitments", wm.nTotalGrossMonthlyCommitments));
+		results.push_back(Pair("Total Annual Reward", wm.nTotalAnnualReward));
+		results.push_back(Pair("Saturation Percent Annual", RoundToString(wm.nSaturationPercentAnnual * 100, 8)));
+		results.push_back(Pair("Saturation Percent Monthly", RoundToString(wm.nSaturationPercentMonthly * 100, 8)));
+	}
+	results.push_back(Pair("Total Gross Burns Today", wm.nTotalGrossBurnsToday));
+	
+	results.push_back(Pair("Total Burns Today", wm.nTotalBurnsToday));
+	
+	results.push_back(Pair("30 day DWU", RoundToString(GetDWUBasedOnMaturity(30, wm.DWU) * 100, 4)));
+	results.push_back(Pair("90 day DWU", RoundToString(GetDWUBasedOnMaturity(90, wm.DWU) * 100, 4)));
+	results.push_back(Pair("180 day DWU", RoundToString(GetDWUBasedOnMaturity(180, wm.DWU) * 100, 4)));
+	results.push_back(Pair("365 day DWU", RoundToString(GetDWUBasedOnMaturity(365, wm.DWU) * 100, 4)));
 	return results;
 }
 
@@ -1761,37 +1858,6 @@ UniValue hexblocktocoinbase(const JSONRPCRequest& request)
 	} 
 	return results;
 }
-
-void EmitChild(CPK c, std::string sCharity, bool fAll, std::string sMyCPK, UniValue& results)
-{
-	std::string sCPK = c.sAddress;
-	std::string sChildID = c.sOptData;
-	std::string sBIODomain = GetSporkValue("bio-domain-" + sCharity);
-	std::string sBIOUrl = sBIODomain + sChildID + ".htm";
-	CPK userCPK = GetCPKFromProject("cpk", sCPK);
-	if (!sChildID.empty())
-	{
-		if (fAll || c.sAddress == sMyCPK)
-		{
-			results.push_back(Pair("Charity", sCharity));
-			results.push_back(Pair("Child ID", sChildID));
-			results.push_back(Pair("CPK", c.sAddress));
-			results.push_back(Pair("Biography", sBIOUrl));
-			double nBalance = GetChildBalance(sChildID, sCharity);
-			results.push_back(Pair("Balance", nBalance));
-	
-			if (nBalance == -999)
-				results.push_back(Pair("Notes", "This child is not provisioned yet."));
-			if (nBalance > 0)
-				results.push_back(Pair("Notes", "Child sponsorship is due."));
-			if (nBalance <= 0 && nBalance != -999)
-				results.push_back(Pair("Notes", "Good job, nothing due!"));		
-			results.push_back(Pair("---------", "--------------------------------------------------"));
-
-		}
-	}
-}
-
 
 UniValue protx(const JSONRPCRequest& request)
 {
@@ -1933,6 +1999,10 @@ static const CRPCCommand commands[] =
 	{ "evo",                "books",                        &books,                         false, {}  },
 	{ "evo",                "datalist",                     &datalist,                      false, {}  },
 	{ "evo",                "dashpay",                      &dashpay,                       false, {}  },
+	{ "evo",                "dashstakequote",               &dashstakequote,                false, {}  },
+	{ "evo",                "dashstake",                    &dashstake,                     false, {}  },
+	{ "evo",                "dws",                          &dws,                           false, {}  },
+	{ "evo",                "dwsquote",                     &dwsquote,                      false, {}  },
 	{ "evo",                "hexblocktocoinbase",           &hexblocktocoinbase,            false, {}  },
 	{ "evo",                "getpobhhash",                  &getpobhhash,                   false, {}  },
     { "evo",                "bls",                          &_bls,                          false, {}  },

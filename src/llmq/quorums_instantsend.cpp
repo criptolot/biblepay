@@ -377,6 +377,7 @@ void CInstantSendManager::InterruptWorkerThread()
 bool CInstantSendManager::ProcessTx(const CTransaction& tx, bool allowReSigning, const Consensus::Params& params)
 {
     if (!IsNewInstantSendEnabled()) {
+		LogPrintf("llmq not enabled processtx %f ", 899);
         return true;
     }
 
@@ -800,7 +801,7 @@ std::unordered_set<uint256> CInstantSendManager::ProcessPendingInstantSendLocks(
     CBLSBatchVerifier<NodeId, uint256> batchVerifier(false, true, 8);
     std::unordered_map<uint256, std::pair<CQuorumCPtr, CRecoveredSig>> recSigs;
 
-    for (const auto& p : pend) {
+	for (const auto& p : pend) {
         auto& hash = p.first;
         auto nodeId = p.second.first;
         auto& islock = p.second.second;
@@ -1143,9 +1144,9 @@ void CInstantSendManager::NotifyChainLock(const CBlockIndex* pindexChainLock)
 
 void CInstantSendManager::UpdatedBlockTip(const CBlockIndex* pindexNew)
 {
-    // TODO remove this after DIP8 has activated
-    bool fDIP0008Active = VersionBitsState(pindexNew->pprev, Params().GetConsensus(), Consensus::DEPLOYMENT_DIP0008, versionbitscache) == THRESHOLD_ACTIVE;
-
+    const Consensus::Params& consensusParams = Params().GetConsensus();
+    bool fDIP0008Active = pindexNew->pprev->nHeight > consensusParams.DIP0008Height;
+	
     if (sporkManager.IsSporkActive(SPORK_19_CHAINLOCKS_ENABLED) && fDIP0008Active) {
         // Nothing to do here. We should keep all islocks and let chainlocks handle them.
         return;
@@ -1162,7 +1163,7 @@ void CInstantSendManager::UpdatedBlockTip(const CBlockIndex* pindexNew)
 void CInstantSendManager::HandleFullyConfirmedBlock(const CBlockIndex* pindex)
 {
     auto& consensusParams = Params().GetConsensus();
-
+	
     std::unordered_map<uint256, CInstantSendLockPtr> removeISLocks;
     {
         LOCK(cs);
@@ -1466,6 +1467,7 @@ bool CInstantSendManager::GetInstantSendLockByHash(const uint256& hash, llmq::CI
 bool CInstantSendManager::IsLocked(const uint256& txHash)
 {
     if (!IsNewInstantSendEnabled()) {
+		LogPrintf("QuorumInstantSendManager not enabled %f", 809);
         return false;
     }
 

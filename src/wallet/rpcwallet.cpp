@@ -82,8 +82,12 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
 		entry.push_back(Pair("Smart-Contract-Reward", true));
 	if (wtx.tx->IsWhaleReward())
 		entry.push_back(Pair("Dynamic-Whale-Stake-Reward", true));
+	if (wtx.tx->IsDashReward())
+		entry.push_back(Pair("Dash-Stake-Reward", true));
 	if (wtx.tx->IsWhaleStake())
 		entry.push_back(Pair("Dyamic-Whale-Stake", true));
+	if (wtx.tx->IsDashStake())
+		entry.push_back(Pair("Dash-Stake", true));
 	if (wtx.tx->IsCPKAssociation())
 		entry.push_back(Pair("Christian-Public-Key-Association", true));
 	if (wtx.tx->IsGSCTransmission())
@@ -1514,6 +1518,8 @@ void ListTransactions(CWallet * const pwallet, const CWalletTx& wtx, const std::
 					if (wtx.tx->IsGSCPayment()) sSuffix = " smart-contract-payment";
 					if (wtx.tx->IsWhaleReward()) sSuffix = " dynamic-whale-stake-reward";
 					if (wtx.tx->IsWhaleStake()) sSuffix = " dynamic-whale-stake";
+					if (wtx.tx->IsDashStake()) sSuffix = " dash-stake";
+					if (wtx.tx->IsDashReward()) sSuffix = " dash-stake-reward";
 					if (wtx.tx->IsCPKAssociation()) sSuffix = " Christian-Keypair-Association";
 					if (wtx.tx->IsGSCTransmission()) sSuffix = " GSC-Stake-Transmission";
 					if (wtx.tx->IsABN()) sSuffix = " Anti-Botnet-Transaction";

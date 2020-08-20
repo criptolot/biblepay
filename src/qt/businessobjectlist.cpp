@@ -198,6 +198,7 @@ void BusinessObjectList::createUI(const QStringList &headers, const QString &pSt
 		connect(ui->tableWidget->horizontalHeader(), SIGNAL(sectionPressed(int)),this, SLOT(HandleIndicatorChanged(int)));
 		bSlotsCreated = true;
 	}
+
 }
 
 void BusinessObjectList::HandleIndicatorChanged(int logicalIndex)

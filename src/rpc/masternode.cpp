@@ -537,9 +537,23 @@ UniValue masternodelist(const JSONRPCRequest& request)
     }
 
     UniValue obj(UniValue::VOBJ);
+	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
+	bool fConnectivity = POOSOrphanTest("status", 60);
+	bool fPOOSEnabled = nOrphanBanning == 1 && fConnectivity;
 
     auto mnList = deterministicMNManager->GetListAtChainTip();
-    auto dmnToStatus = [&](const CDeterministicMNCPtr& dmn) {
+    auto dmnToStatus = [&](const CDeterministicMNCPtr& dmn) 
+	{
+
+		if (fPOOSEnabled)
+		{
+			bool fOK = POOSOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString(), 120);
+			if (!fOK)
+			{
+				return "POOS_BANNED";
+			}
+		}
+
         if (mnList.IsMNValid(dmn)) {
             return "ENABLED";
         }

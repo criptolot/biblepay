@@ -298,6 +298,25 @@ bool CBitcoinAddress::GetKeyID(CKeyID& keyID) const
     return true;
 }
 
+bool CBitcoinAddress::GetNonStandardKeyID(CKeyID& keyID, int iNonStandardNetwork) const
+{
+	bool fCorrectSize = vchData.size() == 20;
+	if (!fCorrectSize)
+		return false;
+	std::vector<unsigned char> vchNetwork = std::vector<unsigned char>(1, iNonStandardNetwork);
+
+	if (vchVersion != vchNetwork)
+	{
+		return false;
+	}
+
+    uint160 id;
+    memcpy(&id, &vchData[0], 20);
+    keyID = CKeyID(id);
+    return true;
+}
+
+
 bool CBitcoinAddress::IsScript() const
 {
     return IsValid() && vchVersion == Params().Base58Prefix(CChainParams::SCRIPT_ADDRESS);

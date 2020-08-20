@@ -69,8 +69,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 				sub.IsSuperblockPayment = wtx.tx->IsSuperblockPayment();
 				sub.IsABN = wtx.tx->IsABN();
 				sub.IsWhaleStake = wtx.tx->IsWhaleStake();
+				sub.IsDashStake = wtx.tx->IsDashStake();
 				std::string sAmount = RoundToString((double)wtx.tx->vout[i].nValue/COIN, 4);
 				sub.IsWhaleReward = Contains(sAmount, ".1527");
+				sub.IsDashReward = Contains(sAmount, ".1528");
 		
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address))
                 {
@@ -90,6 +92,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 					if (sub.IsWhaleReward && i != 0)
 					{
 						sub.type = TransactionRecord::WhaleReward;
+					}
+					else if (sub.IsDashReward && i != 0)
+					{
+						sub.type = TransactionRecord::DashReward;
 					}
 					else if (sub.IsGSCPayment && i != 0)
 					{
@@ -198,6 +204,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 					sub.type = TransactionRecord::WhaleStake;
 				if (wtx.tx->IsWhaleReward())
 					sub.type = TransactionRecord::WhaleReward;
+				if (wtx.tx->IsDashStake())
+					sub.type = TransactionRecord::DashStake;
+				if (wtx.tx->IsDashReward())
+					sub.type = TransactionRecord::DashReward;
 
             }
 
@@ -260,6 +270,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 					else if (wtx.tx->IsWhaleStake())
 					{
 						sub.type = TransactionRecord::WhaleStake;
+					}
+					else if (wtx.tx->IsDashStake())
+					{
+						sub.type = TransactionRecord::DashStake;
 					}
 			    }
                 else
@@ -336,7 +350,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx, int numISLocks, int c
         }
     }
     // For generated transactions, determine maturity
-    else if (type == TransactionRecord::Generated || type == TransactionRecord::SuperBlockPayment || type == TransactionRecord::GSCPayment || type == TransactionRecord::WhaleReward)
+    else if (type == TransactionRecord::Generated || type == TransactionRecord::SuperBlockPayment || type == TransactionRecord::GSCPayment || type == TransactionRecord::WhaleReward || type == TransactionRecord::DashReward)
 	{
         if (wtx.GetBlocksToMaturity() > 0)
         {

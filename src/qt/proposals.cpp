@@ -23,6 +23,12 @@ QStringList Proposals::GetHeaders()
                        << tr("Yes Ct")
                        << tr("No Ct")
                        << tr("Abstain Ct")
+					   << tr("CA Yes Ct")
+					   << tr("CA No Ct")
+					   << tr("CA Abs Ct")
+					   << tr("CA Yes Ttl")
+					   << tr("CA No Ttl")
+					   << tr("CA Abs Ttl")
                        << tr("Url");
 	return pHeaders;
 }
@@ -89,7 +95,7 @@ void Proposals::createUI(const QStringList &headers, const QString &pStr)
     int rows = pMatrix.size();
     ui->tableWidget->setRowCount(rows);
     int cols = pMatrix[0].size();
-	if (cols > 9) cols = 9; //Limit to the URL column for now
+	if (cols > 15) cols = 15; //Limit to the URL column for now
     ui->tableWidget->setColumnCount(cols);
     ui->tableWidget->setHorizontalHeaderLabels(headers);
 
@@ -103,16 +109,21 @@ void Proposals::createUI(const QStringList &headers, const QString &pStr)
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 	// Column 0 width should be slimmer
-	ui->tableWidget->setColumnWidth(0, 115);
-	ui->tableWidget->setColumnWidth(1, 150);
-	ui->tableWidget->setColumnWidth(2, 80);  //Amount
-	ui->tableWidget->setColumnWidth(3, 80);  //Expense Type
-	ui->tableWidget->setColumnWidth(4, 100); //Created Date
-	ui->tableWidget->setColumnWidth(5, 50);
-
-	ui->tableWidget->setColumnWidth(6, 50);
-	ui->tableWidget->setColumnWidth(7, 65);
-	ui->tableWidget->setColumnWidth(8, 120);
+	ui->tableWidget->setColumnWidth(0, 115); // ID
+	ui->tableWidget->setColumnWidth(1, 150); // Name
+	ui->tableWidget->setColumnWidth(2, 80);  // Amount
+	ui->tableWidget->setColumnWidth(3, 80);  // Expense Type
+	ui->tableWidget->setColumnWidth(4, 100); // Created Date
+	ui->tableWidget->setColumnWidth(5, 50);  // Yes
+	ui->tableWidget->setColumnWidth(6, 50);  // No
+	ui->tableWidget->setColumnWidth(7, 75);  // Abstain
+	ui->tableWidget->setColumnWidth(8, 75);  // CA Yes
+	ui->tableWidget->setColumnWidth(9, 75);  // CA No
+	ui->tableWidget->setColumnWidth(10, 75); // CA Abstain
+	ui->tableWidget->setColumnWidth(11, 80); // Coin Age Yes Total
+	ui->tableWidget->setColumnWidth(12, 80); // Coin Age No Total
+	ui->tableWidget->setColumnWidth(13, 80); // Coin Age Abstain Total
+	ui->tableWidget->setColumnWidth(14, 150);// URL
 
 	ui->tableWidget->sortByColumn(4, Qt::AscendingOrder);
 
@@ -125,11 +136,17 @@ void Proposals::slotCustomMenuRequested(QPoint pos)
     /* Create an object context menu */
     QMenu * menu = new QMenu(this);
     //  Create, Connect and Set the actions to the menu
-    menu->addAction(tr("Vote For"), this, SLOT(slotVoteFor()));
-    menu->addAction(tr("Vote Against"), this, SLOT(slotVoteAgainst()));
-    menu->addAction(tr("Vote Abstain"), this, SLOT(slotAbstainCount()));
+    menu->addAction(tr("Vote with Sanctuary For"), this, SLOT(slotVoteFor()));
+    menu->addAction(tr("Vote with Sanctuary Against"), this, SLOT(slotVoteAgainst()));
+    menu->addAction(tr("Vote with Sanctuary Abstain"), this, SLOT(slotAbstainCount()));
+
+	menu->addAction(tr("Vote with Coin-Age For"), this, SLOT(slotVoteCoinAgeFor()));
+    menu->addAction(tr("Vote with Coin-Age Against"), this, SLOT(slotVoteCoinAgeAgainst()));
+    menu->addAction(tr("Vote with Coin-Age Abstain"), this, SLOT(slotVoteCoinAgeAbstain()));
+    
     menu->addAction(tr("Chart Proposal"), this, SLOT(slotChartProposal()));
     menu->addAction(tr("View Proposal"), this, SLOT(slotViewProposal()));
+
     menu->popup(ui->tableWidget->viewport()->mapToGlobal(pos));
 }
 
@@ -183,6 +200,60 @@ void Proposals::slotVoteAgainst()
         }
     }
 }
+
+void Proposals::VerifyUserReallyWantsToVote(std::string sVotingType, std::string sVotingAction)
+{
+    int row = ui->tableWidget->selectionModel()->currentIndex().row();
+    if(row >= 0)
+    {
+        QMessageBox msgBox;
+        msgBox.setWindowTitle(tr("Biblepay Proposal Voting"));
+        msgBox.setText(QString::fromStdString("Vote " + sVotingAction + " for the Proposal with " + sVotingType + "?"));
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        if (QMessageBox::Yes == msgBox.exec())
+        {
+			std::string sGobjectID = GUIUtil::FROMQS(ui->tableWidget->item(row,0)->text());
+			std::string TXID_OUT;
+			std::string ERROR_OUT;
+			bool fVoted = VoteWithCoinAge(sGobjectID, sVotingAction, TXID_OUT, ERROR_OUT);
+			std::string sNarr;
+			QMessageBox msgOutcome;
+			msgOutcome.setWindowTitle(tr("Voting Outcome"));
+
+			if (fVoted && !TXID_OUT.empty())
+			{
+				double nCoinAge = GetCoinAge(TXID_OUT);
+				sNarr = "Success!  You have voted " + sVotingAction + " for the Proposal with " + RoundToString(nCoinAge, 2) + " in coin-age.  TXID: " + TXID_OUT + ".  Please wait 3 blocks to see the voting totals change in the proposals page totals grid.  ";
+			}
+			else
+			{
+				sNarr = "Voting Failed [" + ERROR_OUT + "].  Please ensure you have coin-age stored in your CPK.  You can use the exec bankroll command to send funds to your CPK.  ";
+			}
+			msgOutcome.setText(GUIUtil::TOQS(sNarr));
+			msgOutcome.setStandardButtons(QMessageBox::Ok);
+			msgOutcome.setDefaultButton(QMessageBox::Ok);
+			msgOutcome.exec();
+       	}
+    }
+}
+
+
+void Proposals::slotVoteCoinAgeFor()
+{
+	VerifyUserReallyWantsToVote("coin-age", "YES");
+}
+
+void Proposals::slotVoteCoinAgeAgainst()
+{
+	VerifyUserReallyWantsToVote("coin-age", "NO");
+}
+
+void Proposals::slotVoteCoinAgeAbstain()
+{
+	VerifyUserReallyWantsToVote("coin-age", "ABSTAIN");
+}
+
 
 void Proposals::slotVoteFor()
 {

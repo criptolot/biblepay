@@ -375,6 +375,21 @@ bool CMasternodePayments::GetBlockTxOuts(int nBlockHeight, CAmount blockReward, 
         return false;
     }
 
+	// POOS - R ANDREWS - 7-18-2020
+	if (pindex != NULL)
+	{
+		double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
+		int64_t nElapsed = GetAdjustedTime() - pindex->GetBlockTime();
+		if (nElapsed < (60 * 60 * 24) && nOrphanBanning == 1)
+		{
+			bool fPoosValid = POOSOrphanTest(dmnPayee->pdmnState->pubKeyOperator.Get().ToString(), 30);
+			if (!fPoosValid)
+				masternodeReward = 1 * COIN;
+		}
+	}
+
+	// End of POOS
+
     CAmount operatorReward = 0;
     if (dmnPayee->nOperatorReward != 0 && dmnPayee->pdmnState->scriptOperatorPayout != CScript()) {
         // This calculation might eventually turn out to result in 0 even if an operator reward percentage is given.
@@ -449,6 +464,32 @@ bool CMasternodePayments::IsTransactionValid(const CTransaction& txNew, int nBlo
                 found = true;
                 break;
             }
+			else
+			{
+				// POOS (Proof-of-orphan-sponsorship) - 7-18-2020
+				CTxDestination dest1;
+				CTxDestination dest2;
+				if (ExtractDestination(txout.scriptPubKey, dest1) && ExtractDestination(txout2.scriptPubKey, dest2))
+				{
+					// txout2 contains the 'purported' values (from the network); txout contains the sanctuaries calculated values
+					std::string sRecipient1 = CBitcoinAddress(dest1).ToString();
+					std::string sRecipient2 = CBitcoinAddress(dest2).ToString();
+					CAmount nAmount1 = txout.nValue;
+					CAmount nAmount2 = txout2.nValue;
+					// So for POOS, to prevent forking, we handle the situation that could occur when the supermajority set a payment of 1 (network values) and (lets say due to an internet outage, or a change of POOS status) we internally try to pay the full amount, let us catch that here:
+					if (!sRecipient1.empty() && (sRecipient1 == sRecipient2) && (nAmount1 == (1 * COIN) || nAmount2 == (1 * COIN)))
+					{
+						found = true;
+						break;
+					}
+					// Automatic Price Mooning
+					if (!sRecipient1.empty() && (sRecipient1 == sRecipient2) && (blockReward == APM_REWARD * COIN))
+					{
+						found = true;
+						break;
+					}
+				}
+			}
 			if (fDebug)
 			{
 				i++;

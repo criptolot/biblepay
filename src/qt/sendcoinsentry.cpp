@@ -56,6 +56,7 @@ SendCoinsEntry::SendCoinsEntry(const PlatformStyle *_platformStyle, QWidget *par
     connect(ui->deleteButton_is, SIGNAL(clicked()), this, SLOT(deleteClicked()));
     connect(ui->deleteButton_s, SIGNAL(clicked()), this, SLOT(deleteClicked()));
 	connect(ui->chkDonate, SIGNAL(toggled(bool)), this, SLOT(updateFoundationAddress()));
+	connect(ui->chkDWS, SIGNAL(toggled(bool)), this, SLOT(updateBurnAddress()));
 	connect(ui->chkDiary, SIGNAL(toggled(bool)), this, SLOT(diaryEntry()));
 	// Anti-Censorship Features (ACF)
 	connect(ui->btnAttach, SIGNAL(clicked()), this, SLOT(attachFile()));
@@ -90,6 +91,19 @@ void SendCoinsEntry::updateFoundationAddress()
 	    ui->payAmount->setFocus();
 	}
 }
+
+void SendCoinsEntry::updateBurnAddress()
+{
+	const CChainParams& chainparams = Params();
+	bool bCheckedF = (ui->chkDWS->checkState() == Qt::Checked);
+
+	if (bCheckedF)
+	{
+		ui->payTo->setText(GUIUtil::TOQS(chainparams.GetConsensus().BurnAddress));
+	    ui->payAmount->setFocus();
+	}
+}
+
 
 SendCoinsEntry::~SendCoinsEntry()
 {
@@ -215,6 +229,7 @@ SendCoinsRecipient SendCoinsEntry::getValue()
 	recipient.fTithe = (ui->chkTithe->checkState() == Qt::Checked);
 	recipient.fPrayer = (ui->chkPrayer->checkState() == Qt::Checked);
 	recipient.fDiary = (ui->chkDiary->checkState() == Qt::Checked);
+	recipient.fDWS = (ui->chkDWS->checkState() == Qt::Checked);
 	// End of DAC
     return recipient;
 }

@@ -31,7 +31,8 @@ std::string GetSANDirectory2()
 	 std::string prefix = CURRENCY_NAME;
 	 boost::to_lower(prefix);
 	 boost::filesystem::path pathConfigFile(GetArg("-conf", prefix + ".conf"));
-     if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir(false) / pathConfigFile;
+     if (!pathConfigFile.is_complete()) 
+		 pathConfigFile = GetDataDir(false) / pathConfigFile;
 	 boost::filesystem::path dir = pathConfigFile.parent_path();
 	 std::string sDir = dir.string() + "/SAN/";
 	 boost::filesystem::path pathSAN(sDir);
@@ -143,34 +144,41 @@ std::string GetGithubVersion()
 {
 	std::string sURL = "https://" + GetSporkValue("bms");
 	std::string sRestfulURL = "BMS/LAST_MANDATORY_VERSION";
-	std::string sV = ExtractXML(HTTPSPost(false, 0, "", "", "", sURL, sRestfulURL, 443, "", 25, 10000, 1), "<VERSION>", "</VERSION>");
+	std::string sV = ExtractXML(Uplink(false, "", sURL, sRestfulURL, SSL_PORT, 25, 1), "<VERSION>", "</VERSION>");
 	return sV;
 }
 
 double GetCryptoPrice(std::string sSymbol)
 {
 	boost::to_lower(sSymbol);
-	int SSL_PORT = 443;
-	int CONNECTION_TIMEOUT = 15;
-	int TRANSMISSION_TIMEOUT = 15000;
-	int TERM_TYPE = 1;
-	std::string sC1 = HTTPSPost(false, 0, "", "", "api", GetSporkValue("bms"), GetSporkValue("getbmscryptoprice" + sSymbol), 
-		SSL_PORT, "", CONNECTION_TIMEOUT, TRANSMISSION_TIMEOUT, TERM_TYPE);
-	double dDebugLevel = cdbl(GetArg("-debuglevel", "0"), 0);
-	if (dDebugLevel == 1)
-		LogPrintf("CryptoPrice %s %s", sSymbol, sC1);
+
+	double nLast = cdbl(ReadCacheWithMaxAge("price", sSymbol, (60 * 30)), 12);
+	if (nLast > 0)
+		return nLast;
+	
+	std::string sC1 = Uplink(false, "", GetSporkValue("bms"), GetSporkValue("getbmscryptoprice" + sSymbol), SSL_PORT, 15, 1);
 	std::string sPrice = ExtractXML(sC1, "<MIDPOINT>", "</MIDPOINT>");
 	double dMid = cdbl(sPrice, 12);
+	WriteCache("price", sSymbol, RoundToString(dMid, 12), GetAdjustedTime());
 	return dMid;
 }
 
-double GetPBase(double& out_BTC)
+double GetPBase(double& out_BTC, double& out_BBP)
 {
 	// Get the DAC market price based on midpoint of bid-ask in Satoshi * BTC price in USD
-	double dDacPrice = GetCryptoPrice("bbp");  // ToDo:  Revisit this after the community votes, etc.
+	double dBBPPrice = GetCryptoPrice("bbp");  // ToDo:  Revisit this after the community votes, etc.
 	double dBTC = GetCryptoPrice("btc");
 	out_BTC = dBTC;
-	double dPriceUSD = dBTC * dDacPrice;
+	out_BBP = dBBPPrice;
+
+	double nBBPOverride = cdbl(GetSporkValue("BBPPRICE"), 12);
+	if (!fProd && nBBPOverride > 0)
+	{
+		// In Testnet, allow us to override the BBP price with a spork price so we can test APM
+		out_BBP = nBBPOverride;
+	}
+
+	double dPriceUSD = dBTC * dBBPPrice;
 	return dPriceUSD;
 }
 
@@ -226,7 +234,7 @@ int GetWCGMemberID(std::string sMemberName, std::string sAuthCode, double& nPoin
 {
 	std::string sDomain = "https://www.worldcommunitygrid.org";
 	std::string sRestfulURL = "verifyMember.do?name=" + sMemberName + "&code=" + sAuthCode;
-	std::string sResponse = HTTPSPost(true, 0, "", "", "", sDomain, sRestfulURL, 443, "", 12, 14000, 1);
+	std::string sResponse = Uplink(true, "", sDomain, sRestfulURL, SSL_PORT, 12, 1);
 	int iID = (int)cdbl(ExtractXML(sResponse, "<MemberId>","</MemberId>"), 0);
 	nPoints = cdbl(ExtractXML(sResponse, "<Points>", "</Points>"), 2);
 	return iID;
@@ -271,7 +279,8 @@ std::map<std::string, Researcher> GetPayableResearchers()
 			std::string cpid = GetCPIDElementByData(sData, 8);
 			std::string sCPK = GetCPIDElementByData(sData, 0);
 			vFIFO.push_back(std::make_tuple(nLockTime, cpid, sCPK));
-			LogPrintf("cpid %s cpk %s locktime %f", cpid, sCPK, nLockTime);
+			if (fDebugSpam)
+				LogPrintf("cpid %s cpk %s locktime %f", cpid, sCPK, nLockTime);
 		}
 	}
 		
@@ -284,7 +293,8 @@ std::map<std::string, Researcher> GetPayableResearchers()
 		std::string cpid = std::get<1>(item); //item.second;
 		std::string sCPK = std::get<2>(item); //item.third;
 		cpid_reverse_lookup[cpid] = sCPK;
-		LogPrintf("Adding cpid %s with %s ", cpid, sCPK);
+		if (fDebugSpam)
+			LogPrintf("Adding cpid %s with %s ", cpid, sCPK);
 	}
 	
 	// Payable Researchers
@@ -302,12 +312,14 @@ std::map<std::string, Researcher> GetPayableResearchers()
 					if (myResearcher.second.rac > 1)
 					{
 						r[sSignedCPID] = myResearcher.second;
-						LogPrintf("\nGetPayableResearchers::Adding %s for %s", sSignedCPID, sSourceCPK);
+						if (fDebugSpam)
+							LogPrintf("\nGetPayableResearchers::Adding %s for %s", sSignedCPID, sSourceCPK);
 					}
 				}
 				else
 				{
-					LogPrintf("\nGPR::Not Adding %s because %s", sSignedCPID, sSourceCPK);
+					if (fDebugSpam)
+						LogPrintf("\nGPR::Not Adding %s because %s", sSignedCPID, sSourceCPK);
 				}
 			}
 		}

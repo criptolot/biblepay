@@ -164,6 +164,7 @@ struct Params {
 	int LAST_TITHE_BLOCK;
 	int PODC_LAST_BLOCK;
 	int POOM_PHASEOUT_HEIGHT;
+	int POOS_HEIGHT;
 	// End of Bible Pay Settings
 
     /** Block height and hash at which BIP34 becomes active */
@@ -179,6 +180,8 @@ struct Params {
     int DIP0003Height;
     /** Block height at which DIP0003 becomes enforced */
     int DIP0003EnforcementHeight;
+	int DIP0008Height;
+
     uint256 DIP0003EnforcementHash;
 	int DIP0003HeightPhase2;
 	int LLMQHeight;

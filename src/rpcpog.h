@@ -411,7 +411,7 @@ DACResult DownloadFile(std::string sBaseURL, std::string sPage, int iPort, int i
 DACResult BIPFS_UploadFile(std::string sLocalPath, std::string sWebPath, std::string sTXID, int iTargetDensity, int nDurationDays, bool fDryRun, bool fEncrypted);
 DACResult BIPFS_UploadFolder(std::string sDirPath, std::string sWebPath, std::string sTXID, int iTargetDensity, int nDurationDays, bool fDryRun, bool fEncrypted);
 bool SendDWS(std::string& sTXID, std::string& sError, std::string sReturnAddress, std::string sCPK, double nAmt, double nDuration, bool fDryRun);
-std::string GetHowey(int iType);
+std::string GetHowey(bool fRPC, bool fBurn);
 bool EncryptFile(std::string sPath, std::string sTargetPath);
 bool DecryptFile(std::string sPath, std::string sTargetPath);
 std::string FormatURL(std::string URL, int iPart);

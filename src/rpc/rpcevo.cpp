@@ -1560,7 +1560,7 @@ UniValue dashstake(const JSONRPCRequest& request)
 
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 		
-	std::string sHelp = "You must specify dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE 0=test/1=Authorize.\n";
+	std::string sHelp = "You must specify dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE I_AGREE=Authorize.\n" + GetHowey(true, false);
 	
 	if (request.fHelp || (request.params.size() != 4))
 		throw std::runtime_error(sHelp.c_str());
@@ -1581,15 +1581,12 @@ UniValue dashstake(const JSONRPCRequest& request)
 		return results;
 	}
 
-	double nDryRun = cdbl(request.params[3].get_str(), 0);
-
-	// TODO: print the bbp utxo amount, bbp exchange rate val, dash val, dash utxo val
-	// if spent throw special error
+	std::string sAuth = request.params[3].get_str();
 
 	WhaleMetric wm = GetDashStakeMetrics(chainActive.Tip()->nHeight, true);
 	std::string sTXID;
 	DashStake ds;
-	if (nDryRun == 1)
+	if (sAuth == "I_AGREE")
 	{
 		bool fSent = SendDashStake(sCPK, sTXID, sError, sBBPUTXO, sDashUTXO, sBBPSig, sDashSig, 30 * 6.5, sCPK, false, ds);
 		if (!fSent || !sError.empty())
@@ -1613,6 +1610,10 @@ UniValue dashstake(const JSONRPCRequest& request)
 			results.push_back(Pair("TXID", sTXID));
 		}
 	}
+	else
+	{
+		throw std::runtime_error(sHelp.c_str());
+	}
 	return results;
 }
 
@@ -1623,7 +1624,7 @@ UniValue dws(const JSONRPCRequest& request)
 	// dws amount duration_in_days 0=test/1=authorize
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 		
-	std::string sHelp = "You must specify dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + GetHowey(1);
+	std::string sHelp = "You must specify dws amount duration_in_days 0=test/I_AGREE=Authorize [optional=SPECIFIC_STAKE_RETURN_ADDRESS (If Left Empty, we will send your stake back to your CPK)].\n" + GetHowey(true, true);
 	
 	if (request.fHelp || (request.params.size() != 3 && request.params.size() != 4))
 		throw std::runtime_error(sHelp.c_str());
@@ -1665,7 +1666,7 @@ UniValue dws(const JSONRPCRequest& request)
 	else
 	{
 		// Dry Run
-		results.push_back(Pair("Test Mode", GetHowey(1)));
+		results.push_back(Pair("Test Mode", GetHowey(true, true)));
 	}
 	return results;
 }
@@ -1737,7 +1738,7 @@ UniValue dashstakequote(const JSONRPCRequest& request)
 		results.push_back(Pair("Saturation Percent Monthly", RoundToString(wm.nSaturationPercentMonthly * 100, 8)));
 	}
 	results.push_back(Pair("Total Stakes Today", wm.nTotalBurnsToday));
-	results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(180, wm.DWU) * 100, 4)));
+	results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(30 * 6.5, wm.DWU) * 100, 4)));
 	return results;
 }
 

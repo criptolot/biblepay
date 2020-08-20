@@ -95,7 +95,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 					}
 					else if (sub.IsDashReward && i != 0)
 					{
-						sub.type = TransactionRecord::WhaleReward;
+						sub.type = TransactionRecord::DashReward;
 					}
 					else if (sub.IsGSCPayment && i != 0)
 					{
@@ -350,7 +350,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx, int numISLocks, int c
         }
     }
     // For generated transactions, determine maturity
-    else if (type == TransactionRecord::Generated || type == TransactionRecord::SuperBlockPayment || type == TransactionRecord::GSCPayment || type == TransactionRecord::WhaleReward)
+    else if (type == TransactionRecord::Generated || type == TransactionRecord::SuperBlockPayment || type == TransactionRecord::GSCPayment || type == TransactionRecord::WhaleReward || type == TransactionRecord::DashReward)
 	{
         if (wtx.GetBlocksToMaturity() > 0)
         {

@@ -5002,15 +5002,28 @@ DACResult BIPFS_UploadFolder(std::string sDirPath, std::string sWebPath, std::st
 	return dOverall;
 }
 
-std::string GetHowey(int iType)
+std::string GetHowey(bool fRPC, bool fBurn)
 {
-	std::string sPrefix = iType == 0 ? "clicking [YES]," : "typing I_AGREE in uppercase,";
+	std::string sPrefix = !fRPC ? "clicking [YES]," : "typing I_AGREE in uppercase,";
+	std::string sAction;
+	std::string sAction2;
+	if (fBurn)
+	{
+		sAction = "BURN";
+		sAction2 = "BURNING";
+	}
+	else
+	{
+		sAction = "STAKE";
+		sAction = "STAKING";
+	}
+
 	std::string sHowey = "By " + sPrefix + " you agree to the following conditions:"
-			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO BURN THESE COINS, AND DO NOT EXPECT AN INCREASE IN VALUE."
+			"\n1.  I AM MAKING A SELF DIRECTED DECISION TO " + sAction + " THESE COINS, AND DO NOT EXPECT AN INCREASE IN VALUE."
 			"\n2.  I HAVE NOT BEEN PROMISED A PROFIT, AND THIS ACTION IS NOT PROMISING ME ANY HOPES OF PROFIT IN ANY WAY NOR IS THE COMMUNITY OR ORGANIZATION."
 			"\n3.  " + CURRENCY_NAME + " IS NOT ACTING AS A COMMON ENTERPRISE OR THIRD PARTY IN THIS ENDEAVOR."
 			"\n4.  I HOLD " + CURRENCY_NAME + " AS A HARMLESS UTILITY."
-			"\n5.  I REALIZE I AM RISKING 100% OF MY CRYPTO-HOLDINGS BY BURNING IT, AND " + CURRENCY_NAME + " IS NOT OBLIGATED TO REFUND MY CRYPTO-HOLDINGS OR GIVE ME ANY REWARD.";
+			"\n5.  I REALIZE I AM RISKING 100% OF MY CRYPTO-HOLDINGS BY " + sAction2 + " THEM, AND " + CURRENCY_NAME + " IS NOT OBLIGATED TO REFUND MY CRYPTO-HOLDINGS OR GIVE ME ANY REWARD.";
 	return sHowey;
 }
 

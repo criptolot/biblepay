@@ -248,10 +248,10 @@ public:
 		consensus.DIP0003Height = 133891;
 		// September 2020 Go-Live (POOS)
 		consensus.POOS_HEIGHT = 217000; // Sept 2020 Mandatory Upgrade height
-		consensus.LLMQHeight = 217000; // The first attempt at llmq quorums that conform to voting out bad quorum members
-		consensus.DIP0003EnforcementHeight = 217000;
-		consensus.DIP0003HeightPhase2 = 217000;
-		consensus.DIP0008Height = 217000;
+		consensus.LLMQHeight = 217200; // The first attempt at llmq quorums that conform to voting out bad quorum members
+		consensus.DIP0003EnforcementHeight = 220000;
+		consensus.DIP0003HeightPhase2 = 220000;
+		consensus.DIP0008Height = 222000;
 		// End of September 2020 Go-Live (POOS)
 
 		consensus.nSanctuaryPaymentsPhaseIIHeight = 166075; // Set this at the Go-Live height for .14 
@@ -453,12 +453,15 @@ public:
         consensus.DIP0001Height = 7000;
 
 		consensus.DIP0003Height = 30000; 
-		consensus.LLMQHeight = 51815;
-		consensus.DIP0003EnforcementHeight = 51815;
-		consensus.DIP0003HeightPhase2 = 51815;
-		consensus.DIP0008Height = 51815;
-		
-		consensus.BIP34Height = 51000;
+
+		// Note the following two lines: DIP8 is earlier:
+		consensus.LLMQHeight = 57000;
+
+		consensus.DIP0008Height = 58000;
+		consensus.DIP0003EnforcementHeight = 57500;
+		consensus.DIP0003HeightPhase2 = 57500;
+		consensus.BIP34Height = 57500;
+
         consensus.BIP34Hash = uint256S("0x0");
       
 		consensus.nSanctuaryPaymentsPhaseIIHeight = 8400;

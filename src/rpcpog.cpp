@@ -4034,6 +4034,14 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 		return false;
 	}
 
+	bool fEnabled = GetSporkDouble("dashstakeenabled", 0);
+	if (!fEnabled)
+	{
+		sError = "Sorry, this feature is not enabled yet.";
+		LogPrintf("VerifyDashStake::%s", sError);
+		return false;
+	}
+
 	CBitcoinAddress returnAddress(w.ReturnAddress);
 	if (!returnAddress.IsValid())
 	{

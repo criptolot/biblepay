@@ -60,7 +60,7 @@ struct IPFSTransaction
 	std::string Network;
 	std::string CPK;
 	int nHeight = 0;
-	std::map<std::string, std::string> mapRegions = std::map<std::string, std::string>();
+	std::map<std::string, std::string> mapRegions;
 };
 
 struct DashUTXO
@@ -81,8 +81,8 @@ struct DACResult
 	int nSize = 0;
 	std::string TXID;
 	std::string ErrorCode;
-	std::map<std::string, IPFSTransaction> mapResponses = std::map<std::string, IPFSTransaction>();
-	std::map<std::string, std::string> mapRegions = std::map<std::string, std::string>();
+	std::map<std::string, IPFSTransaction> mapResponses;
+	std::map<std::string, std::string> mapRegions;
 };
 
 struct QueuedProposal

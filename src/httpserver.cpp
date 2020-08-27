@@ -9,6 +9,7 @@
 #include "util.h"
 #include "netbase.h"
 #include "rpc/protocol.h" // For HTTP status codes
+#include "rpcpog.h"
 #include "sync.h"
 #include "ui_interface.h"
 
@@ -36,7 +37,7 @@
 #endif
 
 /** Maximum size of http request (request line + headers) */
-static const size_t MAX_HEADERS_SIZE = 8192;
+static const size_t MAX_HEADERS_SIZE = 16384;
 
 /** HTTP request work item */
 class HTTPWorkItem : public HTTPClosure
@@ -254,11 +255,21 @@ static void http_request_cb(struct evhttp_request* req, void* arg)
     LogPrint("http", "Received a %s request for %s from %s\n",
              RequestMethodString(hreq->GetRequestMethod()), hreq->GetURI(), hreq->GetPeer().ToString());
 
-    // Early address-based allow check
-    if (!ClientAllowed(hreq->GetPeer())) {
-        hreq->WriteReply(HTTP_FORBIDDEN);
-        return;
-    }
+	bool fAllow = Contains(hreq->GetURI(), "getaddressutxos") || Contains(hreq->GetURI(), "pushtx");
+	double dAllowBBPAirRequests = cdbl(GetArg("-allowbbpairrequests", "0"), 0);
+	if (dAllowBBPAirRequests == 1 && fAllow)
+	{
+		// This request is OK on this server
+	}
+	else
+	{
+		// Early address-based allow check
+		if (!ClientAllowed(hreq->GetPeer())) 
+		{
+			hreq->WriteReply(HTTP_FORBIDDEN);
+			return;
+		}
+	}
 
     // Early reject unknown HTTP methods
     if (hreq->GetRequestMethod() == HTTPRequest::UNKNOWN) {

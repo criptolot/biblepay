@@ -2226,12 +2226,9 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 
 	// Sync older sidechain blocks
-	for (int nHeight = consensusParams.POOS_HEIGHT / 4; nHeight < chainActive.Tip()->nHeight + 10000; nHeight += 10000)
-	{
-		SyncSideChain(nHeight);
-		std::string sNarr = "Syncing Sidechain " + RoundToString(nHeight, 0) + "...";
-		uiInterface.InitMessage(_("Syncing sidechain..."));
-	}
+	SyncSideChain(0);
+	std::string sNarr = "Syncing Sidechain " + RoundToString(nHeight, 0) + "...";
+	uiInterface.InitMessage(_("Syncing sidechain..."));
 
     uiInterface.InitMessage(_("Discovering Peers..."));
     Discover(threadGroup);

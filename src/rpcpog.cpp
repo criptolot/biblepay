@@ -5030,7 +5030,7 @@ std::string GetHowey(bool fRPC, bool fBurn)
 	else
 	{
 		sAction = "STAKE";
-		sAction = "STAKING";
+		sAction2 = "STAKING";
 	}
 
 	std::string sHowey = "By " + sPrefix + " you agree to the following conditions:"

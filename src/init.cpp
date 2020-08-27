@@ -2227,7 +2227,6 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 	// Sync older sidechain blocks
 	SyncSideChain(0);
-	std::string sNarr = "Syncing Sidechain " + RoundToString(nHeight, 0) + "...";
 	uiInterface.InitMessage(_("Syncing sidechain..."));
 
     uiInterface.InitMessage(_("Discovering Peers..."));

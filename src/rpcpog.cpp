@@ -4502,10 +4502,7 @@ bool POOSOrphanTest(std::string sSanctuaryPubKey, int64_t nTimeout)
 	std::tuple<std::string, std::string, std::string> t = GetOrphanPOOSURL(sSanctuaryPubKey);
 	std::string sResponse = Uplink(false, "", std::get<0>(t), std::get<1>(t), SSL_PORT, 25, 1);
 	std::string sOK = ExtractXML(sResponse, "Status:", "\r\n");
-	if (!sOK.empty())
-	{
-		WriteCache("poosorphantest", sSanctuaryPubKey, sOK, GetAdjustedTime());
-	}
+	WriteCache("poosorphantest", sSanctuaryPubKey, sOK + " ", GetAdjustedTime());
 	bool fOK = Contains(sOK, "OK");
 	return fOK;
 }

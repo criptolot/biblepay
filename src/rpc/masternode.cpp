@@ -547,7 +547,7 @@ UniValue masternodelist(const JSONRPCRequest& request)
 
 		if (fPOOSEnabled)
 		{
-			bool fOK = POOSOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString(), 120);
+			bool fOK = POOSOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString(), 420);
 			if (!fOK)
 			{
 				return "POOS_BANNED";

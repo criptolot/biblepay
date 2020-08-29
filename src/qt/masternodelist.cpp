@@ -207,7 +207,7 @@ void MasternodeList::updateDIP3List()
 
 		if (fPOOSEnabled)
 		{
-			bool fOK = POOSOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString(), 120);
+			bool fOK = POOSOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString(), 420);
 			if (!fOK)
 			{
 				statusItem = new QTableWidgetItem(tr("POOS_BANNED"));

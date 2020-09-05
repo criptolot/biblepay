@@ -352,14 +352,7 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
         // different nodes, let's figure out who are the bad ones
     }
 
-	// POOS
-	/*
-	double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
-	double nMaximumSanctuaryBanPercentage = GetSporkDouble("MaxSancBanPercentage", .50);
-	int nPunished = 0;
-	int64_t nStartTime = GetAdjustedTime();
-	bool fConnectivity = OrphanTest("status");
-	*/
+	// POOS - R Andrews - Add Extra POOS banning at the DKG Session Level
 
 	auto mnList = deterministicMNManager->GetListAtChainTip();
 	
@@ -371,24 +364,14 @@ std::set<NodeId> BatchVerifyMessageSigs(CDKGSession& session, const std::vector<
         const auto& msg = *p.second;
         auto member = session.GetMember(msg.proTxHash);
         bool valid = msg.sig.VerifyInsecure(member->dmn->pdmnState->pubKeyOperator.Get(), msg.GetSignHash());
-		bool fPoosValid = true;
-		
-		/*
-		// 7-10-2020 - POOS - R ANDREWS (Proof of Orphan Sponsorship)
-		int64_t nElapsed = GetAdjustedTime() - nStartTime;
-		
-		if (fConnectivity && nOrphanBanning == 1 && nElapsed < (60 * 7) && member->dmn->pdmnState->nPoSeBanHeight == -1 && nPunished < nMaxPunishments)
+		bool fPoosInvalid = mapPOOSStatus[member->dmn->pdmnState->pubKeyOperator.Get().ToString()] == 255;
+		if (fPoosInvalid)
 		{
-			fPoosValid = OrphanTest(member->dmn->pdmnState->pubKeyOperator.Get().ToString());
-			if (!fPoosValid)
-			{
-				nPunished++;
-				LogPrintf("POOS::Punishing %s %f", member->dmn->pdmnState->pubKeyOperator.Get().ToString(), nPunished);
-			}
+			Misbehaving(p.first, 50);
+			LogPrintf("\nPOOS::Banning deficient sanctuary %s ", member->dmn->pdmnState->pubKeyOperator.Get().ToString());
 		}
-		*/
-
-        if (!valid || !fPoosValid) {
+		
+        if (!valid) {
             ret.emplace(p.first);
         }
     }

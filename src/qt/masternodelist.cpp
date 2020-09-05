@@ -201,7 +201,7 @@ void MasternodeList::updateDIP3List()
         QTableWidgetItem* statusItem = new QTableWidgetItem(mnList.IsMNValid(dmn) ? tr("ENABLED") : (mnList.IsMNPoSeBanned(dmn) ? tr("POSE_BANNED") : tr("UNKNOWN")));
 		int64_t nAdditionalPenalty = 0;
 
-		bool fOK = mapPOOSStatus[dmn->pdmnState->pubKeyOperator.Get().ToString()];
+		bool fOK = mapPOOSStatus[dmn->pdmnState->pubKeyOperator.Get().ToString()] != 255;
 		if (!fOK)
 		{
 			statusItem = new QTableWidgetItem(tr("POOS_BANNED"));

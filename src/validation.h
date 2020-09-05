@@ -263,7 +263,7 @@ struct DashUTXO;
 
 extern std::map<std::string, IPFSTransaction> mapSidechainTransactions;
 extern std::map<std::string, DashUTXO> mapDashUTXO;
-extern std::map<std::string, bool> mapPOOSStatus;
+extern std::map<std::string, int> mapPOOSStatus;
 extern std::atomic<bool> fDIP0001ActiveAtTip;
 extern std::map<std::string, Researcher> mvResearchers;
 

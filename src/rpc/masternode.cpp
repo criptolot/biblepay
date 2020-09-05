@@ -541,7 +541,7 @@ UniValue masternodelist(const JSONRPCRequest& request)
     auto mnList = deterministicMNManager->GetListAtChainTip();
     auto dmnToStatus = [&](const CDeterministicMNCPtr& dmn) 
 	{
-		if (!mapPOOSStatus[dmn->pdmnState->pubKeyOperator.Get().ToString()])
+		if (mapPOOSStatus[dmn->pdmnState->pubKeyOperator.Get().ToString()] == 255)
 			return "POOS_BANNED";
 	
         if (mnList.IsMNValid(dmn)) {

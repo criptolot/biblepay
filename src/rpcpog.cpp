@@ -4532,7 +4532,7 @@ bool ApproveSanctuaryRevivalTransaction(CTransaction tx)
 		{
 			return true;
 		}
-		bool fPoosValid = mapPOOSStatus[dmn->pdmnState->pubKeyOperator.Get().ToString()];
+		bool fPoosValid = mapPOOSStatus[dmn->pdmnState->pubKeyOperator.Get().ToString()] == 1;
 		LogPrintf("\nApproveSanctuaryRevivalTx TXID=%s, Op=%s, Approved=%f ", tx.GetHash().GetHex(), dmn->pdmnState->pubKeyOperator.Get().ToString(), (double)fPoosValid);
 		return fPoosValid;
 	}

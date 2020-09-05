@@ -8,6 +8,7 @@
 #include "masternode-sync.h"
 
 
+static int64_t nPoosProcessTime = 0;
 void ThreadPOOS(CConnman& connman)
 {
 
@@ -24,9 +25,20 @@ void ThreadPOOS(CConnman& connman)
 			double nOrphanBanning = GetSporkDouble("EnableOrphanSanctuaryBanning", 0);
 			bool fConnectivity = POOSOrphanTest("status", 60 * 60);
 			bool fPOOSEnabled = nOrphanBanning == 1 && fConnectivity;
+			int64_t nElapsed = GetAdjustedTime() - nPoosProcessTime;
+			if (nElapsed > (60 * 60 * 8))
+			{
+				// Once every 8 hours we clear the POOS statuses and start over (in case sanctuaries dropped out or added, or if the entire POOS system was disabled etc).
+				mapPOOSStatus.clear();
+				nPoosProcessTime = GetAdjustedTime();
+			}
+			if (nOrphanBanning != 1)
+			{
+				mapPOOSStatus.clear();
+			}
+
 			if (fPOOSEnabled)
 			{
-
 				auto mnList = deterministicMNManager->GetListAtChainTip();
 				mnList.ForEachMN(false, [&](const CDeterministicMNCPtr& dmn) 
 				{
@@ -34,7 +46,8 @@ void ThreadPOOS(CConnman& connman)
 					{
 						std::string sPubKey = dmn->pdmnState->pubKeyOperator.Get().ToString();
 						bool fOK = POOSOrphanTest(sPubKey, 60 * 60);
-						mapPOOSStatus[sPubKey] = fOK;
+						int nStatus = fOK ? 1 : 255;
+						mapPOOSStatus[sPubKey] = nStatus;
 						MilliSleep(1000);
 					}
 				});
@@ -45,7 +58,6 @@ void ThreadPOOS(CConnman& connman)
 			{
 				SyncSideChain(chainActive.Tip()->nHeight);
 			}
-
 		}
 		catch(...)
 		{

@@ -34,7 +34,8 @@ void ThreadPOOS(CConnman& connman)
 					bool fOK = POOSOrphanTest(sPubKey, 60 * 60);
 					mapPOOSStatus[sPubKey] = fOK;
 					MilliSleep(1000);
-					boost::this_thread::interruption_point();
+					if (ShutdownRequested())
+						break;
         		});
 			}
 			nIterations++;
@@ -53,10 +54,10 @@ void ThreadPOOS(CConnman& connman)
 
 		for (int i = 0; i < nSleepLength; i++)
 		{
-			boost::this_thread::interruption_point();
+			if (ShutdownRequested())
+				break;
 			MilliSleep(1000);
 		}
-
 	}
 }
 

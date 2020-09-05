@@ -2076,6 +2076,8 @@ std::string Uplink(bool bPost, std::string sPayload, std::string sBaseURL, std::
 		{
 			if (!TargetFileName.empty())
 				OutFile.close();
+			BIO_free_all(bio);
+
 			return "<ERROR>CTX_IS_NULL</ERROR>";
 		}
 		bio = BIO_new_ssl_connect(ctx);
@@ -2094,7 +2096,10 @@ std::string Uplink(bool bPost, std::string sPayload, std::string sBaseURL, std::
 			LogPrintf("Connecting to %s", sDomainWithPort.c_str());
 		int nRet = 0;
 		if (sDomain.empty()) 
+		{
+			BIO_free_all(bio);
 			return "<ERROR>DOMAIN_MISSING</ERROR>";
+		}
 		
 		nRet = BIO_do_connect(bio);
 		if (nRet <= 0)
@@ -2103,6 +2108,7 @@ std::string Uplink(bool bPost, std::string sPayload, std::string sBaseURL, std::
 				LogPrintf("Failed connection to %s ", sDomainWithPort);
 			if (!TargetFileName.empty())
 				OutFile.close();
+			BIO_free_all(bio);
 
 			return "<ERROR>Failed connection to " + sDomainWithPort + "</ERROR>";
 		}
@@ -2117,6 +2123,7 @@ std::string Uplink(bool bPost, std::string sPayload, std::string sBaseURL, std::
 		{
 			if (!TargetFileName.empty())
 				OutFile.close();
+			BIO_free_all(bio);
 
 			return "<ERROR>FAILED_HTTPS_POST</ERROR>";
 		}
@@ -3656,6 +3663,7 @@ CAmount GetAnnualDWSReward(int nHeight, int nType)
 	else if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT)
 	{
 		nDWS = nTotal * .64;
+		// ToDo: Change Scale to 2 - when we add a new coin
 		double nDWSFactor = GetSporkDouble("DWSFactor"+ RoundToString(nType, 0), 0);
 		if (nDWSFactor > 0 && nDWSFactor < .99)
 			nDWS = nDWSFactor;
@@ -4493,16 +4501,9 @@ std::tuple<std::string, std::string, std::string> GetOrphanPOOSURL(std::string s
 
 bool POOSOrphanTest(std::string sSanctuaryPubKey, int64_t nTimeout)
 {
-	std::string sCacheOK = ReadCacheWithMaxAge("poosorphantest", sSanctuaryPubKey, nTimeout);
-	if (!sCacheOK.empty())
-	{
-		bool fCacheOK = Contains(sCacheOK, "OK");
-		return fCacheOK;
-	}
 	std::tuple<std::string, std::string, std::string> t = GetOrphanPOOSURL(sSanctuaryPubKey);
 	std::string sResponse = Uplink(false, "", std::get<0>(t), std::get<1>(t), SSL_PORT, 25, 1);
 	std::string sOK = ExtractXML(sResponse, "Status:", "\r\n");
-	WriteCache("poosorphantest", sSanctuaryPubKey, sOK + " ", GetAdjustedTime());
 	bool fOK = Contains(sOK, "OK");
 	return fOK;
 }
@@ -4531,7 +4532,7 @@ bool ApproveSanctuaryRevivalTransaction(CTransaction tx)
 		{
 			return true;
 		}
-		bool fPoosValid = POOSOrphanTest(dmn->pdmnState->pubKeyOperator.Get().ToString(), 30);
+		bool fPoosValid = mapPOOSStatus[dmn->pdmnState->pubKeyOperator.Get().ToString()];
 		LogPrintf("\nApproveSanctuaryRevivalTx TXID=%s, Op=%s, Approved=%f ", tx.GetHash().GetHex(), dmn->pdmnState->pubKeyOperator.Get().ToString(), (double)fPoosValid);
 		return fPoosValid;
 	}

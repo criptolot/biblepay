@@ -99,7 +99,7 @@
 #endif
 
 extern void ThreadSendAlert(CConnman& connman);
-extern void ThreadPOSE(CConnman& connman);
+extern void ThreadPOOS(CConnman& connman);
 
 bool fFeeEstimatesInitialized = false;
 static const bool DEFAULT_PROXYRANDOMIZE = true;
@@ -214,6 +214,7 @@ void Interrupt(boost::thread_group& threadGroup)
     InterruptRPC();
     InterruptREST();
     InterruptTorControl();
+	//InterruptPOOS();
     llmq::InterruptLLMQSystem();
     if (g_connman)
         g_connman->Interrupt();
@@ -2225,10 +2226,6 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 
-	// Sync older sidechain blocks
-	SyncSideChain(0);
-	uiInterface.InitMessage(_("Syncing sidechain..."));
-
     uiInterface.InitMessage(_("Discovering Peers..."));
     Discover(threadGroup);
 
@@ -2269,10 +2266,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 #endif
 
     threadGroup.create_thread(boost::bind(&ThreadSendAlert, boost::ref(connman)));
-
-	// Disable this feature in favor of LLMQs
-	if (false)
-		threadGroup.create_thread(boost::bind(&ThreadPOSE, boost::ref(connman)));
+	threadGroup.create_thread(boost::bind(&ThreadPOOS, boost::ref(connman)));
 
     return !fRequestShutdown;
 }

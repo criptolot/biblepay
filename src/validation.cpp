@@ -117,8 +117,8 @@ std::map<uint256, int64_t> mapRejectedBlocks GUARDED_BY(cs_main);
 // DAC
 std::map<std::pair<std::string, std::string>, std::pair<std::string, int64_t>> mvApplicationCache;
 std::map<std::string, IPFSTransaction> mapSidechainTransactions;
+std::map<std::string, bool> mapPOOSStatus;
 std::map<std::string, DashUTXO> mapDashUTXO;
-std::map<std::string, POSEScore> mvPOSEScore;
 std::map<std::string, Researcher> mvResearchers;
 
 std::string msGithubVersion;

@@ -1665,13 +1665,6 @@ std::string ExecuteGenericSmartContractQuorumProcess()
 		LoadResearchers();
 	}
 
-	int64_t nTipAge = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();
-	if (nTipAge < (60 * 60 * 4) && chainActive.Tip()->nHeight % 10 == 0)
-	{
-		SyncSideChain(chainActive.Tip()->nHeight);
-	}
-
-
 	if (fGSCTime)
 		SendOutGSCs();
 

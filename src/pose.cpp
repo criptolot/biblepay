@@ -30,13 +30,14 @@ void ThreadPOOS(CConnman& connman)
 				auto mnList = deterministicMNManager->GetListAtChainTip();
 				mnList.ForEachMN(false, [&](const CDeterministicMNCPtr& dmn) 
 				{
-					std::string sPubKey = dmn->pdmnState->pubKeyOperator.Get().ToString();
-					bool fOK = POOSOrphanTest(sPubKey, 60 * 60);
-					mapPOOSStatus[sPubKey] = fOK;
-					MilliSleep(1000);
-					if (ShutdownRequested())
-						break;
-        		});
+					if (!ShutdownRequested())
+					{
+						std::string sPubKey = dmn->pdmnState->pubKeyOperator.Get().ToString();
+						bool fOK = POOSOrphanTest(sPubKey, 60 * 60);
+						mapPOOSStatus[sPubKey] = fOK;
+						MilliSleep(1000);
+					}
+				});
 			}
 			nIterations++;
 			int64_t nTipAge = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();

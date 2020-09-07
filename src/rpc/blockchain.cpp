@@ -1868,6 +1868,11 @@ UniValue exec(const JSONRPCRequest& request)
 		results.push_back(Pair("pinfo", nMN));
 		results.push_back(Pair("elapsed", nElapsed));
 	}
+	else if (sItem == "rxpools")
+	{
+		std::string sPoolList = GetSporkValue("RX_POOLS_LIST");
+		results.push_back(Pair("rx_pools", sPoolList));
+	}
 	else if (sItem == "sendalert")
 	{
 		// This command allows BiblePay devs to send out a network alert (or an upgrade notification etc).

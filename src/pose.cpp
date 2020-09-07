@@ -63,7 +63,7 @@ void ThreadPOOS(CConnman& connman)
 		{
 			LogPrintf("Error encountered in POOS main loop. %f \n", 0);
 		}
-		int nSleepLength = nIterations < 5 ? 60*5 : 60*15;
+		int nSleepLength = nIterations < 5 ? 60*5 : 60*30;
 
 		for (int i = 0; i < nSleepLength; i++)
 		{

@@ -360,8 +360,8 @@ public:
         fRequireStandard = true;
         fRequireRoutableExternalIP = true;
         fMineBlocksOnDemand = false;
-        fAllowMultipleAddressesFromGroup = false;
-        fAllowMultiplePorts = false;
+        fAllowMultipleAddressesFromGroup = true;
+        fAllowMultiplePorts = true;
 
         nFulfilledRequestExpireTime = 60 * 60; // fulfilled requests expire in 1 hour
         vSporkAddresses = {"BB2BwSbDCqCqNsfc7FgWFJn4sRgnUt4tsM"};
@@ -566,7 +566,7 @@ public:
         fRequireStandard = false;
         fRequireRoutableExternalIP = true;
         fMineBlocksOnDemand = false;
-        fAllowMultipleAddressesFromGroup = false;
+        fAllowMultipleAddressesFromGroup = true;
         fAllowMultiplePorts = true;
 
         nPoolMinParticipants = 3;

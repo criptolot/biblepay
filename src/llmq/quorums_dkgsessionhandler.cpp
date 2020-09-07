@@ -147,7 +147,9 @@ bool CDKGSessionHandler::InitNewQuorum(const CBlockIndex* pindexQuorum)
 
     curSession = std::make_shared<CDKGSession>(params, blsWorker, dkgManager);
 
-    if (!deterministicMNManager->IsDIP3Enforced(pindexQuorum->nHeight)) {
+	// R Andrews - 9-7-2020 - Tisk...Tisk...Tisk... Due to this abomination, we were not creating Quorums between the LLMQHeight and the DIP3 enforcement height.
+	
+    if (pindexQuorum->nHeight < consensus.LLMQHeight) {
         return false;
     }
 

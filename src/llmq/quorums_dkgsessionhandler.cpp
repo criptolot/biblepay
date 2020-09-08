@@ -487,6 +487,8 @@ void CDKGSessionHandler::HandleDKGRound()
         throw AbortPhaseException();
     }
 
+	LogPrintf("Quorum::HandleDKGRound %f ", 1);
+
     quorumDKGDebugManager->UpdateLocalSessionStatus(params.type, [&](CDKGDebugSessionStatus& status) {
         bool changed = status.phase != (uint8_t) QuorumPhase_Initialized;
         status.phase = (uint8_t) QuorumPhase_Initialized;

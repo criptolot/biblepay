@@ -158,7 +158,7 @@ void CFinalCommitmentTxPayload::ToJson(UniValue& obj) const
 bool CheckLLMQCommitment(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state)
 {
 
-	bool fLLMQActive = pindexPrev->nHeight >= Params().GetConsensus().LLMQHeight;
+	bool fLLMQActive = pindexPrev->nHeight >= Params().GetConsensus().LLMQHeight2;
 	if (!fLLMQActive) 
 		return true;
 	

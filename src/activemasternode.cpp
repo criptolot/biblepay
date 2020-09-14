@@ -65,7 +65,7 @@ void CActiveMasternodeManager::Init()
 
     if (!fMasternodeMode) return;
 
-	if (chainActive.Tip()->nHeight < Params().GetConsensus().DIP0003Height)
+	if (chainActive.Tip()->nHeight < Params().GetConsensus().LLMQHeight)
 		return;
 
     // Check that our local network configuration is correct
@@ -136,7 +136,7 @@ void CActiveMasternodeManager::UpdatedBlockTip(const CBlockIndex* pindexNew, con
 
 	if (pindexNew->nHeight < Params().GetConsensus().LLMQHeight)
 		return;
-
+	 
     if (state == MASTERNODE_READY) {
         auto oldMNList = deterministicMNManager->GetListForBlock(pindexNew->pprev);
         auto newMNList = deterministicMNManager->GetListForBlock(pindexNew);

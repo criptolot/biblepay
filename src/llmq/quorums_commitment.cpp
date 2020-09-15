@@ -6,6 +6,7 @@
 #include "quorums_utils.h"
 
 #include "chainparams.h"
+#include "spork.h"
 #include "validation.h"
 
 #include "evo/specialtx.h"
@@ -158,9 +159,10 @@ void CFinalCommitmentTxPayload::ToJson(UniValue& obj) const
 bool CheckLLMQCommitment(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state)
 {
 	bool fLLMQActive = pindexPrev->nHeight >= Params().GetConsensus().LLMQHeight - 1;
-	if (!fLLMQActive) 
+	bool fLLMQDisabled = sporkManager.GetSporkValue(SPORK_31_GSC_BUFFER) > 255 && sporkManager.GetSporkValue(SPORK_31_GSC_BUFFER) < 512;
+	if (fLLMQDisabled || !fLLMQActive)
 		return true;
-	
+
     CFinalCommitmentTxPayload qcTx;
     if (!GetTxPayload(tx, qcTx)) {
         return state.DoS(100, false, REJECT_INVALID, "bad-qc-payload");

@@ -15,6 +15,8 @@
 #include "net.h"
 #include "net_processing.h"
 #include "primitives/block.h"
+#include "spork.h"
+
 #include "validation.h"
 
 namespace llmq
@@ -181,7 +183,8 @@ bool CQuorumBlockProcessor::ProcessCommitment(int nHeight, const uint256& blockH
 {
     auto& params = Params().GetConsensus().llmqs.at((Consensus::LLMQType)qc.llmqType);
 	bool fLLMQActive = nHeight >= Params().GetConsensus().LLMQHeight - 1;
-	if (!fLLMQActive) 
+	bool fLLMQDisabled = sporkManager.GetSporkValue(SPORK_31_GSC_BUFFER) > 255 && sporkManager.GetSporkValue(SPORK_31_GSC_BUFFER) < 512;
+	if (fLLMQDisabled || !fLLMQActive) 
 		return true;
 
     uint256 quorumHash = GetQuorumBlockHash((Consensus::LLMQType)qc.llmqType, nHeight);

@@ -180,9 +180,9 @@ static std::tuple<std::string, uint8_t, uint32_t> BuildInversedHeightKey(Consens
 bool CQuorumBlockProcessor::ProcessCommitment(int nHeight, const uint256& blockHash, const CFinalCommitment& qc, CValidationState& state)
 {
     auto& params = Params().GetConsensus().llmqs.at((Consensus::LLMQType)qc.llmqType);
-	bool fLLMQActive = nHeight >= Params().GetConsensus().LLMQHeight;
-//	if (!fLLMQActive) 
-//		return true;
+	bool fLLMQActive = nHeight >= Params().GetConsensus().LLMQHeight - 1;
+	if (!fLLMQActive) 
+		return true;
 
     uint256 quorumHash = GetQuorumBlockHash((Consensus::LLMQType)qc.llmqType, nHeight);
     if (quorumHash.IsNull()) {

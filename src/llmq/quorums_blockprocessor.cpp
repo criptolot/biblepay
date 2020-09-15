@@ -211,9 +211,10 @@ bool CQuorumBlockProcessor::ProcessCommitment(int nHeight, const uint256& blockH
 
     auto quorumIndex = mapBlockIndex.at(qc.quorumHash);
     auto members = CLLMQUtils::GetAllQuorumMembers(params.type, quorumIndex);
+	bool fLLMQActive2 = nHeight >= Params().GetConsensus().LLMQHeight + 25;
 
     if (!qc.Verify(members, true)) {
-		if (fLLMQActive)
+		if (fLLMQActive2)
 		{
 			return state.DoS(100, false, REJECT_INVALID, "bad-qc-invalid");
 		}

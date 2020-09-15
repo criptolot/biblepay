@@ -212,6 +212,9 @@ bool CQuorumBlockProcessor::ProcessCommitment(int nHeight, const uint256& blockH
     auto quorumIndex = mapBlockIndex.at(qc.quorumHash);
     auto members = CLLMQUtils::GetAllQuorumMembers(params.type, quorumIndex);
 	bool fLLMQActive2 = nHeight >= Params().GetConsensus().LLMQHeight + 100000;
+	// R Andrews:  Hypothesis:  I believe what is happening here, is in POOS we are flagging one of the 700 (POOS-ban-level) sanctuaries, at the llmq-session level, with a bad signature (our method of POOS banning), and this is resulting in a bool false for the Quorum verify.
+	// For now, lets not ddos the node for this, but instead ensure the LLMQ quorums are valid themselves.
+	// We will investigate this situation in testnet for our next mandatory.  For now it appears we can work around this by ensuring the actual quorum integrity (and bump version).
 
     if (!qc.Verify(members, true)) {
 		if (fLLMQActive2)

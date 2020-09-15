@@ -211,7 +211,7 @@ bool CQuorumBlockProcessor::ProcessCommitment(int nHeight, const uint256& blockH
 
     auto quorumIndex = mapBlockIndex.at(qc.quorumHash);
     auto members = CLLMQUtils::GetAllQuorumMembers(params.type, quorumIndex);
-	bool fLLMQActive2 = nHeight >= Params().GetConsensus().LLMQHeight + 25;
+	bool fLLMQActive2 = nHeight >= Params().GetConsensus().LLMQHeight + 100000;
 
     if (!qc.Verify(members, true)) {
 		if (fLLMQActive2)

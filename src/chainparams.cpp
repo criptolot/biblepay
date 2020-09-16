@@ -248,11 +248,11 @@ public:
 		consensus.DIP0003Height = 133891;
 		// September 2020 Go-Live (POOS)
 		consensus.POOS_HEIGHT = 217000; // Sept 2020 Mandatory Upgrade height
-		consensus.LLMQHeight = 220000; // The first attempt at llmq quorums that conform to voting out bad quorum members
-		consensus.LLMQHeight2 = 220000;
-		consensus.DIP0003EnforcementHeight = 220000;
-		consensus.DIP0003HeightPhase2 = 220000;
-		consensus.DIP0008Height = 222000;
+		consensus.LLMQHeight = 320000; // The first attempt at llmq quorums that conform to voting out bad quorum members
+		consensus.LLMQHeight2 = 320000;
+		consensus.DIP0003EnforcementHeight = 320000;
+		consensus.DIP0003HeightPhase2 = 320000;
+		consensus.DIP0008Height = 322000;
 		// End of September 2020 Go-Live (POOS)
 
 		consensus.nSanctuaryPaymentsPhaseIIHeight = 166075; // Set this at the Go-Live height for .14 

@@ -39,7 +39,10 @@ void ThreadPOOS(CConnman& connman)
 
 			if (fPOOSEnabled)
 			{
+				// 9-15-2020 - R Andrews
 				auto mnList = deterministicMNManager->GetListAtChainTip();
+			    std::vector<uint256> toBan;
+
 				mnList.ForEachMN(false, [&](const CDeterministicMNCPtr& dmn) 
 				{
 					if (!ShutdownRequested())
@@ -48,9 +51,18 @@ void ThreadPOOS(CConnman& connman)
 						bool fOK = POOSOrphanTest(sPubKey, 60 * 60);
 						int nStatus = fOK ? 1 : 255;
 						mapPOOSStatus[sPubKey] = nStatus;
+						if (!fOK)
+						{
+					        toBan.emplace_back(dmn->proTxHash);
+						}
 						MilliSleep(1000);
 					}
 				});
+
+				// Ban 
+				for (const auto& proTxHash : toBan) {
+					mnList.PoSePunish(proTxHash, mnList.CalcPenalty(100), false);
+			    }
 			}
 			nIterations++;
 			int64_t nTipAge = GetAdjustedTime() - chainActive.Tip()->GetBlockTime();

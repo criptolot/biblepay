@@ -139,8 +139,8 @@ double GetCoinPrice()
 	double dPriorPrice = 0;
 	double dPriorPhase = 0;
 	double out_BTC = 0;
-	double out_BBP = 0;
-	nLastPrice = GetPBase(out_BTC, out_BBP);
+	double out_EST = 0;
+	nLastPrice = GetPBase(out_BTC, out_EST);
 	return nLastPrice;
 }
 
@@ -610,39 +610,39 @@ double CalculateAPM(int nHeight)
 	if (nHeight < nAPMHeight || nHeight < 1 || nAPMHeight == 0)
 		return 0;
 	double out_BTC = 0;
-	double out_BBP = 0;
-	double dPrice = GetPBase(out_BTC, out_BBP);
+	double out_EST = 0;
+	double dPrice = GetPBase(out_BTC, out_EST);
 	double dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nHeight), "<bbpprice>", "</bbpprice>"), 12);
 	if (dLastPrice == 0 && nHeight > BLOCKS_PER_DAY * 2)
 	{
-		// In case BBP missed a day (somehow), one more try using the previous day as the prior price:
+		// In case EST missed a day (somehow), one more try using the previous day as the prior price:
 		nHeight -= BLOCKS_PER_DAY;
 		dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(nHeight), "<bbpprice>", "</bbpprice>"), 12);
 	}
 	double nResult = 0;
-	if (dLastPrice == 0 || out_BBP == 0)
+	if (dLastPrice == 0 || out_EST == 0)
 	{
 		// Price is missing for one of the two days
 		nResult = -1;
 	}
-	else if (dLastPrice == out_BBP)
+	else if (dLastPrice == out_EST)
 	{
 		// Price has not changed
 		nResult = 1;
 	}
-	else if (dLastPrice < out_BBP)
+	else if (dLastPrice < out_EST)
 	{
 		// Price has INCREASED!  YES!
 		nResult = 2;
 	}
-	else if (dLastPrice > out_BBP)
+	else if (dLastPrice > out_EST)
 	{
 		// Price has DECREASED -- BOO.
 		nResult = 3;
 	}
 
 	LogPrintf("CalculateAPM::Result==%f::LastHeight %f Price %s, Current Price %s", 
-		nResult, nHeight, RoundToString(dLastPrice, 12), RoundToString(out_BBP, 12));
+		nResult, nHeight, RoundToString(dLastPrice, 12), RoundToString(out_EST, 12));
 	return nResult;
 }
 
@@ -943,9 +943,9 @@ std::string AssessBlocks(int nHeight, bool fCreatingContract)
 	{
 		// Add the QT Phase
 		double out_BTC = 0;
-		double out_BBP = 0;
-		double dPrice = GetPBase(out_BTC, out_BBP);
-		QTData = "<QTDATA><QTPHASE>" + RoundToString(CalculateAPM(nHeight), 0) + "</QTPHASE><BBPPRICE>" + RoundToString(out_BBP, 12) + "</BBPPRICE><PRICE>" 
+		double out_EST = 0;
+		double dPrice = GetPBase(out_BTC, out_EST);
+		QTData = "<QTDATA><QTPHASE>" + RoundToString(CalculateAPM(nHeight), 0) + "</QTPHASE><ESTPRICE>" + RoundToString(out_EST, 12) + "</ESTPRICE><PRICE>" 
 			+ RoundToString(dPrice, 12) + "</PRICE><BTCPRICE>" + RoundToString(out_BTC, 2) + "</BTCPRICE></QTDATA>";
 
 		std::string DWSData;
@@ -1474,7 +1474,7 @@ std::string SerializeSanctuaryQuorumTrigger(int iContractAssessmentHeight, int n
 		sJson += GJE("price", ExtractXML(sQTData, "<PRICE>", "</PRICE>"), true, true);
 		sJson += GJE("qtphase", ExtractXML(sQTData, "<QTPHASE>", "</QTPHASE>"), true, true);
 		sJson += GJE("btcprice", ExtractXML(sQTData,"<BTCPRICE>", "</BTCPRICE>"), true, true);
-		sJson += GJE("bbpprice", ExtractXML(sQTData,"<BBPPRICE>", "</BBPPRICE>"), true, true);
+		sJson += GJE("bbpprice", ExtractXML(sQTData,"<ESTPRICE>", "</ESTPRICE>"), true, true);
 	}
 	sJson += GJE("type", sType, false, false); 
 	sJson += "}]]";

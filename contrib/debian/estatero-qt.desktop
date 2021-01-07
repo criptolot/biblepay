@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Estatero Core
+Comment=Estatero P2P Cryptocurrency
+Comment[de]=Verbinde mit dem Estatero peer-to-peer Netzwerk
+Comment[fr]=Estatero, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=Estatero, eşten eşe kriptografik sanal para birimi
+Exec=estatero-qt %u
+Terminal=false
+Type=Application
+Icon=estatero128
+MimeType=x-scheme-handler/estatero;
+Categories=Office;Finance;

@@ -6,13 +6,13 @@ reset-files.bash
 *.tar.gz
 
 *.exe
-src/biblepay
-src/biblepayd
-src/biblepay-cli
-src/biblepay-tx
-src/test/testbiblepay
-src/qt/test/testbiblepay-qt
-src/bench/benchbiblepay
+src/estatero
+src/estaterod
+src/estatero-cli
+src/estatero-tx
+src/test/testestatero
+src/qt/test/testestatero-qt
+src/bench/benchestatero
 
 # autoreconf
 Makefile.in
@@ -35,9 +35,9 @@ config.log
 config.status
 configure
 libtool
-src/config/biblepay-config.h
+src/config/estatero-config.h
 src/config/coin-config.h
-src/config/biblepay-config.h.in
+src/config/estatero-config.h.in
 src/config/coin-config.h.in
 src/config/stamp-h1
 share/setup.nsi
@@ -83,13 +83,13 @@ libconftest.dylib*
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
-biblepay-qt
-Biblepay-Qt.app
+estatero-qt
+Estatero-Qt.app
 !/depends/Makefile
 
 # Unit-tests
 Makefile.test
-biblepay-qt_test
+estatero-qt_test
 src/test/buildenv.py
 
 # Resources cpp
@@ -103,7 +103,7 @@ build
 *.gcno
 *.gcda
 /*.info
-testbiblepay.coverage/
+testestatero.coverage/
 total.coverage/
 coverage_percent.txt
 
@@ -122,15 +122,15 @@ qa/cache/*
 .autotools
 /doc/doxygen/
 
-libbiblepayconsensus.pc
+libestateroconsensus.pc
 contrib/devtools/split-debug.sh
-src/qt/biblepay-qt.bash
+src/qt/estatero-qt.bash
 qa/pull-tester/tests-config.sh
 
 #development symlinks
-biblepay-cli
-biblepayd
-biblepay-qt
+estatero-cli
+estaterod
+estatero-qt
 make
 
 /docker/bin
@@ -138,7 +138,7 @@ make
 # CLion
 .idea
 cmake-build-debug
-contrib/devtools/windows/DevelopBiblePay.sln
-contrib/devtools/windows/DevelopBiblePay.suo
+contrib/devtools/windows/DevelopEstatero.sln
+contrib/devtools/windows/DevelopEstatero.suo
 src/.vs/src/v15/.suo
 src/.vs/VSWorkspaceState.json

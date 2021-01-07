@@ -17,7 +17,7 @@ padding:0;
 }
 
 QWidget#header {
-background-image: url(':/images/bezaleel/biblepay_logo');
+background-image: url(':/images/bezaleel/estatero_logo');
 xmin-width:217px;
 xmin-height:170px;
 min-width:50px;
@@ -808,17 +808,17 @@ QDialog#HelpMessageDialog QScrollBar:vertical, QDialog#HelpMessageDialog QScroll
 border:0;
 }
 
-/* About biblepay Dialog */
+/* About estatero Dialog */
 QDialog#AboutDialog {
 background-color:#grey;
 color:white;
 }
 
-QDialog#AboutDialog QLabel#label, QDialog#AboutDialog QLabel#copyrightLabel, QDialog#AboutDialog QLabel#label_2 { /* About biblepay Contents */
+QDialog#AboutDialog QLabel#label, QDialog#AboutDialog QLabel#copyrightLabel, QDialog#AboutDialog QLabel#label_2 { /* About estatero Contents */
 margin-left:10px;
 }
 
-QDialog#AboutDialog QLabel#label_2 { /* Margin for About biblepay text */
+QDialog#AboutDialog QLabel#label_2 { /* Margin for About estatero text */
 margin-right:10px;
 }
 
@@ -1191,7 +1191,7 @@ min-width:410px;
 margin-right:5px;
 margin-left:0;
 margin-top:0;
-background-image: url(':/images/bezaleel/biblepay_logo_horizontal');
+background-image: url(':/images/bezaleel/estatero_logo_horizontal');
 background-repeat:none;
 }
 

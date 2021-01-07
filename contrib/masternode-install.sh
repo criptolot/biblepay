@@ -11,16 +11,16 @@ UNDERLINE='\033[4m'
 MAX=10
 CURRSTEP=0
 
-COINDOWNLOADFILE=biblepay-aarch64-linux-gnu.tar.gz
-COINREPO=https://github.com/biblepay/biblepay.git
+COINDOWNLOADFILE=estatero-aarch64-linux-gnu.tar.gz
+COINREPO=https://github.com/estatero/estatero.git
 COINRPCPORT=9998
 COINPORT=40000
-COINDAEMON=biblepayd
-COINCLIENT=biblepay-cli
-COINTX=biblepay-tx
-COINCORE=.biblepay
-COINCONFIG=biblepay.conf
-COINDOWNLOADDIR=biblepay
+COINDAEMON=estaterod
+COINCLIENT=estatero-cli
+COINTX=estatero-tx
+COINCORE=.estatero
+COINCONFIG=estatero.conf
+COINDOWNLOADDIR=estatero
 
 archname=""
 update=""
@@ -57,7 +57,7 @@ done
 
 purgeOldInstallation() {
     echo "Searching old masternode files"
-    if [ -d ~/.biblepay ]; then
+    if [ -d ~/.estatero ]; then
         if [[ "$UNATTENDED" != "Y" ]]; then
             echo -e "${BOLD}"
             read -p "An existing setup was detected. Do you want to upgrade (y) or clean install (n)? (y/n)?" existing
@@ -75,14 +75,14 @@ purgeOldInstallation() {
         else 
             echo "Removing old masternode files and configuration"
             #kill wallet daemon
-            sudo killall biblepayd > /dev/null 2>&1
+            sudo killall estaterod > /dev/null 2>&1
             #remove old ufw port allow
             sudo ufw delete allow COINRPCPORT/tcp > /dev/null 2>&1
             sudo ufw delete allow COINPORT/tcp > /dev/null 2>&1
             #remove old files
-            sudo rm -rf ~/.biblepay > /dev/null 2>&1
-            #remove binaries and biblepay utilities
-            cd /usr/local/bin && sudo rm biblepay-cli biblepay-tx biblepayd biblepay-qt> /dev/null 2>&1 
+            sudo rm -rf ~/.estatero > /dev/null 2>&1
+            #remove binaries and estatero utilities
+            cd /usr/local/bin && sudo rm estatero-cli estatero-tx estaterod estatero-qt> /dev/null 2>&1 
             cd ~
             echo -e "${GREEN}* Done${NONE}";
         fi
@@ -153,7 +153,7 @@ setupSwap() {
 installFirewall() {
     let "CURRSTEP++"
     echo
-    echo -e "[${CURRSTEP}/${MAX}] Installing UFW Firewall and opening Biblepay port. Please wait..."
+    echo -e "[${CURRSTEP}/${MAX}] Installing UFW Firewall and opening Estatero port. Please wait..."
     sudo apt-get -y install ufw > /dev/null 2>&1
     sudo ufw allow ssh/tcp > /dev/null 2>&1
     sudo ufw limit ssh/tcp > /dev/null 2>&1
@@ -168,7 +168,7 @@ installDependencies() {
     echo
     echo -e "[${CURRSTEP}/${MAX}] Installing dependencies. Please wait..."
     sudo add-apt-repository main > /dev/null 2>&1
-    sudo add-apt-repository universe > /dev/null 2>&1  # missing in cleanbiblepay Ubuntu 18.04
+    sudo add-apt-repository universe > /dev/null 2>&1  # missing in cleanestatero Ubuntu 18.04
     sudo apt-get install build-essential libtool autotools-dev automake pkg-config python3 bsdmainutils cmake -y > /dev/null 2>&1
     echo -e "${NONE}${GREEN}* Done${NONE}";
 }
@@ -178,9 +178,9 @@ downloadWallet() {
     let "CURRSTEP++"
     let "CURRSTEP++"
     echo -e "[${CURRSTEP}/${MAX}] Downloading wallet binaries for arch ${archname}. Please wait, this might take a while to complete..."
-    wget https://biblepay.org/biblepayd-evo-${archname}.tar.gz > /dev/null 2>&1
-    sudo tar -xzf ./biblepayd-evo-${archname}.tar.gz --directory /usr/local/bin > /dev/null 2>&1
-    rm ./biblepayd-evo-${archname}.tar.gz
+    wget https://estatero.org/estaterod-evo-${archname}.tar.gz > /dev/null 2>&1
+    sudo tar -xzf ./estaterod-evo-${archname}.tar.gz --directory /usr/local/bin > /dev/null 2>&1
+    rm ./estaterod-evo-${archname}.tar.gz
     echo -e "${NONE}${GREEN}* Done${NONE}";
 }
 
@@ -307,13 +307,13 @@ echo -e "|             ´--:::--.´ ´-+syy´    ´yyso/:.´.-:::-:-´          
 echo -e "|                .-:-:::::-....´´´´´´....-::--:::-.                 |"
 echo -e "|                   ´.-::::::--:::::::---::::-.´                    |"
 echo -e "|                                                                   |"
-echo -e "|            Biblepay Masternode Installer                          |"
+echo -e "|            Estatero Masternode Installer                          |"
 echo -e "|                                                                   |"
 echo -e "--------------------------------------------------------------------"
 
 if [[ "$UNATTENDED" != "Y" ]]; then
     echo -e "${BOLD}"
-    read -p "This script will setup your Biblepay Masternode. Continue? (y/n)?" response
+    read -p "This script will setup your Estatero Masternode. Continue? (y/n)?" response
     echo -e "${NONE}"
 else 
     response="y"
@@ -336,7 +336,7 @@ echo
     
     if [[ "$UNATTENDED" != "Y" ]]; then
         echo -e "${BOLD}"
-        read -p "Use pre-compiled Biblepay binaries (y) or compile from source (n)? (y/n)?" binaries
+        read -p "Use pre-compiled Estatero binaries (y) or compile from source (n)? (y/n)?" binaries
         echo -e "${NONE}"
     else 
         binaries="y"

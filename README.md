@@ -1,36 +1,36 @@
-BiblePay Core staging tree 0.14.0
+Estatero Core staging tree 0.14.0
 ===============================
 
-`master:` [![Build Status](https://travis-ci.org/biblepay/biblepay.svg?branch=master)](https://travis-ci.org/biblepay/biblepay) `develop:` [![Build Status](https://travis-ci.org/biblepay/biblepay.svg?branch=develop)](https://travis-ci.org/biblepay/biblepay/branches)
+`master:` [![Build Status](https://travis-ci.org/estatero/estatero.svg?branch=master)](https://travis-ci.org/estatero/estatero) `develop:` [![Build Status](https://travis-ci.org/estatero/estatero.svg?branch=develop)](https://travis-ci.org/estatero/estatero/branches)
 
-https://www.biblepay.org
+https://www.estatero.org
 
 
-What is Biblepay?
+What is Estatero?
 ----------------
 
-Biblepay is an experimental digital currency that enables anonymous, instant
-payments to anyone, anywhere in the world. Biblepay uses peer-to-peer technology
+Estatero is an experimental digital currency that enables anonymous, instant
+payments to anyone, anywhere in the world. Estatero uses peer-to-peer technology
 to operate with no central authority: managing transactions and issuing money
-are carried out collectively by the network. BiblePay Core is the name of the open
+are carried out collectively by the network. Estatero Core is the name of the open
 source software which enables the use of this currency.
 
 For more information, as well as an immediately useable, binary version of
-the BiblePay Core software, see https://www.biblepay.org/get-biblepay/.
+the Estatero Core software, see https://www.estatero.org/get-estatero/.
 
 
 License
 -------
 
-BiblePay Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
+Estatero Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
 
 Development Process
 -------------------
 
 The `master` branch is meant to be stable. Development is normally done in separate branches.
-[Tags](https://github.com/biblepay/biblepay/tags) are created to indicate new official,
-stable release versions of BiblePay Core.
+[Tags](https://github.com/estatero/estatero/tags) are created to indicate new official,
+stable release versions of Estatero Core.
 
 The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -66,7 +66,7 @@ Translations
 ------------
 
 Changes to translations as well as new translations can be submitted to
-[BiblePay Core's Transifex page](https://www.transifex.com/projects/p/biblepay/).
+[Estatero Core's Transifex page](https://www.transifex.com/projects/p/estatero/).
 
 Translations are periodically pulled from Transifex and merged into the git repository. See the
 [translation process](doc/translation_process.md) for details on how this works.
@@ -74,4 +74,4 @@ Translations are periodically pulled from Transifex and merged into the git repo
 **Important**: We do not accept translation changes as GitHub pull requests because the next
 pull from Transifex would automatically overwrite them again.
 
-Translators should also follow the [forum](https://www.biblepay.org/forum/topic/biblepay-worldwide-collaboration.88/).
+Translators should also follow the [forum](https://www.estatero.org/forum/topic/estatero-worldwide-collaboration.88/).

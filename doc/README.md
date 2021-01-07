@@ -1,33 +1,33 @@
-BiblePay Core 0.14.0
+Estatero Core 0.14.0
 =====================
 
-This is the official reference wallet for Biblepay digital currency and comprises the backbone of the Biblepay peer-to-peer network. You can [download BiblePay Core](https://www.biblepay.org/downloads/) or [build it yourself](#building) using the guides below.
+This is the official reference wallet for Estatero digital currency and comprises the backbone of the Estatero peer-to-peer network. You can [download Estatero Core](https://www.estatero.org/downloads/) or [build it yourself](#building) using the guides below.
 
 Running
 ---------------------
-The following are some helpful notes on how to run Biblepay on your native platform.
+The following are some helpful notes on how to run Estatero on your native platform.
 
 ### Unix
 
 Unpack the files into a directory and run:
 
-- `bin/biblepay-qt` (GUI) or
-- `bin/biblepayd` (headless)
+- `bin/estatero-qt` (GUI) or
+- `bin/estaterod` (headless)
 
 ### Windows
 
-Unpack the files into a directory, and then run biblepay-qt.exe.
+Unpack the files into a directory, and then run estatero-qt.exe.
 
 ### OS X
 
-Drag Biblepay-Qt to your applications folder, and then run Biblepay-Qt.
+Drag Estatero-Qt to your applications folder, and then run Estatero-Qt.
 
 ### Need Help?
 
-* See the [Biblepay documentation](https://docs.biblepay.org)
+* See the [Estatero documentation](https://docs.estatero.org)
 for help and more information.
-* Ask for help on [Biblepay Nation Discord](http://biblepaychat.org)
-* Ask for help on the [Biblepay Forum](https://biblepay.org/forum)
+* Ask for help on [Estatero Nation Discord](http://estaterochat.org)
+* Ask for help on the [Estatero Forum](https://estatero.org/forum)
 =======
 * See the [Dash Developer Documentation](https://dash-docs.github.io/) 
 for technical specifications and implementation details.
@@ -36,7 +36,7 @@ for technical specifications and implementation details.
 
 Building
 ---------------------
-The following are developer notes on how to build BiblePay Core on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
+The following are developer notes on how to build Estatero Core on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
 
 - [OS X Build Notes](build-osx.md)
 - [Unix Build Notes](build-unix.md)
@@ -46,7 +46,7 @@ The following are developer notes on how to build BiblePay Core on your native p
 
 Development
 ---------------------
-The BiblePay Core repo's [root README](/README.md) contains relevant information on the development process and automated testing.
+The Estatero Core repo's [root README](/README.md) contains relevant information on the development process and automated testing.
 
 - [Developer Notes](developer-notes.md)
 - [Release Notes](release-notes.md)
@@ -62,8 +62,8 @@ The BiblePay Core repo's [root README](/README.md) contains relevant information
 - [Benchmarking](benchmarking.md)
 
 ### Resources
-* Discuss on the [Biblepay Forum](https://biblepay.org/forum), in the Development & Technical Discussion board.
-* Discuss on [Biblepay Nation Discord](http://biblepaychat.org)
+* Discuss on the [Estatero Forum](https://estatero.org/forum), in the Development & Technical Discussion board.
+* Discuss on [Estatero Nation Discord](http://estaterochat.org)
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)

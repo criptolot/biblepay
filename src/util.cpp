@@ -261,16 +261,16 @@ void SetCurrencyName(std::string sEXE)
 	if (fDAC)
 	{
 		CURRENCY_NAME = "DAC";
-		DOMAIN_NAME = "biblepay.org";  // ToDo: Change this depending on what we do
-		GITHUB_URL = "https://github.com/biblepay/biblepay";  // ToDo: Change this depending on what we do
+		DOMAIN_NAME = "estatero.org";  // ToDo: Change this depending on what we do
+		GITHUB_URL = "https://github.com/estatero/estatero";  // ToDo: Change this depending on what we do
 		CURRENCY_TICKER = "DAC";
 	}
 	else
 	{
-		CURRENCY_NAME = "BIBLEPAY";
-		DOMAIN_NAME = "biblepay.org";
-		GITHUB_URL = "https://github.com/biblepay/biblepay";
-		CURRENCY_TICKER = "BBP";
+		CURRENCY_NAME = "ESTATERO";
+		DOMAIN_NAME = "estatero.org";
+		GITHUB_URL = "https://github.com/estatero/estatero";
+		CURRENCY_TICKER = "EST";
 	}
 	if (false)
 		printf(" CURRENCY_NAME=%s, DOMAIN=%s, TICKER=%s\n ", CURRENCY_NAME.c_str(), DOMAIN_NAME.c_str(), CURRENCY_TICKER.c_str());
@@ -645,7 +645,7 @@ boost::filesystem::path GetDefaultDataDir()
     // Unix: ~/.coinname
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Biblepay";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "Estatero";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -655,10 +655,10 @@ boost::filesystem::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/Biblepay";
+    return pathRet / "Library/Application Support/Estatero";
 #else
     // Unix
-    return pathRet / ".biblepay";
+    return pathRet / ".estatero";
 #endif
 #endif
 }

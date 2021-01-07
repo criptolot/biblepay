@@ -1,0 +1,25 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/translations">
+        <file alias="ar">locale/estatero_ar.qm</file>
+        <file alias="bg">locale/estatero_bg.qm</file>
+        <file alias="de">locale/estatero_de.qm</file>
+        <file alias="en">locale/estatero_en.qm</file>
+        <file alias="es">locale/estatero_es.qm</file>
+        <file alias="fi">locale/estatero_fi.qm</file>
+        <file alias="fr">locale/estatero_fr.qm</file>
+        <file alias="it">locale/estatero_it.qm</file>
+        <file alias="ja">locale/estatero_ja.qm</file>
+        <file alias="ko">locale/estatero_ko.qm</file>
+        <file alias="nl">locale/estatero_nl.qm</file>
+        <file alias="pl">locale/estatero_pl.qm</file>
+        <file alias="pt">locale/estatero_pt.qm</file>
+        <file alias="ru">locale/estatero_ru.qm</file>
+        <file alias="sk">locale/estatero_sk.qm</file>
+        <file alias="sv">locale/estatero_sv.qm</file>
+        <file alias="th">locale/estatero_th.qm</file>
+        <file alias="tr">locale/estatero_tr.qm</file>
+        <file alias="vi">locale/estatero_vi.qm</file>
+        <file alias="zh_CN">locale/estatero_zh_CN.qm</file>
+        <file alias="zh_TW">locale/estatero_zh_TW.qm</file>
+    </qresource>
+</RCC>

@@ -1,9 +1,9 @@
 Release Process
 ====================
 
-* Update translations, see [translation_process.md](https://github.com/biblepay/biblepay/blob/master/doc/translation_process.md#synchronising-translations).
+* Update translations, see [translation_process.md](https://github.com/estatero/estatero/blob/master/doc/translation_process.md#synchronising-translations).
 
-* Update manpages, see [gen-manpages.sh](https://github.com/biblepay/biblepay/blob/master/contrib/devtools/README.md#gen-manpagessh).
+* Update manpages, see [gen-manpages.sh](https://github.com/estatero/estatero/blob/master/contrib/devtools/README.md#gen-manpagessh).
 
 Before every minor and major release:
 
@@ -19,7 +19,7 @@ Before every minor and major release:
 
 Before every major release:
 
-* Update hardcoded [seeds](/contrib/seeds/README.md). TODO: Give example PR for Biblepay
+* Update hardcoded [seeds](/contrib/seeds/README.md). TODO: Give example PR for Estatero
 * Update [`BLOCK_CHAIN_SIZE`](/src/qt/intro.cpp) to the current size plus some overhead.
 
 ### First time / New builders
@@ -29,12 +29,12 @@ If you're using the automated script (found in [contrib/gitian-build.py](/contri
 Check out the source code in the following directory hierarchy.
 
 	cd /path/to/your/toplevel/build
-	git clone https://github.com/biblepay/gitian.sigs.git
-	git clone https://github.com/biblepay/biblepay-detached-sigs.git
+	git clone https://github.com/estatero/gitian.sigs.git
+	git clone https://github.com/estatero/estatero-detached-sigs.git
 	git clone https://github.com/devrandom/gitian-builder.git
-	git clone https://github.com/biblepay/biblepay.git
+	git clone https://github.com/estatero/estatero.git
 
-### BiblePay Core maintainers/release engineers, update (commit) version in sources
+### Estatero Core maintainers/release engineers, update (commit) version in sources
 
 - `configure.ac`:
     - `_CLIENT_VERSION_MAJOR`
@@ -68,7 +68,7 @@ If you're using the automated script (found in [contrib/gitian-build.py](/contri
 
 Setup Gitian descriptors:
 
-    pushd ./biblepay
+    pushd ./estatero
     export SIGNER=(your Gitian key, ie bluematt, sipa, etc)
     export VERSION=(new version, e.g. 0.12.3)
     git fetch
@@ -103,7 +103,7 @@ Create the OS X SDK tarball, see the [OS X readme](README_osx.md) for details, a
 By default, Gitian will fetch source files as needed. To cache them ahead of time:
 
     pushd ./gitian-builder
-    make -C ../biblepay/depends download SOURCES_PATH=`pwd`/cache/common
+    make -C ../estatero/depends download SOURCES_PATH=`pwd`/cache/common
     popd
 
 Only missing files will be fetched, so this is safe to re-run for each build.
@@ -111,50 +111,50 @@ Only missing files will be fetched, so this is safe to re-run for each build.
 NOTE: Offline builds must use the --url flag to ensure Gitian fetches only from local URLs. For example:
 
     pushd ./gitian-builder
-    ./bin/gbuild --url biblepay=/path/to/biblepay,signature=/path/to/sigs {rest of arguments}
+    ./bin/gbuild --url estatero=/path/to/estatero,signature=/path/to/sigs {rest of arguments}
     popd
 
 The gbuild invocations below <b>DO NOT DO THIS</b> by default.
 
-### Build and sign BiblePay Core for Linux, Windows, and OS X:
+### Build and sign Estatero Core for Linux, Windows, and OS X:
 
     pushd ./gitian-builder
-    ./bin/gbuild --memory 3000 --commit biblepay=v${VERSION} ../biblepay/contrib/gitian-descriptors/gitian-linux.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../biblepay/contrib/gitian-descriptors/gitian-linux.yml
-    mv build/out/biblepay-*.tar.gz build/out/src/biblepay-*.tar.gz ../
+    ./bin/gbuild --memory 3000 --commit estatero=v${VERSION} ../estatero/contrib/gitian-descriptors/gitian-linux.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../estatero/contrib/gitian-descriptors/gitian-linux.yml
+    mv build/out/estatero-*.tar.gz build/out/src/estatero-*.tar.gz ../
 
-    ./bin/gbuild --memory 3000 --commit biblepay=v${VERSION} ../biblepay/contrib/gitian-descriptors/gitian-win.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../biblepay/contrib/gitian-descriptors/gitian-win.yml
-    mv build/out/biblepay-*-win-unsigned.tar.gz inputs/biblepay-win-unsigned.tar.gz
-    mv build/out/biblepay-*.zip build/out/biblepay-*.exe ../
+    ./bin/gbuild --memory 3000 --commit estatero=v${VERSION} ../estatero/contrib/gitian-descriptors/gitian-win.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../estatero/contrib/gitian-descriptors/gitian-win.yml
+    mv build/out/estatero-*-win-unsigned.tar.gz inputs/estatero-win-unsigned.tar.gz
+    mv build/out/estatero-*.zip build/out/estatero-*.exe ../
 
-    ./bin/gbuild --memory 3000 --commit biblepay=v${VERSION} ../biblepay/contrib/gitian-descriptors/gitian-osx.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../biblepay/contrib/gitian-descriptors/gitian-osx.yml
-    mv build/out/biblepay-*-osx-unsigned.tar.gz inputs/biblepay-osx-unsigned.tar.gz
-    mv build/out/biblepay-*.tar.gz build/out/biblepay-*.dmg ../
+    ./bin/gbuild --memory 3000 --commit estatero=v${VERSION} ../estatero/contrib/gitian-descriptors/gitian-osx.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../estatero/contrib/gitian-descriptors/gitian-osx.yml
+    mv build/out/estatero-*-osx-unsigned.tar.gz inputs/estatero-osx-unsigned.tar.gz
+    mv build/out/estatero-*.tar.gz build/out/estatero-*.dmg ../
     popd
 
 Build output expected:
 
-  1. source tarball (`biblepay-${VERSION}.tar.gz`)
-  2. linux 32-bit and 64-bit dist tarballs (`biblepay-${VERSION}-linux[32|64].tar.gz`)
-  3. windows 32-bit and 64-bit unsigned installers and dist zips (`biblepay-${VERSION}-win[32|64]-setup-unsigned.exe`, `biblepay-${VERSION}-win[32|64].zip`)
-  4. OS X unsigned installer and dist tarball (`biblepay-${VERSION}-osx-unsigned.dmg`, `biblepay-${VERSION}-osx64.tar.gz`)
+  1. source tarball (`estatero-${VERSION}.tar.gz`)
+  2. linux 32-bit and 64-bit dist tarballs (`estatero-${VERSION}-linux[32|64].tar.gz`)
+  3. windows 32-bit and 64-bit unsigned installers and dist zips (`estatero-${VERSION}-win[32|64]-setup-unsigned.exe`, `estatero-${VERSION}-win[32|64].zip`)
+  4. OS X unsigned installer and dist tarball (`estatero-${VERSION}-osx-unsigned.dmg`, `estatero-${VERSION}-osx64.tar.gz`)
   5. Gitian signatures (in `gitian.sigs/${VERSION}-<linux|{win,osx}-unsigned>/(your Gitian key)/`)
 
 ### Verify other gitian builders signatures to your own. (Optional)
 
 Add other gitian builders keys to your gpg keyring, and/or refresh keys.
 
-    gpg --import biblepay/contrib/gitian-keys/*.pgp
+    gpg --import estatero/contrib/gitian-keys/*.pgp
     gpg --refresh-keys
 
 Verify the signatures
 
     pushd ./gitian-builder
-    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-linux ../biblepay/contrib/gitian-descriptors/gitian-linux.yml
-    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-unsigned ../biblepay/contrib/gitian-descriptors/gitian-win.yml
-    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-unsigned ../biblepay/contrib/gitian-descriptors/gitian-osx.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-linux ../estatero/contrib/gitian-descriptors/gitian-linux.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-unsigned ../estatero/contrib/gitian-descriptors/gitian-win.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-unsigned ../estatero/contrib/gitian-descriptors/gitian-osx.yml
     popd
 
 ### Next steps:
@@ -203,25 +203,25 @@ Codesigner only: Commit the detached codesign payloads:
 Non-codesigners: wait for Windows/OS X detached signatures:
 
 - Once the Windows/OS X builds each have 3 matching signatures, they will be signed with their respective release keys.
-- Detached signatures will then be committed to the [biblepay-detached-sigs](https://github.com/biblepay/biblepay-detached-sigs) repository, which can be combined with the unsigned apps to create signed binaries.
+- Detached signatures will then be committed to the [estatero-detached-sigs](https://github.com/estatero/estatero-detached-sigs) repository, which can be combined with the unsigned apps to create signed binaries.
 
 Create (and optionally verify) the signed OS X binary:
 
     pushd ./gitian-builder
-    ./bin/gbuild -i --commit signature=v${VERSION} ../biblepay/contrib/gitian-descriptors/gitian-osx-signer.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../biblepay/contrib/gitian-descriptors/gitian-osx-signer.yml
-    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../biblepay/contrib/gitian-descriptors/gitian-osx-signer.yml
-    mv build/out/biblepay-osx-signed.dmg ../biblepay-${VERSION}-osx.dmg
+    ./bin/gbuild -i --commit signature=v${VERSION} ../estatero/contrib/gitian-descriptors/gitian-osx-signer.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../estatero/contrib/gitian-descriptors/gitian-osx-signer.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../estatero/contrib/gitian-descriptors/gitian-osx-signer.yml
+    mv build/out/estatero-osx-signed.dmg ../estatero-${VERSION}-osx.dmg
     popd
 
 Create (and optionally verify) the signed Windows binaries:
 
     pushd ./gitian-builder
-    ./bin/gbuild -i --commit signature=v${VERSION} ../biblepay/contrib/gitian-descriptors/gitian-win-signer.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../biblepay/contrib/gitian-descriptors/gitian-win-signer.yml
-    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-signed ../biblepay/contrib/gitian-descriptors/gitian-win-signer.yml
-    mv build/out/biblepay-*win64-setup.exe ../biblepay-${VERSION}-win64-setup.exe
-    mv build/out/biblepay-*win32-setup.exe ../biblepay-${VERSION}-win32-setup.exe
+    ./bin/gbuild -i --commit signature=v${VERSION} ../estatero/contrib/gitian-descriptors/gitian-win-signer.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../estatero/contrib/gitian-descriptors/gitian-win-signer.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-signed ../estatero/contrib/gitian-descriptors/gitian-win-signer.yml
+    mv build/out/estatero-*win64-setup.exe ../estatero-${VERSION}-win64-setup.exe
+    mv build/out/estatero-*win32-setup.exe ../estatero-${VERSION}-win32-setup.exe
     popd
 
 Commit your signature for the signed OS X/Windows binaries:
@@ -243,23 +243,23 @@ sha256sum * > SHA256SUMS
 
 The list of files should be:
 ```
-biblepay-${VERSION}-aarch64-linux-gnu.tar.gz
-biblepay-${VERSION}-arm-linux-gnueabihf.tar.gz
-biblepay-${VERSION}-i686-pc-linux-gnu.tar.gz
-biblepay-${VERSION}-x86_64-linux-gnu.tar.gz
-biblepay-${VERSION}-osx64.tar.gz
-biblepay-${VERSION}-osx.dmg
-biblepay-${VERSION}.tar.gz
-biblepay-${VERSION}-win32-setup.exe
-biblepay-${VERSION}-win32.zip
-biblepay-${VERSION}-win64-setup.exe
-biblepay-${VERSION}-win64.zip
+estatero-${VERSION}-aarch64-linux-gnu.tar.gz
+estatero-${VERSION}-arm-linux-gnueabihf.tar.gz
+estatero-${VERSION}-i686-pc-linux-gnu.tar.gz
+estatero-${VERSION}-x86_64-linux-gnu.tar.gz
+estatero-${VERSION}-osx64.tar.gz
+estatero-${VERSION}-osx.dmg
+estatero-${VERSION}.tar.gz
+estatero-${VERSION}-win32-setup.exe
+estatero-${VERSION}-win32.zip
+estatero-${VERSION}-win64-setup.exe
+estatero-${VERSION}-win64.zip
 ```
 The `*-debug*` files generated by the gitian build contain debug symbols
 for troubleshooting by developers. It is assumed that anyone that is interested
 in debugging can run gitian to generate the files for themselves. To avoid
 end-user confusion about which file to pick, as well as save storage
-space *do not upload these to the biblepay.org server*.
+space *do not upload these to the estatero.org server*.
 
 - GPG-sign it, delete the unsigned file:
 ```
@@ -269,20 +269,20 @@ rm SHA256SUMS
 (the digest algorithm is forced to sha256 to avoid confusion of the `Hash:` header that GPG adds with the SHA256 used for the files)
 Note: check that SHA256SUMS itself doesn't end up in SHA256SUMS, which is a spurious/nonsensical entry.
 
-- Upload zips and installers, as well as `SHA256SUMS.asc` from last step, to the biblepay.org server
+- Upload zips and installers, as well as `SHA256SUMS.asc` from last step, to the estatero.org server
 
-- Update biblepay.org
+- Update estatero.org
 
 - Announce the release:
 
-  - Release on Biblepay forum: https://www.biblepay.org/forum/topic/official-announcements.54/
+  - Release on Estatero forum: https://www.estatero.org/forum/topic/official-announcements.54/
 
-  - Optionally Discord, twitter, reddit /r/Biblepay, ... but this will usually sort out itself
+  - Optionally Discord, twitter, reddit /r/Estatero, ... but this will usually sort out itself
 
-  - Notify flare so that he can start building [the PPAs](https://launchpad.net/~biblepay.org/+archive/ubuntu/biblepay)
+  - Notify flare so that he can start building [the PPAs](https://launchpad.net/~estatero.org/+archive/ubuntu/estatero)
 
   - Archive release notes for the new version to `doc/release-notes/` (branch `master` and branch of the release)
 
-  - Create a [new GitHub release](https://github.com/biblepay/biblepay/releases/new) with a link to the archived release notes.
+  - Create a [new GitHub release](https://github.com/estatero/estatero/releases/new) with a link to the archived release notes.
 
   - Celebrate

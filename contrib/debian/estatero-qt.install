@@ -1,0 +1,6 @@
+usr/local/bin/estatero-qt usr/bin
+share/pixmaps/estatero32.xpm usr/share/pixmaps
+share/pixmaps/estatero16.xpm usr/share/pixmaps
+share/pixmaps/estatero128.png usr/share/pixmaps
+debian/estatero-qt.desktop usr/share/applications
+debian/estatero-qt.protocol usr/share/kde4/services/

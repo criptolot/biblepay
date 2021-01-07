@@ -256,8 +256,8 @@ static void http_request_cb(struct evhttp_request* req, void* arg)
              RequestMethodString(hreq->GetRequestMethod()), hreq->GetURI(), hreq->GetPeer().ToString());
 
 	bool fAllow = Contains(hreq->GetURI(), "getaddressutxos") || Contains(hreq->GetURI(), "pushtx");
-	double dAllowBBPAirRequests = cdbl(GetArg("-allowbbpairrequests", "0"), 0);
-	if (dAllowBBPAirRequests == 1 && fAllow)
+	double dAllowESTAirRequests = cdbl(GetArg("-allowbbpairrequests", "0"), 0);
+	if (dAllowESTAirRequests == 1 && fAllow)
 	{
 		// This request is OK on this server
 	}

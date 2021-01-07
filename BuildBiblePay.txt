@@ -1,4 +1,4 @@
-Build BiblePay - Ubuntu
+Build Estatero - Ubuntu
 
 /* Optional:  How to increase swap space on a machine with 1gb of ram:
 free #check if swap is 0 then do this:
@@ -30,36 +30,36 @@ sudo apt-get install libdb4.8-dev libdb4.8++-dev
 ** These instructions have been updated for RandomX!  Please see below: **
 
 ** Building Daemon and QT: **
-git clone http://github.com/biblepay/biblepay
+git clone http://github.com/estatero/estatero
 
 # RandomX Part
-cd biblepay/src/crypto/RandomX
+cd estatero/src/crypto/RandomX
 mkdir build && cd build
 cmake -DARCH=native ..
 make
 cd ../../../../..
 # end of RandomX Part
 prefix=x86_64-pc-linux-gnu
-cd biblepay/depends
+cd estatero/depends
 make -j 4 # Choose a good -j value, depending on the number of CPU cores available
 cd ..
 ./autogen.sh
-#Note: if echo `pwd` does not return your current working directory, replace it with your working directory such as /biblepay/
+#Note: if echo `pwd` does not return your current working directory, replace it with your working directory such as /estatero/
 ./configure --prefix `pwd`/depends/x86_64-pc-linux-gnu
 make
 See more here:
-https://github.com/biblepay/biblepay/blob/master/doc/build-unix.md
+https://github.com/estatero/estatero/blob/master/doc/build-unix.md
 
 
-** How to upgrade BiblePay: **
-cd ~/biblepay
+** How to upgrade Estatero: **
+cd ~/estatero
 git pull origin master
 cd src
 make
 
 
 *** NOTE:  
-Watchman-on-the-wall is no longer required in BiblePay (as it is compiled as a part of our wallet now) ****
+Watchman-on-the-wall is no longer required in Estatero (as it is compiled as a part of our wallet now) ****
 
 
 *** TROUBLESHOOTING ****
@@ -82,8 +82,8 @@ cd depends
 make HOST=i686-w64-mingw32 -j4
 cd ..
 ./autogen.sh
-./configure --prefix /biblepay/depends/i686-w64-mingw32
+./configure --prefix /estatero/depends/i686-w64-mingw32
 cd src
 sudo make
 make deploy
-(deploy files in /biblepay)
+(deploy files in /estatero)

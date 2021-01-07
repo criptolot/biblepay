@@ -917,7 +917,7 @@ QString getThemeName()
 		std::string sMySettings = settings.fileName().toUtf8().constData();
 		LogPrintf("\n Using QT settings file location %s \n", sMySettings);
 	}
-	// DAC - Since we only have one theme so far... Use DAC for DAC, otherwise pass through to use the selected BiblePay theme:
+	// DAC - Since we only have one theme so far... Use DAC for DAC, otherwise pass through to use the selected Estatero theme:
 	 QString theme = settings.value("theme", "").toString();
 
 	if (CURRENCY_NAME == "DAC")

@@ -1,11 +1,11 @@
 Sample configuration files for:
 
-SystemD: biblepayd.service
-Upstart: biblepayd.conf
-OpenRC:  biblepayd.openrc
-         biblepayd.openrcconf
-CentOS:  biblepayd.init
-OS X:    org.biblepay.biblepayd.plist
+SystemD: estaterod.service
+Upstart: estaterod.conf
+OpenRC:  estaterod.openrc
+         estaterod.openrcconf
+CentOS:  estaterod.init
+OS X:    org.estatero.estaterod.plist
 
 have been made available to assist packagers in creating node packages here.
 

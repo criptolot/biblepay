@@ -1,4 +1,4 @@
-Biblepay Core version 1.4.8.5
+Estatero Core version 1.4.8.5
 ==========================
 
 Release is now available from:
@@ -22,14 +22,14 @@ How to Upgrade
 
 If you are running an older version, shut it down. Wait until it has completely
 shut down (which might take a few minutes for older versions), then run the
-installer (on Windows) or just copy over /Applications/Biblepay-Qt (on Mac) or
+installer (on Windows) or just copy over /Applications/Estatero-Qt (on Mac) or
 dashd/dash-qt (on Linux). If you upgrade after DIP0003 activation and you were
 using version < 0.13 you will have to reindex (start with -reindex-chainstate
 or -reindex) to make sure your wallet has all the new data synced. Upgrading from
 version 0.13 should not require any additional actions.
 
 When upgrading from a version prior to 0.14.0.3, the
-first startup of Biblepay Core will run a migration process which can take a few minutes
+first startup of Estatero Core will run a migration process which can take a few minutes
 to finish. After the migration, a downgrade to an older version is only possible with
 a reindex (or reindex-chainstate).
 

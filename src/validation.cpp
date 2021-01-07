@@ -910,7 +910,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             return state.DoS(0, false, REJECT_DUPLICATE, "protx-dup");
         }
 
-		// BiblePay Memory Pool
+		// Estatero Memory Pool
 		if (chainActive.Tip() != NULL)
 		{
 			// If this is a PODC association, user must prove ownership of the CPID, otherwise reject the transaction
@@ -1224,14 +1224,14 @@ double ConvertBitsToDouble(unsigned int nBits)
     return dDiff;
 }
 
-double GetBiblePayUnchainedPercentage(int nHeight)
+double GetEstateroUnchainedPercentage(int nHeight)
 {
 	// Returns a double from .25 to 1.0 representing the chain speed over the last 24 hours.
 	// When the chain speed is normal (within 99.9% slow and up to 10% fast), this function return 1.0.
 	// However, if the chain is more than 10% fast, the speed factor is calculated, resulting in a double less than 1.0.
 	// If the double is < .25, we set a min floor of .25.
-	// We use the resulting speed indicator to shave off subsidy rewards when BiblePay Unchained is active.
-	// (BiblePay Unchained allows up to 1000 Transactions Per Second (TPS) on our chain and results in 20 second confirmations and therefore more blocks per minute until the load declines).
+	// We use the resulting speed indicator to shave off subsidy rewards when Estatero Unchained is active.
+	// (Estatero Unchained allows up to 1000 Transactions Per Second (TPS) on our chain and results in 20 second confirmations and therefore more blocks per minute until the load declines).
 
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 	double nDPLThreshhold = .90;
@@ -1326,7 +1326,7 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 		}
 		else if (i > consensusParams.POOM_PHASEOUT_HEIGHT)
 		{
-			// To pay for the DWS increase, we have increased our deflation rate to .025 (30% annually).  https://forum.biblepay.org/index.php?topic=532.msg7389#msg7389
+			// To pay for the DWS increase, we have increased our deflation rate to .025 (30% annually).  https://forum.estatero.org/index.php?topic=532.msg7389#msg7389
 			iDeflationRate = .025; 
 		}
     }
@@ -1356,7 +1356,7 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 	double nBPLHeight = GetSporkDouble("BPL", 0);
 	if (nBPLHeight > 0 && nPrevHeight > nBPLHeight)
 	{
-		double nChainSpeedFactor = GetBiblePayUnchainedPercentage(nPrevHeight);
+		double nChainSpeedFactor = GetEstateroUnchainedPercentage(nPrevHeight);
 		nSubsidy = nSubsidy * nChainSpeedFactor;
 	}
 
@@ -1386,7 +1386,7 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 	CAmount ret = 0;
 	if (nHeight > consensusParams.POOS_HEIGHT)
 	{
-		// https://forum.biblepay.org/index.php?topic=583.0
+		// https://forum.estatero.org/index.php?topic=583.0
 		ret = .6575 * blockValue;
 	}
 	else if (nHeight > consensusParams.POOM_PHASEOUT_HEIGHT && nHeight <= consensusParams.POOS_HEIGHT)

@@ -2,7 +2,7 @@
 // It's very important to not execute any scripts outside of the builder container, as it's our protection against
 // external developers bringing in harmful code into Jenkins.
 // Jenkins will only run the build if this Jenkinsfile was not modified in an external pull request. Only branches
-// which are part of the Biblepay repo will allow modification to the Jenkinsfile.
+// which are part of the Estatero repo will allow modification to the Jenkinsfile.
 
 def targets = [
   'win32',
@@ -34,7 +34,7 @@ for(int i = 0; i < targets.size(); i++) {
         "JOB_NUMBER=${BUILD_NUMBER}",
       ]
       withEnv(env) {
-        def builderImageName="biblepay-builder-${target}"
+        def builderImageName="estatero-builder-${target}"
 
         def builderImage
         stage("${target}/builder-image") {
@@ -44,49 +44,49 @@ for(int i = 0; i < targets.size(); i++) {
         builderImage.inside("-t") {
           // copy source into fixed path
           // we must build under the same path everytime as otherwise caches won't work properly
-          sh "cp -ra ${pwd}/. /biblepay-src/"
+          sh "cp -ra ${pwd}/. /estatero-src/"
 
           // restore cache
           def hasCache = false
           try {
-            copyArtifacts(projectName: "biblepay-biblepay/${BRANCH_NAME}", optional: true, selector: lastSuccessful(), filter: "ci-cache-${target}.tar.gz")
+            copyArtifacts(projectName: "estatero-estatero/${BRANCH_NAME}", optional: true, selector: lastSuccessful(), filter: "ci-cache-${target}.tar.gz")
           } catch (Exception e) {
           }
           if (fileExists("ci-cache-${target}.tar.gz")) {
             hasCache = true
-            echo "Using cache from biblepay-biblepay/${BRANCH_NAME}"
+            echo "Using cache from estatero-estatero/${BRANCH_NAME}"
           } else {
             try {
-              copyArtifacts(projectName: 'biblepay-biblepay/develop', optional: true, selector: lastSuccessful(), filter: "ci-cache-${target}.tar.gz");
+              copyArtifacts(projectName: 'estatero-estatero/develop', optional: true, selector: lastSuccessful(), filter: "ci-cache-${target}.tar.gz");
             } catch (Exception e) {
             }
             if (fileExists("ci-cache-${target}.tar.gz")) {
               hasCache = true
-              echo "Using cache from biblepay-biblepay/develop"
+              echo "Using cache from estatero-estatero/develop"
             }
           }
 
           if (hasCache) {
-            sh "cd /biblepay-src && tar xzf ${pwd}/ci-cache-${target}.tar.gz"
+            sh "cd /estatero-src && tar xzf ${pwd}/ci-cache-${target}.tar.gz"
           } else {
-            sh "mkdir -p /biblepay-src/ci-cache-${target}"
+            sh "mkdir -p /estatero-src/ci-cache-${target}"
           }
 
           stage("${target}/depends") {
-            sh 'cd /biblepay-src && ./ci/build_depends.sh'
+            sh 'cd /estatero-src && ./ci/build_depends.sh'
           }
           stage("${target}/build") {
-            sh 'cd /biblepay-src && ./ci/build_src.sh'
+            sh 'cd /estatero-src && ./ci/build_src.sh'
           }
           stage("${target}/test") {
-            sh 'cd /biblepay-src && ./ci/test_unittests.sh'
+            sh 'cd /estatero-src && ./ci/test_unittests.sh'
           }
           stage("${target}/test") {
-            sh 'cd /biblepay-src && ./ci/test_integrationtests.sh'
+            sh 'cd /estatero-src && ./ci/test_integrationtests.sh'
           }
 
           // archive cache and copy it into the jenkins workspace
-          sh "cd /biblepay-src && tar czfv ci-cache-${target}.tar.gz ci-cache-${target} && cp ci-cache-${target}.tar.gz ${pwd}/"
+          sh "cd /estatero-src && tar czfv ci-cache-${target}.tar.gz ci-cache-${target} && cp ci-cache-${target}.tar.gz ${pwd}/"
         }
 
         // upload cache

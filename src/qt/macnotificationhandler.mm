@@ -13,7 +13,7 @@
 - (NSString *)__bundleIdentifier
 {
     if (self == [NSBundle mainBundle]) {
-        return @"org.biblepay.Biblepay-Qt";
+        return @"org.estatero.Estatero-Qt";
     } else {
         return [self __bundleIdentifier];
     }

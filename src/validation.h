@@ -135,7 +135,7 @@ static const int64_t DEFAULT_MAX_TIP_AGE = 24 * 60 * 60; // ~144 blocks behind -
 /** Maximum age of our tip in seconds for us to be considered current for fee estimation */
 static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
 
-/** BiblePay extern functions **/
+/** Estatero extern functions **/
 void SetOverviewStatus();
 void KillBlockchainFiles();
 bool LateBlock(const CBlock& block, const CBlockIndex* pindexPrev, int iMinutes);

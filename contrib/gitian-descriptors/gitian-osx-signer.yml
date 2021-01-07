@@ -1,5 +1,5 @@
 ---
-name: "biblepay-dmg-signer"
+name: "estatero-dmg-signer"
 suites:
 - "bionic"
 architectures:
@@ -7,10 +7,10 @@ architectures:
 packages:
 - "faketime"
 remotes:
-- "url": "https://github.com/biblepay/biblepay-detached-sigs.git"
+- "url": "https://github.com/estatero/estatero-detached-sigs.git"
   "dir": "signature"
 files:
-- "biblepaycore-osx-unsigned.tar.gz"
+- "estaterocore-osx-unsigned.tar.gz"
 script: |
   WRAP_DIR=$HOME/wrapped
   mkdir -p ${WRAP_DIR}
@@ -27,8 +27,8 @@ script: |
     chmod +x ${WRAP_DIR}/${prog}
   done
 
-  UNSIGNED=biblepaycore-osx-unsigned.tar.gz
-  SIGNED=biblepaycore-osx-signed.dmg
+  UNSIGNED=estaterocore-osx-unsigned.tar.gz
+  SIGNED=estaterocore-osx-signed.dmg
 
   tar -xf ${UNSIGNED}
   OSX_VOLNAME="$(cat osx_volname)"

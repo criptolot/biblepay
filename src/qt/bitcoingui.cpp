@@ -1024,13 +1024,13 @@ void BitcoinGUI::showDecentralizedWeb()
 
 void BitcoinGUI::showAccountability()
 {
-	std::string sURL = "https://web.biblepay.org/Accountability";
+	std::string sURL = "https://web.estatero.org/Accountability";
 	QDesktopServices::openUrl(QUrl(GUIUtil::TOQS(sURL)));
 }
 
 void BitcoinGUI::showExchange()
 {
-	std::string sURL = "https://www.southxchange.com/Market/Book/BBP/BTC";
+	std::string sURL = "https://www.southxchange.com/Market/Book/EST/BTC";
 	QDesktopServices::openUrl(QUrl(GUIUtil::TOQS(sURL)));
 }
 

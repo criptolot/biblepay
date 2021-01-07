@@ -141,7 +141,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
 	// End of BPL
     arith_uint256 bnNew(PastDifficultyAverage);
     int64_t _nTargetTimespan = CountBlocks * params.nPowTargetSpacing; 
-	// Note that BBP has 7 minute block spacing.
+	// Note that EST has 7 minute block spacing.
 	// We recently added the 'exec masterclock' command (in 2020).  This allows us to target 7 minute blocks very accurately.
 	// The chain was slow from 2017 to 2019 (slow by 11%, as we emitted 192K blocks while we should have emitted 219K blocks), however now with RandomX, we are 2.2% fast.  So the difference should correct itself over the next 30 months through convergence.  We will continue to monitor exec masterclock to ensure we are on the right trajectory for a square emission over the long term.
 

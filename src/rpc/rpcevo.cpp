@@ -1542,42 +1542,42 @@ UniValue getpobhhash(const JSONRPCRequest& request)
 UniValue dashstake(const JSONRPCRequest& request)
 {
 	// Dash Staking
-	// This allows you to lock up Y amount of Dash + Z amount of BBP in a contract, and receive monthly rewards on this amount.
+	// This allows you to lock up Y amount of Dash + Z amount of EST in a contract, and receive monthly rewards on this amount.
 	// Starting initially as of September 15th, 2020, we will start with 6 month contracts (this is primarily to ensure the prices of each underlying currency do not change significatly since the start date of the contract).
-	// IE, assets will need to be re-locked once every 6 months to ensure fresh price quotes (as we strive to lock roughly equal amounts of BBP with equal amounts of DASH).
+	// IE, assets will need to be re-locked once every 6 months to ensure fresh price quotes (as we strive to lock roughly equal amounts of EST with equal amounts of DASH).
 	// However, we do tolerate price changes during the duration of the contract.
 	// But, if either asset is spent, the contract is cancelled (cancelled during our next GSC height after an asset is spent).
 	// You can see if a contract is in force by looking at the "expiration" and the "expired" and the "spent" fields of each contract.
 	// Contracts pay interest rewards MONTHLY.  At the contract height + 30*205 successively, for each period.
 	// To get a dashstake quote, type 'dashstakequote' first.
 	// Example:
-	// dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE 0=test/1=authorize
-	// To create a signature, from DASH type:  signmessage dash_public_key DASH-UTXO-ORDINAL <enter>.  Copy the Dash signature into the BiblePay 'dashstake' command.
+	// dashstake EST_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE 0=test/1=authorize
+	// To create a signature, from DASH type:  signmessage dash_public_key DASH-UTXO-ORDINAL <enter>.  Copy the Dash signature into the Estatero 'dashstake' command.
 
 	// NOTE:  UTXOs cannot be re-used until a contract expires.
-	// The lower stake amount denominated in BBP is used to assess the MonthlyEarnings based on the market value of Dash and BBP at the time the contract is created.
+	// The lower stake amount denominated in EST is used to assess the MonthlyEarnings based on the market value of Dash and EST at the time the contract is created.
 	// You may re-lock after expiration.
 
 	const Consensus::Params& consensusParams = Params().GetConsensus();
 		
-	std::string sHelp = "You must specify dashstake BBP_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE I_AGREE=Authorize.\n" + GetHowey(true, false);
+	std::string sHelp = "You must specify dashstake EST_UTXO-ORDINAL DASH_UTXO-ORDINAL DASH_SIGNATURE I_AGREE=Authorize.\n" + GetHowey(true, false);
 	
 	if (request.fHelp || (request.params.size() != 4))
 		throw std::runtime_error(sHelp.c_str());
 		
 	std::string sCPK = DefaultRecAddress("Christian-Public-Key");
-	std::string sBBPUTXO = request.params[0].get_str();
+	std::string sESTUTXO = request.params[0].get_str();
 	std::string sDashUTXO = request.params[1].get_str();
 	std::string sDashSig = request.params[2].get_str();
 
 	std::string sError;
 
-	std::string sBBPSig = SignBBPUTXO(sBBPUTXO, sError);
+	std::string sESTSig = SignESTUTXO(sESTUTXO, sError);
 	UniValue results(UniValue::VOBJ);
 
 	if (!sError.empty())
 	{
-		results.push_back(Pair("BBP Signing Error", sError));
+		results.push_back(Pair("EST Signing Error", sError));
 		return results;
 	}
 
@@ -1588,7 +1588,7 @@ UniValue dashstake(const JSONRPCRequest& request)
 	DashStake ds;
 	if (sAuth == "I_AGREE")
 	{
-		bool fSent = SendDashStake(sCPK, sTXID, sError, sBBPUTXO, sDashUTXO, sBBPSig, sDashSig, 30 * 6.5, sCPK, false, ds);
+		bool fSent = SendDashStake(sCPK, sTXID, sError, sESTUTXO, sDashUTXO, sESTSig, sDashSig, 30 * 6.5, sCPK, false, ds);
 		if (!fSent || !sError.empty())
 		{
 			results.push_back(Pair("DWU", RoundToString(GetDWUBasedOnMaturity(30 * 6.5, wm.DWU) * 100, 4)));
@@ -1596,17 +1596,17 @@ UniValue dashstake(const JSONRPCRequest& request)
 		}
 		else
 		{
-			ds = GetDashStakeByUTXO(sBBPUTXO);
+			ds = GetDashStakeByUTXO(sESTUTXO);
 			LockDashStakes();
 			results.push_back(Pair("Monthly Earnings", ds.MonthlyEarnings));
 			results.push_back(Pair("DWU", ds.ActualDWU * 100));
 			results.push_back(Pair("Next Payment Height", ds.Height + BLOCKS_PER_DAY));
-			results.push_back(Pair("BBP Value USD", ds.nBBPValueUSD));
+			results.push_back(Pair("EST Value USD", ds.nESTValueUSD));
 			results.push_back(Pair("Dash Value USD", ds.nDashValueUSD));
-			results.push_back(Pair("BBP Qty", ds.nBBPQty));
-			results.push_back(Pair("BBP Amount", (double)ds.nBBPAmount/COIN));
+			results.push_back(Pair("EST Qty", ds.nESTQty));
+			results.push_back(Pair("EST Amount", (double)ds.nESTAmount/COIN));
 			results.push_back(Pair("Dash Amount", (double)ds.nDashAmount/COIN));
-			results.push_back(Pair("Results", "The Dash Stake Contract was created successfully.  Thank you for using BIBLEPAY and DASH. "));
+			results.push_back(Pair("Results", "The Dash Stake Contract was created successfully.  Thank you for using ESTATERO and DASH. "));
 			results.push_back(Pair("TXID", sTXID));
 		}
 	}
@@ -1699,7 +1699,7 @@ UniValue dashstakequote(const JSONRPCRequest& request)
 			bool fIncExpired = (!ws.expired && dExpired == 2) || (dExpired == 1);
 			if (ws.found && fIncExpired && ((dDetails == 2) || (dDetails==1 && ws.CPK == sCPK)))
 			{
-				std::string sRow = "BBPQty: "+ RoundToString(ws.nBBPQty, 2) + ", BBPAmount: " + RoundToString((double)ws.nBBPAmount/COIN, 2) 
+				std::string sRow = "ESTQty: "+ RoundToString(ws.nESTQty, 2) + ", ESTAmount: " + RoundToString((double)ws.nESTAmount/COIN, 2) 
 					+ ", DashAmount: "+ RoundToString((double)ws.nDashAmount/COIN, 2)
 					+ ", MonthlyReward: " + RoundToString(ws.MonthlyEarnings, 2) 
 					+ ", DWU: " + RoundToString(GetDWUBasedOnMaturity(ws.Duration, ws.DWU) * 100, 4) 
@@ -1707,16 +1707,16 @@ UniValue dashstakequote(const JSONRPCRequest& request)
 					+ ", Height: " + RoundToString(ws.Height, 0) 
 					+ ", Time: " + TimestampToHRDate(ws.Time)
 					+ ", Expiration: " + TimestampToHRDate(ws.MaturityTime)
-					+ ", BBPUTXO: "+ ws.BBPUTXO + ", DASHUTXO: "+ ws.DashUTXO + ", BBPSIG: "+ ws.BBPSignature + ", DashSig: "+ ws.DashSignature 
-					+ ", BBPPrice: "+ RoundToString(ws.nBBPPrice, 12) + ", DashPrice: "+ RoundToString(ws.nDashPrice, 12) + ", BTCPrice: "
-					+ RoundToString(ws.nBTCPrice, 12) + ", BBP_VALUE_USD: "+ RoundToString(ws.nBBPValueUSD, 4) + ", DASH_VALUE_USD: "
-					+ RoundToString(ws.nDashValueUSD, 4) + ", BBPAddress: "+ ws.BBPAddress + ", DashAddress: "+ ws.DashAddress;
+					+ ", ESTUTXO: "+ ws.ESTUTXO + ", DASHUTXO: "+ ws.DashUTXO + ", ESTSIG: "+ ws.ESTSignature + ", DashSig: "+ ws.DashSignature 
+					+ ", ESTPrice: "+ RoundToString(ws.nESTPrice, 12) + ", DashPrice: "+ RoundToString(ws.nDashPrice, 12) + ", BTCPrice: "
+					+ RoundToString(ws.nBTCPrice, 12) + ", EST_VALUE_USD: "+ RoundToString(ws.nESTValueUSD, 4) + ", DASH_VALUE_USD: "
+					+ RoundToString(ws.nDashValueUSD, 4) + ", ESTAddress: "+ ws.ESTAddress + ", DashAddress: "+ ws.DashAddress;
 				// Found, Not Expired, Not Spent, and SignatureValue, and MonthlyEarnings > 0
 				bool fPassesPaymentRequirements = ws.found && !ws.expired && ws.MonthlyEarnings > 0 && ws.SignatureValid && !ws.spent;
-				sRow += ", Expired: " + ToYesNo(ws.expired) + ", SigValid: "+ ToYesNo(ws.SignatureValid) + ", BBPSig: " + ToYesNo(ws.BBPSignatureValid) 
+				sRow += ", Expired: " + ToYesNo(ws.expired) + ", SigValid: "+ ToYesNo(ws.SignatureValid) + ", ESTSig: " + ToYesNo(ws.ESTSignatureValid) 
 					+ ", DashSig: " + ToYesNo(ws.DashSignatureValid) + ", Spent: "+ ToYesNo(ws.spent) + ", Payable: " + ToYesNo(fPassesPaymentRequirements);
 
-				std::string sKey = ws.CPK + "-" + RoundToString(i + 1, 0) + "-" + ws.BBPUTXO + "-" + ws.DashUTXO;
+				std::string sKey = ws.CPK + "-" + RoundToString(i + 1, 0) + "-" + ws.ESTUTXO + "-" + ws.DashUTXO;
 
 				results.push_back(Pair(sKey, sRow));
 			}

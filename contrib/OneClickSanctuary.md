@@ -1,12 +1,12 @@
-***** BIBLEPAY -- ONE-CLICK SANCTUARY INSTALLATION SCRIPT FOR VMS OR HOME USE ****** 
+***** ESTATERO -- ONE-CLICK SANCTUARY INSTALLATION SCRIPT FOR VMS OR HOME USE ****** 
 
 
 URL:
-https://raw.githubusercontent.com/biblepay/biblepay/master/contrib/masternode-install.sh
+https://raw.githubusercontent.com/estatero/estatero/master/contrib/masternode-install.sh
 
 Command line script options
 
--u  Run unattended with defaults (upgrade if .biblepay found, clean install if not)
+-u  Run unattended with defaults (upgrade if .estatero found, clean install if not)
 -n  Don't run apt-get update/upgrade/dist-upgrade/remove 
 -s  Swap size (1G by default). Size values not validated.
 
@@ -26,4 +26,4 @@ Follow the prompts.  The script will ask you if you would like to compile from s
 
 5.  Copy the Sanctuary private key to the controller wallet masternode.conf file, and finish configuration of the Sanctuary.
 
-All credit goes to MIP for creating the script.   And of course to Yeshua for maintaining all of BiblePay.
+All credit goes to MIP for creating the script.   And of course to Yeshua for maintaining all of Estatero.

@@ -349,7 +349,7 @@ void MasternodeList::sponsorChild_clicked()
 			return;
 		std::string sOp = dmn->pdmnState->pubKeyOperator.Get().ToString();
 		std::tuple<std::string, std::string, std::string> t = GetOrphanPOOSURL(sOp);
-		std::string sURL = "https://wiki.biblepay.org/Sanctuary_Child_Sponsorship?childid=" + std::get<2>(t);
+		std::string sURL = "https://wiki.estatero.org/Sanctuary_Child_Sponsorship?childid=" + std::get<2>(t);
 		std::string sNarr = "To sponsor a child for this sanctuary, please see this page to make a payment:  " + sURL +  " .  Your Child ID [" + std::get<2>(t) + "] has been copied to the clipboard.  ";
 	    QApplication::clipboard()->setText(QString::fromStdString(std::get<2>(t)));
 		std::string sTitle = "Becoming an Active Sanctuary";

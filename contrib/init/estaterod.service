@@ -1,0 +1,22 @@
+[Unit]
+Description=Estatero's distributed currency daemon
+After=network.target
+
+[Service]
+User=estaterocore
+Group=estaterocore
+
+Type=forking
+PIDFile=/var/lib/estaterod/estaterod.pid
+ExecStart=/usr/bin/estaterod -daemon -pid=/var/lib/estaterod/estaterod.pid \
+-conf=/etc/estaterocore/estatero.conf -datadir=/var/lib/estaterod -disablewallet
+
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=60s
+TimeoutStartSec=2s
+StartLimitInterval=120s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target

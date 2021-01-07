@@ -268,7 +268,7 @@ void ProposalAddDialog::on_btnSubmit_clicked()
 				// Warn the user that we will charge them a storage fee.  
 				double nTotalFee = (nStorageFee + govobj.GetMinCollateralFee()) / COIN;
 				double nTimeLength = 1; // ToDo:  Make storage duration dynamic
-				std::string sNarr = "A storage fee of " + RoundToString(nTotalFee, 2) + " applies to this object.  This allows biblepay to store the file for " 
+				std::string sNarr = "A storage fee of " + RoundToString(nTotalFee, 2) + " applies to this object.  This allows estatero to store the file for " 
 					+ RoundToString(nTimeLength, 0) + " month(s).  Do you approve this fee?";
 			    int ret = QMessageBox::warning(this, tr("Pay Storage Fee?"), GUIUtil::TOQS(sNarr), QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok);
 				if (ret != QMessageBox::Ok)

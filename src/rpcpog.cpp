@@ -3444,39 +3444,39 @@ DashStake GetDashStake(CTransactionRef tx1)
 			w.Duration = (int)cdbl(ExtractXML(w.XML, "<duration>", "</duration>"), 0);
 			w.CPK = ExtractXML(w.XML, "<cpk>", "</cpk>");
 			w.DWU = cdbl(ExtractXML(w.XML, "<dwu>", "</dwu>"), 4);
-			w.BBPUTXO = ExtractXML(w.XML, "<bbputxo>", "</bbputxo>");
+			w.ESTUTXO = ExtractXML(w.XML, "<bbputxo>", "</bbputxo>");
 			w.DashUTXO = ExtractXML(w.XML, "<dashutxo>", "</dashutxo>");
-			w.BBPSignature = ExtractXML(w.XML, "<bbpsig>", "</bbpsig>");
+			w.ESTSignature = ExtractXML(w.XML, "<bbpsig>", "</bbpsig>");
 			w.DashSignature = ExtractXML(w.XML, "<dashsig>", "</dashsig>");
 			w.ReturnAddress = ExtractXML(w.XML, "<returnaddress>", "</returnaddress>");
-			w.nBBPPrice = cdbl(ExtractXML(w.XML, "<bbpprice>", "</bbpprice>"), 12);
+			w.nESTPrice = cdbl(ExtractXML(w.XML, "<bbpprice>", "</bbpprice>"), 12);
 			w.nDashPrice = cdbl(ExtractXML(w.XML, "<dashprice>", "</dashprice>"), 12);
 			w.nBTCPrice = cdbl(ExtractXML(w.XML, "<btcprice>", "</btcprice>"), 12);
-			w.nBBPValueUSD = cdbl(ExtractXML(w.XML, "<bbpvalue>", "</bbpvalue>"), 2);
+			w.nESTValueUSD = cdbl(ExtractXML(w.XML, "<bbpvalue>", "</bbpvalue>"), 2);
 			w.nDashValueUSD = cdbl(ExtractXML(w.XML, "<dashvalue>", "</dashvalue>"), 2);
-			w.nBBPAmount = cdbl(ExtractXML(w.XML, "<bbpamount>", "</bbpamount>"), 2) * COIN;
+			w.nESTAmount = cdbl(ExtractXML(w.XML, "<bbpamount>", "</bbpamount>"), 2) * COIN;
 			w.nDashAmount = cdbl(ExtractXML(w.XML, "<dashamount>", "</dashamount>"), 2) * COIN;
-			CAmount nBBPAmount = 0;
+			CAmount nESTAmount = 0;
 			CAmount nDashAmount = 0;
-			w.BBPAddress = GetUTXO(w.BBPUTXO, -1, nBBPAmount);
+			w.ESTAddress = GetUTXO(w.ESTUTXO, -1, nESTAmount);
 			w.DashAddress = GetUTXO(w.DashUTXO, -2, nDashAmount);
 			LogPrintf("GetDashStake::Using bbpaddr %s and dash addr %s dash amount %f ", 
-				w.BBPAddress, w.DashAddress, (double)nDashAmount/COIN);
+				w.ESTAddress, w.DashAddress, (double)nDashAmount/COIN);
 			w.MaturityTime = (w.Duration * 86400) + w.Time;
 			if (w.DWU > MAX_DASH_DWU) 
 				w.DWU = 0;
 			if (w.DWU < 0) 
 				w.DWU = 0;
 			// Calculate the lower of the two market values first:
-			double nValueUSD = std::min(w.nBBPValueUSD, w.nDashValueUSD);
-			double nBBPUSD = w.nBTCPrice * w.nBBPPrice;
-			// Note that w.nBBPAmount is a CAmount, and nBBPQty is a double 
-			double n0 = nValueUSD / (nBBPUSD + .000000001);
-			double n2 = nBBPAmount / COIN;
-			w.nBBPQty = std::min(n0, n2);
-			LogPrintf("\nDeciding between bbpvalusd %f and dashvalueusd %f and qty of %f and %f = %f ", w.nBBPValueUSD, w.nDashValueUSD, n0, n2, w.nBBPQty);
+			double nValueUSD = std::min(w.nESTValueUSD, w.nDashValueUSD);
+			double nESTUSD = w.nBTCPrice * w.nESTPrice;
+			// Note that w.nESTAmount is a CAmount, and nESTQty is a double 
+			double n0 = nValueUSD / (nESTUSD + .000000001);
+			double n2 = nESTAmount / COIN;
+			w.nESTQty = std::min(n0, n2);
+			LogPrintf("\nDeciding between bbpvalusd %f and dashvalueusd %f and qty of %f and %f = %f ", w.nESTValueUSD, w.nDashValueUSD, n0, n2, w.nESTQty);
 			w.ActualDWU = GetDWUBasedOnMaturity(w.Duration, w.DWU);
-			w.MonthlyEarnings = cdbl(RoundToString(w.nBBPQty * w.ActualDWU / 12, 0) + ".1528", 4);
+			w.MonthlyEarnings = cdbl(RoundToString(w.nESTQty * w.ActualDWU / 12, 0) + ".1528", 4);
 			// Note this is probably going to be 6 months at first.
 			w.MaturityHeight = (w.Duration * BLOCKS_PER_DAY) + w.Height;
 			w.TXID = tx1->GetHash();
@@ -3484,13 +3484,13 @@ DashStake GetDashStake(CTransactionRef tx1)
 			{
 				w.found = true;
 				w.spent = false;
-				if (w.nBBPAmount == 0 || w.nDashAmount == 0)
+				if (w.nESTAmount == 0 || w.nDashAmount == 0)
 					w.spent = true;
 				w.expired = GetAdjustedTime() > w.MaturityTime;
 				int nKeyType = fProd ? 25 : 140;
-				w.BBPSignatureValid = VerifyDashStakeSignature(w.BBPAddress, w.BBPUTXO, w.BBPSignature, nKeyType);
+				w.ESTSignatureValid = VerifyDashStakeSignature(w.ESTAddress, w.ESTUTXO, w.ESTSignature, nKeyType);
 				w.DashSignatureValid = VerifyDashStakeSignature(w.DashAddress, w.DashUTXO, w.DashSignature, 76);
-				w.SignatureValid = w.BBPSignatureValid && w.DashSignatureValid;
+				w.SignatureValid = w.ESTSignatureValid && w.DashSignatureValid;
 			}
 			return w;
 		}
@@ -3559,7 +3559,7 @@ std::vector<DashStake> GetDashStakes(bool fIncludeMemoryPool)
 			if (fGot)
 			{
 				DashStake w = GetDashStake(tx1);
-				if (w.found && w.nBBPAmount > 0 && w.DWU > 0 && w.MonthlyEarnings > 0)
+				if (w.found && w.nESTAmount > 0 && w.DWU > 0 && w.MonthlyEarnings > 0)
 				{
 					wStakes.push_back(w);
 				}
@@ -3574,7 +3574,7 @@ std::vector<DashStake> GetDashStakes(bool fIncludeMemoryPool)
 			const CTransaction& tx = e.GetTx();
 			CTransactionRef tx1 = MakeTransactionRef(std::move(tx));
 			DashStake w = GetDashStake(tx1);
-			if (w.found && w.nBBPAmount > 0 && w.DWU > 0)
+			if (w.found && w.nESTAmount > 0 && w.DWU > 0)
 				wStakes.push_back(w);
 		}
 	}
@@ -3590,7 +3590,7 @@ bool IsDuplicateUTXO(std::string UTXO)
 	for (int i = 0; i < dashStakes.size(); i++)
 	{
 		DashStake d = dashStakes[i];
-		if (!d.expired && (d.BBPUTXO == UTXO || d.DashUTXO == UTXO))
+		if (!d.expired && (d.ESTUTXO == UTXO || d.DashUTXO == UTXO))
 			return true;
 	}
 	return false;
@@ -4050,9 +4050,9 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 		return false;
 	}
 
-	if (w.nBBPAmount < 1000*COIN || w.nBBPAmount > 10000000*COIN)
+	if (w.nESTAmount < 1000*COIN || w.nESTAmount > 10000000*COIN)
 	{
-		LogPrintf("\nVerifyDashStake::REJECTED, Amount out of bounds.  Amount=%f\r\n", (double)w.nBBPAmount/COIN);
+		LogPrintf("\nVerifyDashStake::REJECTED, Amount out of bounds.  Amount=%f\r\n", (double)w.nESTAmount/COIN);
 		sError = "Amount out of bounds.";
 		return false;
 	}
@@ -4064,9 +4064,9 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 		return false;
 	}
 	
-	if (w.nBBPAmount < 1000*COIN || w.nBBPAmount > 10000000*COIN)
+	if (w.nESTAmount < 1000*COIN || w.nESTAmount > 10000000*COIN)
 	{
-		LogPrintf("\nVerifyDashStake::REJECTED, Amount out of bounds.  Amount=%f\r\n", (double)w.nBBPAmount/COIN);
+		LogPrintf("\nVerifyDashStake::REJECTED, Amount out of bounds.  Amount=%f\r\n", (double)w.nESTAmount/COIN);
 		sError = "Amount out of bounds.";
 		return false;
 	}
@@ -4078,15 +4078,15 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 		return false;
 	}
 
-	if (IsDuplicateUTXO(w.BBPUTXO) || IsDuplicateUTXO(w.DashUTXO))
+	if (IsDuplicateUTXO(w.ESTUTXO) || IsDuplicateUTXO(w.DashUTXO))
 	{
 		sError = "Sorry, we found a non-expired contract containing this UTXO.  ";
 		LogPrintf("\nVerifyDashStake::REJECTED::%s", sError);
 		return false;
 	}
 
-	// Verify the BBP price as compared to the DASH price here
-	double dBBPPrice = 0;
+	// Verify the EST price as compared to the DASH price here
+	double dESTPrice = 0;
 	double dDashPrice = 0;
 
 	if (w.Height < (chainActive.Tip()->nHeight - 1) || w.Height > (chainActive.Tip()->nHeight + 1))
@@ -4118,14 +4118,14 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 
 	double nDashPrice = GetCryptoPrice("dash"); 
 	double nBTCPrice = GetCryptoPrice("btc");
-	double nBBPPrice = GetCryptoPrice("bbp");
-	CAmount nBBPAmount = 0;
-	std::string sBBPAddress = GetUTXO(w.BBPUTXO, -1, nBBPAmount);
+	double nESTPrice = GetCryptoPrice("bbp");
+	CAmount nESTAmount = 0;
+	std::string sESTAddress = GetUTXO(w.ESTUTXO, -1, nESTAmount);
 
-	if (nBBPAmount <= 0 || sBBPAddress.empty())
+	if (nESTAmount <= 0 || sESTAddress.empty())
 	{
-		LogPrintf("\nVerifyDashStake::REJECTED, the BBP is either spent, or, we can't find the UTXO. UTXO Address=%s", sBBPAddress);
-		sError = "Sorry, the BBP UTXO has been spent. ";
+		LogPrintf("\nVerifyDashStake::REJECTED, the EST is either spent, or, we can't find the UTXO. UTXO Address=%s", sESTAddress);
+		sError = "Sorry, the EST UTXO has been spent. ";
 		return false;
 	}
 
@@ -4142,27 +4142,27 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 	// Verify Signatures
 	if (!w.SignatureValid)
 	{
-		sError = "Sorry, one of the signatures are invalid.  BBP=" + RoundToString(w.BBPSignatureValid, 0) + ", DASH="+ RoundToString(w.DashSignatureValid, 0) + ".";
+		sError = "Sorry, one of the signatures are invalid.  EST=" + RoundToString(w.ESTSignatureValid, 0) + ", DASH="+ RoundToString(w.DashSignatureValid, 0) + ".";
 		return false;
 	}
 
-	std::string BBPUTXO = std::string();
+	std::string ESTUTXO = std::string();
 	std::string DashUTXO = std::string();
 	
-	double nUSDBBP = nBTCPrice * nBBPPrice;
+	double nUSDEST = nBTCPrice * nESTPrice;
 	double nUSDDash = nBTCPrice * nDashPrice;
-	double nBBPValueUSD = nUSDBBP * (double)nBBPAmount / COIN;
+	double nESTValueUSD = nUSDEST * (double)nESTAmount / COIN;
 	double nDashValueUSD = nUSDDash * (double)nDashAmount / COIN;
 	
-	if (nBBPPrice == 0)
+	if (nESTPrice == 0)
 	{
-		LogPrintf("VerifyDashStake::Error, Unable to verify this dash stake- BBP price is zero.  %f", 8152020);
-		sError = "Unable to verify price with BBP price at zero.";
+		LogPrintf("VerifyDashStake::Error, Unable to verify this dash stake- EST price is zero.  %f", 8152020);
+		sError = "Unable to verify price with EST price at zero.";
 		return false;
 	}
 
 	double nMinimumAcceptableStake = GetSporkDouble("MinimumAcceptableStakeAmount", .25);
-	if (nBBPValueUSD < nMinimumAcceptableStake)
+	if (nESTValueUSD < nMinimumAcceptableStake)
 	{
 		sError = "Sorry, the dash stake must be worth more than $1 USD.";
 		LogPrintf("VerifyDashStake::%s", sError);
@@ -4170,26 +4170,26 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 	}
 
 	// Verify the prices
-	if (!Tolerance(nBBPPrice, w.nBBPPrice, .25) || !Tolerance(nDashPrice, w.nDashPrice, .10) || !Tolerance(nBTCPrice, w.nBTCPrice, .10))
+	if (!Tolerance(nESTPrice, w.nESTPrice, .25) || !Tolerance(nDashPrice, w.nDashPrice, .10) || !Tolerance(nBTCPrice, w.nBTCPrice, .10))
 	{
-		LogPrintf("VerifyDashStake::Error, The exchange prices differ from the purported rates: BBPPrice==%s, ContractPrice==%s,  BTCPrice==%s, ContractBTCPrice==%s", 
-			RoundToString(w.nBBPPrice, 12), RoundToString(nBBPPrice, 12),
+		LogPrintf("VerifyDashStake::Error, The exchange prices differ from the purported rates: ESTPrice==%s, ContractPrice==%s,  BTCPrice==%s, ContractBTCPrice==%s", 
+			RoundToString(w.nESTPrice, 12), RoundToString(nESTPrice, 12),
 			RoundToString(w.nBTCPrice, 12), RoundToString(nBTCPrice, 12));
 		sError = "Sorry, the exchange prices differ from the quoted prices.";
 		return false;
 	}
 
-	// We handle this below by using the std::min of the market value between the USD BBP price and the USD Dash Price - hence the WARNING instead of ERROR
-	if (nBBPValueUSD < nDashValueUSD)
+	// We handle this below by using the std::min of the market value between the USD EST price and the USD Dash Price - hence the WARNING instead of ERROR
+	if (nESTValueUSD < nDashValueUSD)
 	{
-		LogPrintf("VerifyDashStake::Warning, the BBP Value in USD %f is less than the Dash value in USD %f.  ", nBBPValueUSD, nDashValueUSD);
-		//sError = "Sorry, the BBP value in USD ["+ RoundToString(nBBPValueUSD, 4) + "] is less than the Dash value in USD ["+ RoundToString(nDashValueUSD, 4) + "].";
+		LogPrintf("VerifyDashStake::Warning, the EST Value in USD %f is less than the Dash value in USD %f.  ", nESTValueUSD, nDashValueUSD);
+		//sError = "Sorry, the EST value in USD ["+ RoundToString(nESTValueUSD, 4) + "] is less than the Dash value in USD ["+ RoundToString(nDashValueUSD, 4) + "].";
 		//return false;
 	}
 
-	if (!Tolerance(nBBPValueUSD, w.nBBPValueUSD, .25) || !Tolerance(nDashValueUSD, w.nDashValueUSD, .25))
+	if (!Tolerance(nESTValueUSD, w.nESTValueUSD, .25) || !Tolerance(nDashValueUSD, w.nDashValueUSD, .25))
 	{
-		sError = "Sorry, the BBP Value in USD [" + RoundToString(w.nBBPValueUSD, 2) + "] differs from the purported value in USD [" + RoundToString(nBBPValueUSD, 2) + "].";
+		sError = "Sorry, the EST Value in USD [" + RoundToString(w.nESTValueUSD, 2) + "] differs from the purported value in USD [" + RoundToString(nESTValueUSD, 2) + "].";
 		sError += " Or, the Dash Value in USD [" + RoundToString(w.nDashValueUSD, 2) + "] differs from the purported value in USD [" + RoundToString(nDashValueUSD, 2) + "].";
 		LogPrintf("VerifyDashStake::Error, %s", sError);
 		return false;
@@ -4217,7 +4217,7 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 		return false;
 	}
 
-	if (wm.nTotalGrossBurnsToday + (double)(w.nBBPAmount/COIN) + 1 > MAX_DAILY_DASH_STAKE_COMMITMENTS)
+	if (wm.nTotalGrossBurnsToday + (double)(w.nESTAmount/COIN) + 1 > MAX_DAILY_DASH_STAKE_COMMITMENTS)
 	{
 		LogPrintf("\nVerifyDashStake::REJECTED, Sorry, our daily commitments of %f are higher than the acceptable maximum of %f, please wait until tomorrow.", 
 			wm.nTotalGrossBurnsToday, MAX_DAILY_DASH_STAKE_COMMITMENTS);
@@ -4242,8 +4242,8 @@ bool VerifyDashStake(CTransactionRef tx, std::string& sError)
 		}
 	}
 
-	LogPrintf("\nVerifyDashStake ACCEPTED::BBPAmount %f, Duration %f, SatPercentAnnual %f, SatPercentMonthly %f, DWU %f", 
-		(double)w.nBBPAmount/COIN, w.Duration, wm.nSaturationPercentAnnual, wm.nSaturationPercentMonthly, w.DWU);
+	LogPrintf("\nVerifyDashStake ACCEPTED::ESTAmount %f, Duration %f, SatPercentAnnual %f, SatPercentMonthly %f, DWU %f", 
+		(double)w.nESTAmount/COIN, w.Duration, wm.nSaturationPercentAnnual, wm.nSaturationPercentMonthly, w.DWU);
 	return true;
 }
 
@@ -4461,8 +4461,8 @@ static std::map<int, std::mutex> cs_rxhash;
 uint256 GetRandomXHash(std::string sHeaderHex, uint256 key, uint256 hashPrevBlock, int iThreadID)
 {
 	// *****************************************                      RandomX                                    ************************************************************************
-	// Starting at RANDOMX_HEIGHT, we now solve for an equation, rather than simply the difficulty and target.  (See prevention of preimage attacks in our wiki https://wiki.biblepay.org/Preventing_Preimage_Attacks)
-	// This is so our miners may earn a dual revenue stream (RandomX coins + DAC/BiblePay Coins).
+	// Starting at RANDOMX_HEIGHT, we now solve for an equation, rather than simply the difficulty and target.  (See prevention of preimage attacks in our wiki https://wiki.estatero.org/Preventing_Preimage_Attacks)
+	// This is so our miners may earn a dual revenue stream (RandomX coins + DAC/Estatero Coins).
 	// The equation is:  BlakeHash(Previous_DAC_Hash + RandomX_Hash(RandomX_Coin_Header)) < Current_DAC_Block_Difficulty
 	// **********************************************************************************************************************************************************************************
 	std::unique_lock<std::mutex> lock(cs_rxhash[iThreadID]);
@@ -4490,7 +4490,7 @@ std::tuple<std::string, std::string, std::string> GetOrphanPOOSURL(std::string s
 	std::string sURL = "https://";
 	std::string sDomain = GetSporkValue("poseorphandomain");
 	if (sDomain.empty())
-		sDomain = "biblepay.cameroonone.org";
+		sDomain = "estatero.cameroonone.org";
 	sURL += sDomain;
 	if (sSanctuaryPubKey.empty())
 		return std::make_tuple("", "", "");
@@ -4671,8 +4671,8 @@ std::string GetAPMNarrative()
 	int iLastSuperblock = GetLastGSCSuperblockHeight(chainActive.Tip()->nHeight, iNextSuperblock);
 	double dLastPrice = cdbl(ExtractXML(ExtractBlockMessage(iLastSuperblock), "<bbpprice>", "</bbpprice>"), 12);
 	double out_BTC = 0;
-	double out_BBP = 0;
-	double dPrice = GetPBase(out_BTC, out_BBP);
+	double out_EST = 0;
+	double dPrice = GetPBase(out_BTC, out_EST);
     CBlockIndex* pindexSuperblock = chainActive[iLastSuperblock];
 	if (pindexSuperblock != NULL)
 	{
@@ -4680,7 +4680,7 @@ std::string GetAPMNarrative()
 		double nAPM = CalculateAPM(iLastSuperblock);
 		std::string sAPMNarr = APMToString(nAPM);
 		std::string sNarr = "Prior Open " + RoundToString(dLastPrice, 12) + " @" + sHistoricalTime + " [" + RoundToString(iLastSuperblock, 0) + "]"
-			+ "<br>Current Price " + RoundToString(out_BBP, 12) + ", Next SB=" + RoundToString(iNextSuperblock, 0) + ", APM=" + sAPMNarr;
+			+ "<br>Current Price " + RoundToString(out_EST, 12) + ", Next SB=" + RoundToString(iNextSuperblock, 0) + ", APM=" + sAPMNarr;
 
 		return sNarr;
 	}
@@ -4725,7 +4725,7 @@ bool EncryptFile(std::string sPath, std::string sTargetPath)
 	OutFile.open(sTargetPath.c_str(), std::ios::out | std::ios::binary);
 	int iPos = 0;
 	int OP_SIZE = 1024;
-	// BIBLEPAY - We currently get the key from the biblepay.conf file (from the encryptionkey setting)
+	// ESTATERO - We currently get the key from the estatero.conf file (from the encryptionkey setting)
 	std::string sEncryptionKey = GetArg("-encryptionkey", "");
 	if (sEncryptionKey.empty())
 	{
@@ -4835,7 +4835,7 @@ std::string SplitFile(std::string sPath)
         iPart++;
 	}
 	ifs.close();
-	// We calculate the md5 hash of the splitter directory (for safety), and return the path to the caller.  (This prevents biblepay from deleting any of the users files by accident).
+	// We calculate the md5 hash of the splitter directory (for safety), and return the path to the caller.  (This prevents estatero from deleting any of the users files by accident).
     return sDir;
 }
 
@@ -5040,7 +5040,7 @@ std::string GetHowey(bool fRPC, bool fBurn)
 	return sHowey;
 }
 
-std::string SignBBPUTXO(std::string sUTXO, std::string& sError)
+std::string SignESTUTXO(std::string sUTXO, std::string& sError)
 {
 	CAmount nValue = 0;
 	std::string sAddress = GetUTXO(sUTXO, -1, nValue);
@@ -5086,7 +5086,7 @@ bool VerifyDashStakeSignature(std::string sAddress, std::string sUTXO, std::stri
 
 	CBitcoinAddress addr(sAddress);
 	CKeyID keyID;
-    // BBP-PROD=25, Dash-Prod=76
+    // EST-PROD=25, Dash-Prod=76
 
 	// Address does not refer to a key
 	if (!addr.GetNonStandardKeyID(keyID, nKeyType))
@@ -5114,7 +5114,7 @@ bool VerifyDashStakeSignature(std::string sAddress, std::string sUTXO, std::stri
 }
 
 
-bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& sError, std::string sBBPUTXO, std::string sDashUTXO, std::string sBBPSig, std::string sDashSig, 
+bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& sError, std::string sESTUTXO, std::string sDashUTXO, std::string sESTSig, std::string sDashSig, 
 	double nDuration, std::string sCPK, bool fDryRun, DashStake& out_dashstake)
 {
 	const Consensus::Params& consensusParams = Params().GetConsensus();
@@ -5125,29 +5125,29 @@ bool SendDashStake(std::string sReturnAddress, std::string& sTXID, std::string& 
 	
 	double nDashPrice = GetCryptoPrice("dash"); // Dash->BTC price
 	double nBTCPrice = GetCryptoPrice("btc");
-	double nBBPPrice = GetCryptoPrice("bbp");
-	CAmount nBBPAmount = 0;
-	GetUTXO(sBBPUTXO, -1, nBBPAmount);
+	double nESTPrice = GetCryptoPrice("bbp");
+	CAmount nESTAmount = 0;
+	GetUTXO(sESTUTXO, -1, nESTAmount);
 	CAmount nDashAmount = 0;
 	GetUTXO(sDashUTXO, -2, nDashAmount);
-	LogPrintf(" CryptoPrice BBP %s , Dash %s  ", RoundToString(nBBPPrice, 12), RoundToString(nDashPrice, 12));
+	LogPrintf(" CryptoPrice EST %s , Dash %s  ", RoundToString(nESTPrice, 12), RoundToString(nDashPrice, 12));
 
-	double nUSDBBP = nBTCPrice * nBBPPrice;
+	double nUSDEST = nBTCPrice * nESTPrice;
 	double nUSDDash = nBTCPrice * nDashPrice;
-	double nBBPValueUSD = nUSDBBP * ((double)nBBPAmount / COIN);
+	double nESTValueUSD = nUSDEST * ((double)nESTAmount / COIN);
 	double nDashValueUSD = nUSDDash * ((double)nDashAmount / COIN);
 	
-	std::string sPK = "DASHSTAKE-" + sBBPUTXO + "-" + sDashUTXO + "-" + RoundToString(nExpiration, 0);
-	std::string sPayload = "<MT>DASHSTAKE</MT><MK>" + sPK + "</MK><MV><dashstake><bbputxo>" + sBBPUTXO + "</bbputxo><height>" 
+	std::string sPK = "DASHSTAKE-" + sESTUTXO + "-" + sDashUTXO + "-" + RoundToString(nExpiration, 0);
+	std::string sPayload = "<MT>DASHSTAKE</MT><MK>" + sPK + "</MK><MV><dashstake><bbputxo>" + sESTUTXO + "</bbputxo><height>" 
 			+ RoundToString(chainActive.Tip()->nHeight, 0) 
-			+ "</height><dashutxo>"+ sDashUTXO + "</dashutxo><cpk>" + sCPK + "</cpk><bbpsig>"+ sBBPSig + "</bbpsig><dashsig>"+ sDashSig 
+			+ "</height><dashutxo>"+ sDashUTXO + "</dashutxo><cpk>" + sCPK + "</cpk><bbpsig>"+ sESTSig + "</bbpsig><dashsig>"+ sDashSig 
 			+ "</dashsig><time>" + RoundToString(GetAdjustedTime(), 0) + "</time><dwu>" 
 			+ RoundToString(wm.DWU, 4) + "</dwu><duration>" 
 			+ RoundToString(nDuration, 0) + "</duration><returnaddress>" + sReturnAddress + "</returnaddress><expiration>" + TimestampToHRDate(nExpiration) + "</expiration>"
-			+ "<bbpamount>" + RoundToString((double)nBBPAmount / COIN, 2) + "</bbpamount><dashamount>" + RoundToString((double)nDashAmount / COIN, 4) + "</dashamount><bbpprice>"
-			+ RoundToString(nBBPPrice, 12) + "</bbpprice><dashprice>" + RoundToString(nDashPrice, 12)
+			+ "<bbpamount>" + RoundToString((double)nESTAmount / COIN, 2) + "</bbpamount><dashamount>" + RoundToString((double)nDashAmount / COIN, 4) + "</dashamount><bbpprice>"
+			+ RoundToString(nESTPrice, 12) + "</bbpprice><dashprice>" + RoundToString(nDashPrice, 12)
 			+ "</dashprice><btcprice>"+ RoundToString(nBTCPrice, 12) + "</btcprice>"
-			+ "<bbpvalue>" + RoundToString(nBBPValueUSD, 2) + "</bbpvalue><dashvalue>"+ RoundToString(nDashValueUSD, 2) + "</dashvalue></dashstake></MV>";
+			+ "<bbpvalue>" + RoundToString(nESTValueUSD, 2) + "</bbpvalue><dashvalue>"+ RoundToString(nDashValueUSD, 2) + "</dashvalue></dashstake></MV>";
 	
 	CBitcoinAddress toAddress(consensusParams.BurnAddress);
 	if (!toAddress.IsValid())
@@ -5248,7 +5248,7 @@ bool SendDWS(std::string& sTXID, std::string& sError, std::string sReturnAddress
 	
 	if (nAmt < 100 || nAmt > 1000000)
 	{
-		sError = "Sorry, amount must be between 100 and 1,000,000 BBP";
+		sError = "Sorry, amount must be between 100 and 1,000,000 EST";
 		return false;
 	}
 
@@ -5443,9 +5443,9 @@ void LockDashStakes()
 	for (int i = 0; i < wStakes.size(); i++)
 	{
 		DashStake d = wStakes[i];
-		if (d.found && !d.expired && !d.spent && d.MonthlyEarnings > 0 && !d.BBPUTXO.empty())
+		if (d.found && !d.expired && !d.spent && d.MonthlyEarnings > 0 && !d.ESTUTXO.empty())
 		{
-			COutPoint c = OutPointFromUTXO(d.BBPUTXO);
+			COutPoint c = OutPointFromUTXO(d.ESTUTXO);
 			pwalletMain->LockCoin(c);
 		}
 	}
@@ -5458,7 +5458,7 @@ DashStake GetDashStakeByUTXO(std::string sDashStake)
 	for (int i = 0; i < wStakes.size(); i++)
 	{
 		DashStake d = wStakes[i];
-		if (d.found && d.BBPUTXO == sDashStake)
+		if (d.found && d.ESTUTXO == sDashStake)
 			return d;
 	}
 	return e;

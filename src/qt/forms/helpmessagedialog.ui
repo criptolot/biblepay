@@ -67,7 +67,7 @@
         <bool>false</bool>
        </property>
        <property name="pixmap">
-        <pixmap resource="../biblepay.qrc">:/images/drkblue/about</pixmap>
+        <pixmap resource="../estatero.qrc">:/images/drkblue/about</pixmap>
        </property>
        <property name="scaledContents">
         <bool>false</bool>
@@ -362,7 +362,7 @@ p, li { white-space: pre-wrap; }
   </layout>
  </widget>
  <resources>
-  <include location="../biblepay.qrc"/>
+  <include location="../estatero.qrc"/>
  </resources>
  <connections>
   <connection>

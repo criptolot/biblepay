@@ -207,7 +207,7 @@ void Proposals::VerifyUserReallyWantsToVote(std::string sVotingType, std::string
     if(row >= 0)
     {
         QMessageBox msgBox;
-        msgBox.setWindowTitle(tr("Biblepay Proposal Voting"));
+        msgBox.setWindowTitle(tr("Estatero Proposal Voting"));
         msgBox.setText(QString::fromStdString("Vote " + sVotingAction + " for the Proposal with " + sVotingType + "?"));
         msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
         msgBox.setDefaultButton(QMessageBox::Yes);

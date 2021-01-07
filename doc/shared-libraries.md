@@ -1,21 +1,21 @@
 Shared Libraries
 ================
 
-## biblepayconsensus
+## estateroconsensus
 
-The purpose of this library is to make the verification functionality that is critical to Biblepay's consensus available to other applications, e.g. to language bindings.
+The purpose of this library is to make the verification functionality that is critical to Estatero's consensus available to other applications, e.g. to language bindings.
 
 ### API
 
-The interface is defined in the C header `biblepayconsensus.h` located in  `src/script/biblepayconsensus.h`.
+The interface is defined in the C header `estateroconsensus.h` located in  `src/script/estateroconsensus.h`.
 
 #### Version
 
-`biblepayconsensus_version` returns an `unsigned int` with the API version *(currently at an experimental `0`)*.
+`estateroconsensus_version` returns an `unsigned int` with the API version *(currently at an experimental `0`)*.
 
 #### Script Validation
 
-`biblepayconsensus_verify_script` returns an `int` with the status of the verification. It will be `1` if the input script correctly spends the previous output `scriptPubKey`.
+`estateroconsensus_verify_script` returns an `int` with the status of the verification. It will be `1` if the input script correctly spends the previous output `scriptPubKey`.
 
 ##### Parameters
 - `const unsigned char *scriptPubKey` - The previous output script that encumbers spending.
@@ -24,21 +24,21 @@ The interface is defined in the C header `biblepayconsensus.h` located in  `src/
 - `unsigned int txToLen` - The number of bytes for the `txTo`.
 - `unsigned int nIn` - The index of the input in `txTo` that spends the `scriptPubKey`.
 - `unsigned int flags` - The script validation flags *(see below)*.
-- `biblepayconsensus_error* err` - Will have the error/success code for the operation *(see below)*.
+- `estateroconsensus_error* err` - Will have the error/success code for the operation *(see below)*.
 
 ##### Script Flags
-- `biblepayconsensus_SCRIPT_FLAGS_VERIFY_NONE`
-- `biblepayconsensus_SCRIPT_FLAGS_VERIFY_P2SH` - Evaluate P2SH ([BIP16](https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki)) subscripts
-- `biblepayconsensus_SCRIPT_FLAGS_VERIFY_DERSIG` - Enforce strict DER ([BIP66](https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki)) compliance
-- `biblepayconsensus_SCRIPT_FLAGS_VERIFY_NULLDUMMY` - Enforce NULLDUMMY ([BIP147](https://github.com/bitcoin/bips/blob/master/bip-0147.mediawiki))
-- `biblepayconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY` - Enable CHECKLOCKTIMEVERIFY ([BIP65](https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki))
-- `biblepayconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY` - Enable CHECKSEQUENCEVERIFY ([BIP112](https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki))
+- `estateroconsensus_SCRIPT_FLAGS_VERIFY_NONE`
+- `estateroconsensus_SCRIPT_FLAGS_VERIFY_P2SH` - Evaluate P2SH ([BIP16](https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki)) subscripts
+- `estateroconsensus_SCRIPT_FLAGS_VERIFY_DERSIG` - Enforce strict DER ([BIP66](https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki)) compliance
+- `estateroconsensus_SCRIPT_FLAGS_VERIFY_NULLDUMMY` - Enforce NULLDUMMY ([BIP147](https://github.com/bitcoin/bips/blob/master/bip-0147.mediawiki))
+- `estateroconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY` - Enable CHECKLOCKTIMEVERIFY ([BIP65](https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki))
+- `estateroconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY` - Enable CHECKSEQUENCEVERIFY ([BIP112](https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki))
 
 ##### Errors
-- `biblepayconsensus_ERR_OK` - No errors with input parameters *(see the return value of `biblepayconsensus_verify_script` for the verification status)*
-- `biblepayconsensus_ERR_TX_INDEX` - An invalid index for `txTo`
-- `biblepayconsensus_ERR_TX_SIZE_MISMATCH` - `txToLen` did not match with the size of `txTo`
-- `biblepayconsensus_ERR_DESERIALIZE` - An error deserializing `txTo`
+- `estateroconsensus_ERR_OK` - No errors with input parameters *(see the return value of `estateroconsensus_verify_script` for the verification status)*
+- `estateroconsensus_ERR_TX_INDEX` - An invalid index for `txTo`
+- `estateroconsensus_ERR_TX_SIZE_MISMATCH` - `txToLen` did not match with the size of `txTo`
+- `estateroconsensus_ERR_DESERIALIZE` - An error deserializing `txTo`
 
 ### Example Implementations
 - [NBitcoin](https://github.com/NicolasDorier/NBitcoin/blob/master/NBitcoin/Script.cs#L814) (.NET Bindings)

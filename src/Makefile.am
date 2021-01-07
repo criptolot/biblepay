@@ -1,5 +1,5 @@
 # Copyright (c) 2013-2016 The Bitcoin Core developers
-# Copyright (c) 2014-2018 The BiblePay Core developers
+# Copyright (c) 2014-2018 The Estatero Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or  http://www.opensource.org/licenses/mit-license.php.
 
@@ -55,23 +55,23 @@ else
 BLS_LIBS=-lchiabls -lgmp -L$(srcdir)/crypto/RandomX/build -lrandomx
 endif
 
-LIBBITCOIN_SERVER=libbiblepay_server.a
-LIBBITCOIN_COMMON=libbiblepay_common.a
-LIBBITCOIN_CONSENSUS=libbiblepay_consensus.a
-LIBBITCOIN_CLI=libbiblepay_cli.a
-LIBBITCOIN_UTIL=libbiblepay_util.a
-LIBBITCOIN_CRYPTO=crypto/libbiblepay_crypto.a
-LIBBITCOINQT=qt/libbiblepayqt.a
+LIBBITCOIN_SERVER=libestatero_server.a
+LIBBITCOIN_COMMON=libestatero_common.a
+LIBBITCOIN_CONSENSUS=libestatero_consensus.a
+LIBBITCOIN_CLI=libestatero_cli.a
+LIBBITCOIN_UTIL=libestatero_util.a
+LIBBITCOIN_CRYPTO=crypto/libestatero_crypto.a
+LIBBITCOINQT=qt/libestateroqt.a
 LIBSECP256K1=secp256k1/libsecp256k1.la
 
 if ENABLE_ZMQ
-LIBBITCOIN_ZMQ=libbiblepay_zmq.a
+LIBBITCOIN_ZMQ=libestatero_zmq.a
 endif
 if BUILD_BITCOIN_LIBS
-LIBBITCOINCONSENSUS=libbiblepayconsensus.la
+LIBBITCOINCONSENSUS=libestateroconsensus.la
 endif
 if ENABLE_WALLET
-LIBBITCOIN_WALLET=libbiblepay_wallet.a
+LIBBITCOIN_WALLET=libestatero_wallet.a
 endif
 
 $(LIBSECP256K1): $(wildcard secp256k1/src/*) $(wildcard secp256k1/include/*)
@@ -96,15 +96,15 @@ TESTS =
 BENCHMARKS =
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += biblepayd
+  bin_PROGRAMS += estaterod
 endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += biblepay-cli biblepay-tx
+  bin_PROGRAMS += estatero-cli estatero-tx
 endif
 
 .PHONY: FORCE check-symbols check-security
-# biblepay core #
+# estatero core #
 BITCOIN_CORE_H = \
   addrdb.h \
   activemasternode.h \
@@ -268,12 +268,12 @@ obj/build.h: FORCE
 	@$(MKDIR_P) $(builddir)/obj
 	@$(top_srcdir)/share/genbuild.sh $(abs_top_builddir)/src/obj/build.h \
 	  $(abs_top_srcdir)
-libbiblepay_util_a-clientversion.$(OBJEXT): obj/build.h
+libestatero_util_a-clientversion.$(OBJEXT): obj/build.h
 
-# server: shared between biblepayd and biblepay-qt
-libbiblepay_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
-libbiblepay_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbiblepay_server_a_SOURCES = \
+# server: shared between estaterod and estatero-qt
+libestatero_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
+libestatero_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestatero_server_a_SOURCES = \
   activemasternode.cpp \
   addrman.cpp \
   addrdb.cpp \
@@ -368,20 +368,20 @@ libbiblepay_server_a_SOURCES = \
   $(BITCOIN_CORE_H)
 
 if ENABLE_ZMQ
-libbiblepay_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
-libbiblepay_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbiblepay_zmq_a_SOURCES = \
+libestatero_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
+libestatero_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestatero_zmq_a_SOURCES = \
   zmq/zmqabstractnotifier.cpp \
   zmq/zmqnotificationinterface.cpp \
   zmq/zmqpublishnotifier.cpp
 endif
 
 
-# wallet: shared between biblepayd and biblepay-qt, but only linked
+# wallet: shared between estaterod and estatero-qt, but only linked
 # when wallet enabled
-libbiblepay_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbiblepay_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbiblepay_wallet_a_SOURCES = \
+libestatero_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libestatero_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestatero_wallet_a_SOURCES = \
   keepass.cpp \
   privatesend-client.cpp \
   privatesend-util.cpp \
@@ -394,9 +394,9 @@ libbiblepay_wallet_a_SOURCES = \
   $(BITCOIN_CORE_H)
 
 # crypto primitives library
-crypto_libbiblepay_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_CONFIG_INCLUDES) $(PIC_FLAGS)
-crypto_libbiblepay_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(PIC_FLAGS)
-crypto_libbiblepay_crypto_a_SOURCES = \
+crypto_libestatero_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_CONFIG_INCLUDES) $(PIC_FLAGS)
+crypto_libestatero_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(PIC_FLAGS)
+crypto_libestatero_crypto_a_SOURCES = \
   crypto/aes.cpp \
   crypto/aes.h \
   crypto/common.h \
@@ -415,13 +415,13 @@ crypto_libbiblepay_crypto_a_SOURCES = \
   crypto/sha512.h
 
 # x11
-crypto_libbiblepay_crypto_a_SOURCES += \
+crypto_libestatero_crypto_a_SOURCES += \
   crypto/blake.c \
   crypto/bmw.c \
   crypto/cubehash.c \
   crypto/echo.c \
   crypto/groestl.c \
-  crypto/biblepay.c \
+  crypto/estatero.c \
   crypto/jh.c \
   crypto/keccak.c \
   crypto/luffa.c \
@@ -444,9 +444,9 @@ crypto_libbiblepay_crypto_a_SOURCES += \
 
 #  crypto/RandomX/src/randomx.h
 # consensus: shared between all executables that validate any consensus rules.
-libbiblepay_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbiblepay_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbiblepay_consensus_a_SOURCES = \
+libestatero_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libestatero_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestatero_consensus_a_SOURCES = \
   amount.h \
   arith_uint256.cpp \
   arith_uint256.h \
@@ -465,7 +465,7 @@ libbiblepay_consensus_a_SOURCES = \
   primitives/transaction.h \
   pubkey.cpp \
   pubkey.h \
-  script/biblepayconsensus.cpp \
+  script/estateroconsensus.cpp \
   script/interpreter.cpp \
   script/interpreter.h \
   randomx_bbp.h \
@@ -483,10 +483,10 @@ libbiblepay_consensus_a_SOURCES = \
   utilstrencodings.h \
   version.h
 
-# common: shared between biblepayd, and biblepay-qt and non-server tools
-libbiblepay_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbiblepay_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbiblepay_common_a_SOURCES = \
+# common: shared between estaterod, and estatero-qt and non-server tools
+libestatero_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libestatero_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestatero_common_a_SOURCES = \
   amount.cpp \
   base58.cpp \
   bip39.cpp \
@@ -511,9 +511,9 @@ libbiblepay_common_a_SOURCES = \
 # util: shared between all executables.
 # This library *must* be included to make sure that the glibc
 # backward-compatibility objects and their sanity checks are linked.
-libbiblepay_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbiblepay_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbiblepay_util_a_SOURCES = \
+libestatero_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libestatero_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestatero_util_a_SOURCES = \
   bls/bls_batchverifier.h \
   bls/bls_ies.cpp \
   bls/bls_ies.h \
@@ -538,31 +538,31 @@ libbiblepay_util_a_SOURCES = \
   $(BITCOIN_CORE_H)
 
 if GLIBC_BACK_COMPAT
-libbiblepay_util_a_SOURCES += compat/glibc_compat.cpp
+libestatero_util_a_SOURCES += compat/glibc_compat.cpp
 AM_LDFLAGS += -Wl,--wrap=log2f -Wl,--wrap=__divmoddi4
 endif
 
-# cli: shared between biblepay-cli and biblepay-qt
-libbiblepay_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbiblepay_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbiblepay_cli_a_SOURCES = \
+# cli: shared between estatero-cli and estatero-qt
+libestatero_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libestatero_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestatero_cli_a_SOURCES = \
   rpc/client.cpp \
   $(BITCOIN_CORE_H)
 
-nodist_libbiblepay_util_a_SOURCES = $(srcdir)/obj/build.h
+nodist_libestatero_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
-# biblepayd binary #
-biblepayd_SOURCES = biblepayd.cpp
-biblepayd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-biblepayd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-biblepayd_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# estaterod binary #
+estaterod_SOURCES = estaterod.cpp
+estaterod_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+estaterod_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+estaterod_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-biblepayd_SOURCES += biblepayd-res.rc
+estaterod_SOURCES += estaterod-res.rc
 endif
 
-biblepayd_LDADD = \
+estaterod_LDADD = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_COMMON) \
   $(LIBUNIVALUE) \
@@ -575,39 +575,39 @@ biblepayd_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1) 
   
-biblepayd_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(BLS_LIBS)
+estaterod_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(BLS_LIBS)
 
-# biblepay-cli binary #
-biblepay_cli_SOURCES = biblepay-cli.cpp
-biblepay_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-biblepay_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-biblepay_cli_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# estatero-cli binary #
+estatero_cli_SOURCES = estatero-cli.cpp
+estatero_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+estatero_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+estatero_cli_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-biblepay_cli_SOURCES += biblepay-cli-res.rc
+estatero_cli_SOURCES += estatero-cli-res.rc
 endif
 
-biblepay_cli_LDADD = \
+estatero_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO) 
   
 
-biblepay_cli_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS) $(BLS_LIBS)
+estatero_cli_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS) $(BLS_LIBS)
 #
 
-# biblepay-tx binary #
-biblepay_tx_SOURCES = biblepay-tx.cpp
-biblepay_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-biblepay_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-biblepay_tx_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# estatero-tx binary #
+estatero_tx_SOURCES = estatero-tx.cpp
+estatero_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+estatero_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+estatero_tx_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-biblepay_tx_SOURCES += biblepay-tx-res.rc
+estatero_tx_SOURCES += estatero-tx-res.rc
 endif
 
-biblepay_tx_LDADD = \
+estatero_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
@@ -615,22 +615,22 @@ biblepay_tx_LDADD = \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
  
-biblepay_tx_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(CRYPTO_LIBS) $(BLS_LIBS)
+estatero_tx_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(CRYPTO_LIBS) $(BLS_LIBS)
 #
 
-# biblepayconsensus library #
+# estateroconsensus library #
 if BUILD_BITCOIN_LIBS
-include_HEADERS = script/biblepayconsensus.h
-libbiblepayconsensus_la_SOURCES = $(crypto_libbiblepay_crypto_a_SOURCES) $(libbiblepay_consensus_a_SOURCES)
+include_HEADERS = script/estateroconsensus.h
+libestateroconsensus_la_SOURCES = $(crypto_libestatero_crypto_a_SOURCES) $(libestatero_consensus_a_SOURCES)
 
 if GLIBC_BACK_COMPAT
-  libbiblepayconsensus_la_SOURCES += compat/glibc_compat.cpp
+  libestateroconsensus_la_SOURCES += compat/glibc_compat.cpp
 endif
 
-libbiblepayconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libbiblepayconsensus_la_LIBADD = $(LIBSECP256K1) $(BLS_LIBS) $(EVENT_PTHREADS_LIBS)
-libbiblepayconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
-libbiblepayconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libestateroconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
+libestateroconsensus_la_LIBADD = $(LIBSECP256K1) $(BLS_LIBS) $(EVENT_PTHREADS_LIBS)
+libestateroconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
+libestateroconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
 endif
 #

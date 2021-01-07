@@ -28,7 +28,7 @@ namespace Cnv
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            // Emit Chinese New Version translation into BiblePay-QT
+            // Emit Chinese New Version translation into Estatero-QT
 
             // Credit goes to https://github.com/michaelchanwahyan/Bible Michael Chanwahyan for his text conversion of the CNV bible to source text files
             // The CNV, Chinese New Version Traditional, was a joint effort from 100 prominent Chinese Bible scholars, released in 1992.  https://www.biblegateway.com/versions/Chinese-New-Version-Traditional-CNVT/

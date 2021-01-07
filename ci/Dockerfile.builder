@@ -15,9 +15,9 @@ RUN apt-get update && apt-get install -y python3-pip
 # Python stuff
 RUN pip3 install pyzmq # really needed?
 
-# biblepay_hash
-RUN git clone https://github.com/biblepay/biblepay_hash
-RUN cd biblepay_hash && python3 setup.py install
+# estatero_hash
+RUN git clone https://github.com/estatero/estatero_hash
+RUN cd estatero_hash && python3 setup.py install
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
@@ -25,8 +25,8 @@ ARG GROUP_ID=1000
 # add user with specified (or default) user/group ids
 ENV USER_ID ${USER_ID}
 ENV GROUP_ID ${GROUP_ID}
-RUN groupadd -g ${GROUP_ID} biblepay
-RUN useradd -u ${USER_ID} -g biblepay -s /bin/bash -m -d /biblepay biblepay
+RUN groupadd -g ${GROUP_ID} estatero
+RUN useradd -u ${USER_ID} -g estatero -s /bin/bash -m -d /estatero estatero
 
 # Extra packages
 ARG BUILD_TARGET=linux64
@@ -44,13 +44,13 @@ RUN \
   update-alternatives --set x86_64-w64-mingw32-g++  /usr/bin/x86_64-w64-mingw32-g++-posix; \
   exit 0
 
-RUN mkdir /biblepay-src && \
+RUN mkdir /estatero-src && \
   mkdir -p /cache/ccache && \
   mkdir /cache/depends && \
   mkdir /cache/sdk-sources && \
-  chown $USER_ID:$GROUP_ID /biblepay-src && \
+  chown $USER_ID:$GROUP_ID /estatero-src && \
   chown $USER_ID:$GROUP_ID /cache && \
   chown $USER_ID:$GROUP_ID /cache -R
-WORKDIR /biblepay-src
+WORKDIR /estatero-src
 
-USER biblepay
+USER estatero

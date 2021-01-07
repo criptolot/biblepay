@@ -1,8 +1,8 @@
-Source: biblepay
+Source: estatero
 Section: utils
 Priority: optional
-Maintainer: Holger Schinzel <holger@biblepay.org>
-Uploaders: Holger Schinzel <holger@biblepay.org>
+Maintainer: Holger Schinzel <holger@estatero.org>
+Uploaders: Holger Schinzel <holger@estatero.org>
 Build-Depends: debhelper,
  devscripts,
  automake,
@@ -26,45 +26,45 @@ Build-Depends: debhelper,
  python,
  libzmq3-dev
 Standards-Version: 3.9.2
-Homepage: https://www.biblepay.org/
-Vcs-Git: git://github.com/biblepay/biblepay.git
-Vcs-Browser: https://github.com/biblepay/biblepay
+Homepage: https://www.estatero.org/
+Vcs-Git: git://github.com/estatero/estatero.git
+Vcs-Browser: https://github.com/estatero/estatero
 
-Package: biblepayd
+Package: estaterod
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer network based digital currency - daemon
- Biblepay is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Biblepay uses peer-to-peer
+ Estatero is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. Estatero uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. BiblePay Core
+ and issuing money are carried out collectively by the network. Estatero Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides the daemon, biblepayd, and the CLI tool
- biblepay-cli to interact with the daemon.
+ This package provides the daemon, estaterod, and the CLI tool
+ estatero-cli to interact with the daemon.
 
-Package: biblepay-qt
+Package: estatero-qt
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer network based digital currency - Qt GUI
- Biblepay is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Biblepay uses peer-to-peer
+ Estatero is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. Estatero uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. BiblePay Core
+ and issuing money are carried out collectively by the network. Estatero Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides Biblepay-Qt, a GUI for Biblepay based on Qt.
+ This package provides Estatero-Qt, a GUI for Estatero based on Qt.
 
-Package: biblepay-tx
+Package: estatero-tx
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer digital currency - standalone transaction tool
- Biblepay is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Biblepay uses peer-to-peer
+ Estatero is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. Estatero uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. BiblePay Core
+ and issuing money are carried out collectively by the network. Estatero Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides biblepay-tx, a command-line transaction creation
- tool which can be used without a biblepay daemon.  Some means of
+ This package provides estatero-tx, a command-line transaction creation
+ tool which can be used without a estatero daemon.  Some means of
  exchanging minimal transaction data with peers is still required.

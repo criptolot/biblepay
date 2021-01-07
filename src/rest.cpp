@@ -396,7 +396,7 @@ bool getAddress_FromIndex(const int &type, const uint160 &hash, std::string &add
 static bool rest_getaddressutxos(HTTPRequest* req, const std::string& strURIPart)
 {
 	// This API call is used to retrieve UTXO information by Address
-	// NOTE:  You must enabled the addressindex=1 in the biblepay.conf (and reindex=1 once only on start) to use this functionality.
+	// NOTE:  You must enabled the addressindex=1 in the estatero.conf (and reindex=1 once only on start) to use this functionality.
 
     if (!CheckWarmup(req))
         return false;

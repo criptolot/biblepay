@@ -13,18 +13,18 @@
  * for both dacd and dac-qt, to make it harder for attackers to
  * target servers or GUI users specifically.
  */
-const std::string CLIENT_NAME("BiblePay Core");
+const std::string CLIENT_NAME("Estatero Core");
 
-const int BIBLEPAY_VERSION_MAJOR = 1;
-const int BIBLEPAY_VERSION_MINOR = 5;
-const int BIBLEPAY_VERSION_REVISION = 2;
-const int BIBLEPAY_VERSION_BUILD = 9;
+const int ESTATERO_VERSION_MAJOR = 1;
+const int ESTATERO_VERSION_MINOR = 5;
+const int ESTATERO_VERSION_REVISION = 2;
+const int ESTATERO_VERSION_BUILD = 9;
 
 
-const int BIBLE_VERSION =  1000000 * BIBLEPAY_VERSION_MAJOR
-                         +   10000 * BIBLEPAY_VERSION_MINOR
-                         +     100 * BIBLEPAY_VERSION_REVISION
-                         +       1 * BIBLEPAY_VERSION_BUILD;
+const int BIBLE_VERSION =  1000000 * ESTATERO_VERSION_MAJOR
+                         +   10000 * ESTATERO_VERSION_MINOR
+                         +     100 * ESTATERO_VERSION_REVISION
+                         +       1 * ESTATERO_VERSION_BUILD;
 /**
  * Client version number
  */

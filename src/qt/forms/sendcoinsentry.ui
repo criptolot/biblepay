@@ -181,7 +181,7 @@
       <item>
        <widget class="QCheckBox" name="chkDWS">
         <property name="toolTip">
-         <string>Burn this amount of BiblePay as a Dynamic Whale Stake for 90 days.  You will receive the stake back at the end plus a stake reward (quoted when you click send).</string>
+         <string>Burn this amount of Estatero as a Dynamic Whale Stake for 90 days.  You will receive the stake back at the end plus a stake reward (quoted when you click send).</string>
         </property>
         <property name="text">
          <string>Dynamic Whale Stake?</string>
@@ -1492,7 +1492,7 @@
   <tabstop>deleteButton_s</tabstop>
  </tabstops>
  <resources>
-  <include location="../biblepay.qrc"/>
+  <include location="../estatero.qrc"/>
  </resources>
  <connections/>
 </ui>

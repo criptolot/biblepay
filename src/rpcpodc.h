@@ -17,7 +17,7 @@ bool SignStake(std::string sBitcoinAddress, std::string strMessage, std::string&
 std::string GetGithubVersion();
 std::string SerializeSanctuaryQuorumTrigger(int iContractAssessmentHeight, int nEventBlockHeight, std::string sContract);
 bool VerifySigner(std::string sXML);
-double GetPBase(double& out_BTC, double& out_BBP);
+double GetPBase(double& out_BTC, double& out_EST);
 std::string GetCPID();
 bool GetTransactionTimeAndAmount(uint256 txhash, int nVout, int64_t& nTime, CAmount& nAmount);
 std::string SendBlockchainMessage(std::string sType, std::string sPrimaryKey, std::string sValue, double dStorageFee, bool Sign, std::string sExtraPayload, std::string& sError);

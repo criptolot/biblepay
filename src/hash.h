@@ -417,7 +417,7 @@ inline uint256 HashLegacy(const T1 pbegin, const T1 pend)
  
     sph_jh512_context        ctx_jh;
     sph_keccak512_context    ctx_keccak;
-    sph_legacy512_context  ctx_biblepay;
+    sph_legacy512_context  ctx_estatero;
 
     static unsigned char pblank[1];
     uint512 hash[7];
@@ -446,9 +446,9 @@ inline uint256 HashLegacy(const T1 pbegin, const T1 pend)
     sph_keccak512 (&ctx_keccak, static_cast<const void*>(&hash[4]), 64);
     sph_keccak512_close(&ctx_keccak, static_cast<void*>(&hash[5]));
 
-	sph_legacy512_init(&ctx_biblepay);
-    sph_legacy512 (&ctx_biblepay, static_cast<const void*>(&hash[5]), 64);
-    sph_legacy512_close(&ctx_biblepay, static_cast<void*>(&hash[6]));
+	sph_legacy512_init(&ctx_estatero);
+    sph_legacy512 (&ctx_estatero, static_cast<const void*>(&hash[5]), 64);
+    sph_legacy512_close(&ctx_estatero, static_cast<void*>(&hash[6]));
 	
 	// Genesis 2:2
 	// And on the seventh day God ended His work which He had done, and He rested on the seventh day from all His work which He had done. 

@@ -1,12 +1,12 @@
 # Copyright (c) 2013-2016 The Bitcoin Core developers
-# Copyright (c) 2014-2018 The BiblePay Core developers
+# Copyright (c) 2014-2018 The Estatero Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-TESTS += test/testbiblepay
-bin_PROGRAMS += test/testbiblepay
+TESTS += test/testestatero
+bin_PROGRAMS += test/testestatero
 TEST_SRCDIR = test
-TEST_BINARY=test/testbiblepay$(EXEEXT)
+TEST_BINARY=test/testestatero$(EXEEXT)
 
 
 EXTRA_DIST += \
@@ -149,24 +149,24 @@ BITCOIN_TESTS += \
   wallet/test/crypto_tests.cpp
 endif
 
-test_testbiblepay_SOURCES = $(BITCOIN_TESTS) $(JSON_TEST_FILES) $(RAW_TEST_FILES)
-test_testbiblepay_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) -I$(builddir)/test/ $(TESTDEFS) $(EVENT_CFLAGS)
-test_testbiblepay_LDADD = $(LIBBITCOIN_SERVER) $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMMON) $(LIBBITCOIN_UTIL) $(LIBBITCOIN_CONSENSUS) $(LIBBITCOIN_CRYPTO) $(LIBUNIVALUE) $(LIBLEVELDB) $(LIBMEMENV) \
+test_testestatero_SOURCES = $(BITCOIN_TESTS) $(JSON_TEST_FILES) $(RAW_TEST_FILES)
+test_testestatero_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) -I$(builddir)/test/ $(TESTDEFS) $(EVENT_CFLAGS)
+test_testestatero_LDADD = $(LIBBITCOIN_SERVER) $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMMON) $(LIBBITCOIN_UTIL) $(LIBBITCOIN_CONSENSUS) $(LIBBITCOIN_CRYPTO) $(LIBUNIVALUE) $(LIBLEVELDB) $(LIBMEMENV) \
   $(BACKTRACE_LIB) $(BOOST_LIBS) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(LIBSECP256K1) $(EVENT_LIBS)
-test_testbiblepay_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_testestatero_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
 if ENABLE_WALLET
-test_testbiblepay_LDADD += $(LIBBITCOIN_WALLET)
+test_testestatero_LDADD += $(LIBBITCOIN_WALLET)
 endif
 
-test_testbiblepay_LDADD += $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(BLS_LIBS)
-test_testbiblepay_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -static
+test_testestatero_LDADD += $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(BLS_LIBS)
+test_testestatero_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -static
 
 if ENABLE_ZMQ
-test_testbiblepay_LDADD += $(ZMQ_LIBS)
+test_testestatero_LDADD += $(ZMQ_LIBS)
 endif
 
-nodist_test_testbiblepay_SOURCES = $(GENERATED_TEST_FILES)
+nodist_test_testestatero_SOURCES = $(GENERATED_TEST_FILES)
 
 $(BITCOIN_TESTS): $(GENERATED_TEST_FILES)
 
@@ -177,13 +177,13 @@ CLEANFILES += $(CLEAN_BITCOIN_TEST)
 # This file is problematic for out-of-tree builds if it exists.
 DISTCLEANFILES += test/buildenv.pyc
 
-biblepay_test: $(TEST_BINARY)
+estatero_test: $(TEST_BINARY)
 
-biblepay_test_check: $(TEST_BINARY) FORCE
+estatero_test_check: $(TEST_BINARY) FORCE
 	$(MAKE) check-TESTS TESTS=$^
 
-biblepay_test_clean : FORCE
-	rm -f $(CLEAN_BITCOIN_TEST) $(test_testbiblepay_OBJECTS) $(TEST_BINARY)
+estatero_test_clean : FORCE
+	rm -f $(CLEAN_BITCOIN_TEST) $(test_testestatero_OBJECTS) $(TEST_BINARY)
 
 check-local:
 	@echo "Running test/bitcoin-util-test.py..."

@@ -1,22 +1,22 @@
 GENERIC BUILD NOTES
 ====================
-Some notes on how to build BiblePay Core based on the [depends](../depends/README.md) build system.
+Some notes on how to build Estatero Core based on the [depends](../depends/README.md) build system.
 
 Note on old build instructions
 ------------------------------
-In the past, the build documentation contained instructions on how to build Biblepay with system-wide installed dependencies
+In the past, the build documentation contained instructions on how to build Estatero with system-wide installed dependencies
 like BerkeleyDB 4.8, boost and Qt. Building this way is considered deprecated and only building with the `depends` prefix
 is supported today.
 
 Required build tools and environment
 ------------------------------------
-Building the dependencies and BiblePay Core requires some essential build tools to be installed before. Please see
+Building the dependencies and Estatero Core requires some essential build tools to be installed before. Please see
 [build-unix](build-unix.md), [build-osx](build-osx.md) and [build-windows](build-windows.md) for details.
 
 Building dependencies
 ---------------------
-Biblepay inherited the `depends` folder from Bitcoin, which contains all dependencies required to build Biblepay. These
-dependencies must be built before Biblepay can actually be built. To do so, perform the following:
+Estatero inherited the `depends` folder from Bitcoin, which contains all dependencies required to build Estatero. These
+dependencies must be built before Estatero can actually be built. To do so, perform the following:
 
 ```bash
 $ cd depends
@@ -24,11 +24,11 @@ $ make -j4 # Choose a good -j value, depending on the number of CPU cores availa
 $ cd ..
 ```
 
-This will download and build all dependencies required to build BiblePay Core. Caching of build results will ensure that only
+This will download and build all dependencies required to build Estatero Core. Caching of build results will ensure that only
 the packages are rebuilt which have changed since the last depends build.
 
 It is required to re-run the above commands from time to time when dependencies have been updated or added. If this is
-not done, build failures might occur when building Biblepay.
+not done, build failures might occur when building Estatero.
 
 Please read the [depends](../depends/README.md) documentation for more details on supported hosts and configuration
 options. If no host is specified (as in the above example) when calling `make`, the depends system will default to your
@@ -36,9 +36,9 @@ local host system.
 
 Building RandomX library
 ---------------------
-Before you can build Biblepay core, be sure to complile the RandomX library found at src/crypto/RandomX. Instructions can be found [here](https://github.com/biblepay/biblepay/tree/master/src/crypto/RandomX)
+Before you can build Estatero core, be sure to complile the RandomX library found at src/crypto/RandomX. Instructions can be found [here](https://github.com/estatero/estatero/tree/master/src/crypto/RandomX)
 
-Building BiblePay Core
+Building Estatero Core
 ---------------------
 
 ```bash
@@ -66,7 +66,7 @@ If you want to build for the same host but different distro, add `--enable-glibc
 ccache
 ------
 The depends system also contains [ccache](https://ccache.samba.org/), which caches build results on source->object
-level. `./configure` of BiblePay Core will autodetect the presence of ccache and enable use of it. To disable ccache, use
+level. `./configure` of Estatero Core will autodetect the presence of ccache and enable use of it. To disable ccache, use
 `./configure --prefix=<prefix> --disable-ccache`.
 
 The default maximum cache size is 5G, which might not be enough to cache multiple builds when switching Git branches

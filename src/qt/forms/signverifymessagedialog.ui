@@ -352,7 +352,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../biblepay.qrc"/>
+  <include location="../estatero.qrc"/>
  </resources>
  <connections/>
 </ui>

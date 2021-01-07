@@ -30,8 +30,8 @@ cmake_minimum_required(VERSION 2.8.7)
 
 project(RandomX)
 #find_package(Threads REQUIRED)
-#set(BOOST_LIBRARYDIR /BiblepayDevelop/depends/x86_64-w64-mingw32/lib)
-#set(BOOST_ROOT /BiblepayDevelop/depends/x86_64-w64-mingw32/include/boost)
+#set(BOOST_LIBRARYDIR /EstateroDevelop/depends/x86_64-w64-mingw32/lib)
+#set(BOOST_ROOT /EstateroDevelop/depends/x86_64-w64-mingw32/include/boost)
 set(Boost_USE_STATIC_LIBS     ON)
 set(Boost_USE_MULTITHREADED   ON)
 #IF WINDOWS:

@@ -415,9 +415,9 @@ std::string GetQTPhaseXML(uint256 gObj)
 			std::string sPrice = obj["price"].getValStr();
 			std::string sQTPhase = obj["qtphase"].getValStr();
 			std::string sBTC = obj["btcprice"].getValStr();
-			std::string sBBP = obj["bbpprice"].getValStr();
+			std::string sEST = obj["bbpprice"].getValStr();
 			std::string sSporkData = obj["spork_data"].getValStr();
-			std::string sXML = "<price>" + sPrice + "</price><bbpprice>" + sBBP + "</bbpprice><qtphase>" + sQTPhase + "</qtphase><btcprice>" + sBTC + "</btcprice>";
+			std::string sXML = "<price>" + sPrice + "</price><bbpprice>" + sEST + "</bbpprice><qtphase>" + sQTPhase + "</qtphase><btcprice>" + sBTC + "</btcprice>";
 			sXML += sSporkData;
 			return sXML;
 		}
@@ -698,7 +698,7 @@ CAmount CSuperblock::GetPaymentsLimit(int nBlockHeight, bool fIncludeWhaleStakes
 		nSuperblockCycle = consensusParams.nDCCSuperblockCycle;
 		if (nBlockHeight > consensusParams.POOS_HEIGHT)
 		{
-			// https://forum.biblepay.org/index.php?topic=583.0
+			// https://forum.estatero.org/index.php?topic=583.0
 			// This leaves PODC the same, but reduces the monthly budget
 			nBudgetFactor = .5075;
 		}

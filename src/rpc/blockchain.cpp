@@ -182,7 +182,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
 	result.push_back(Pair("blockversion", GetBlockVersion(block.vtx[0]->vout[0].sTxOutMessage)));
 	if (block.vtx.size() > 1)
 		result.push_back(Pair("sanctuary_reward", block.vtx[0]->vout[1].nValue/COIN));
-	// BiblePay
+	// Estatero
 	bool bShowPrayers = true;
     if (blockindex->pprev)
 	{
@@ -1875,7 +1875,7 @@ UniValue exec(const JSONRPCRequest& request)
 	}
 	else if (sItem == "sendalert")
 	{
-		// This command allows BiblePay devs to send out a network alert (or an upgrade notification etc).
+		// This command allows Estatero devs to send out a network alert (or an upgrade notification etc).
 		// We are able to fine tune this alert to reach only certain protocol version ranges.
 		// The alert no longer puts the client in safe mode, so this is a safe process now.
 		if (request.params.size() != 2) 
@@ -2033,7 +2033,7 @@ UniValue exec(const JSONRPCRequest& request)
 			" ( The file_path is the location of the file on your machine.  The web_path is the target URL of the file.  "
 			" The target density is how many world regions you would like the file to be stored in (choose 1-4).  "
 			" The lease duration in days is the number of days you would like the file stored for.  Dry Run=0 means we will not charge for the transaction, we will test the outcome and send you a price quote.  "
-			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the BiblePay IPFS network. ");
+			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the Estatero IPFS network. ");
 
 		std::string sDirPath = request.params[1].get_str();
 		std::string sWebPath = request.params[2].get_str();
@@ -2097,7 +2097,7 @@ UniValue exec(const JSONRPCRequest& request)
 			" ( The file_path is the location of the file on your machine.  The web_path is the target URL of the file.  "
 			" The target density is how many world regions you would like the file to be stored in (choose 1-4).  "
 			" The lease duration in days is the number of days you would like the file stored for.  Dry Run=0 means we will not charge for the transaction, we will test the outcome and send you a price quote.  "
-			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the BiblePay IPFS network. ");
+			" Dry Run=1 means to actually perform the upload and charge the transaction, and make the file live on the Estatero IPFS network. ");
 
 		std::string sDirPath = request.params[1].get_str();
 		std::string sWebPath = request.params[2].get_str();
@@ -3430,8 +3430,8 @@ UniValue exec(const JSONRPCRequest& request)
 		for (int i = 0; i < dws.size(); i++)
 		{
 			DashStake ws = dws[i];
-			results.push_back(Pair("bbputxo", ws.BBPUTXO));
-			results.push_back(Pair("bbpamt", ws.nBBPQty));
+			results.push_back(Pair("bbputxo", ws.ESTUTXO));
+			results.push_back(Pair("bbpamt", ws.nESTQty));
 			results.push_back(Pair("monthlyearnings", ws.MonthlyEarnings));
 		}
 		results.push_back(Pair("earnings", dTotal));
